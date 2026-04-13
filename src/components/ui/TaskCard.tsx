@@ -22,25 +22,25 @@ export default function TaskCard({ task, onAction, actionLabel = 'Lihat', showAs
 
   return (
     <div
-      className={`bg-bg-card border border-surface border-l-4 ${priorityColors[task.prioritas]} rounded-xl p-4 flex flex-col gap-3`}
+      className={`app-panel border-l-4 ${priorityColors[task.prioritas]} flex flex-col gap-3 rounded-2xl p-4 sm:p-5`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-text-primary truncate">{task.judul}</h3>
+          <h3 className="truncate text-base font-bold tracking-tight text-text-primary">{task.judul}</h3>
           {task.deskripsi && (
-            <p className="text-sm text-text-muted mt-0.5 line-clamp-2">{task.deskripsi}</p>
+            <p className="mt-0.5 line-clamp-2 text-sm text-text-muted">{task.deskripsi}</p>
           )}
         </div>
         <TaskStatusBadge status={task.status} />
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-text-muted flex-wrap">
-        <span className={`inline-flex items-center gap-1 ${isOverdue ? 'text-accent-red' : ''}`}>
+      <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
+        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 ${isOverdue ? 'border-accent-red/30 bg-accent-red/10 text-accent-red' : 'border-surface bg-slate-50 dark:bg-surface/40'}`}>
           📅 {task.deadline ? new Date(task.deadline).toLocaleDateString('id-ID') : 'Tidak ada deadline'}
         </span>
-        <span>🎯 Prioritas {priorityLabels[task.prioritas]}</span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-surface bg-slate-50 px-2 py-1 dark:bg-surface/40">🎯 {priorityLabels[task.prioritas]}</span>
         {showAssignee && task.assignee && (
-          <span>👤 {task.assignee.nama}</span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-surface bg-slate-50 px-2 py-1 dark:bg-surface/40">👤 {task.assignee.nama}</span>
         )}
       </div>
 

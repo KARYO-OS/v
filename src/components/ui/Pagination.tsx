@@ -33,7 +33,7 @@ export default function Pagination({
   const to = Math.min(currentPage * pageSize, totalItems ?? currentPage * pageSize);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+    <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-surface/70 bg-bg-card/55 px-3 py-2 sm:flex-row">
       {totalItems !== undefined && (
         <p className="text-xs text-text-muted">
           Menampilkan {from}–{to} dari {totalItems} data
@@ -43,7 +43,7 @@ export default function Pagination({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="px-3 py-1.5 rounded-lg text-sm text-text-muted bg-surface/40 hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="rounded-lg border border-surface/70 bg-surface/35 px-3 py-1.5 text-sm text-text-muted transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Halaman sebelumnya"
         >
           ←
@@ -55,8 +55,8 @@ export default function Pagination({
             <button
               key={p}
               onClick={() => onPageChange(p)}
-              className={`min-w-[32px] px-2 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                p === currentPage ? 'bg-primary text-white' : 'text-text-muted bg-surface/40 hover:bg-surface'
+              className={`min-w-[32px] rounded-lg px-2 py-1.5 text-sm font-medium transition-colors ${
+                p === currentPage ? 'bg-primary text-white' : 'border border-surface/70 bg-surface/35 text-text-muted hover:bg-surface'
               }`}
               aria-current={p === currentPage ? 'page' : undefined}
             >
@@ -67,7 +67,7 @@ export default function Pagination({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="px-3 py-1.5 rounded-lg text-sm text-text-muted bg-surface/40 hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="rounded-lg border border-surface/70 bg-surface/35 px-3 py-1.5 text-sm text-text-muted transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Halaman berikutnya"
         >
           →

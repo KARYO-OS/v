@@ -129,21 +129,21 @@ export default function GlobalSearch() {
       {/* Search trigger button */}
       <button
         onClick={() => { setIsOpen(true); setTimeout(() => inputRef.current?.focus(), 50); }}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface/50 text-text-muted text-sm hover:bg-surface hover:text-text-primary transition-colors"
+        className="flex items-center gap-2 rounded-xl border border-surface bg-slate-50 px-3 py-2 text-sm text-text-muted transition-colors hover:bg-slate-100 hover:text-text-primary dark:bg-surface/35 dark:hover:bg-surface/65"
         aria-label="Cari (Ctrl+K)"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
         </svg>
         <span className="hidden sm:block">Cari...</span>
-        <kbd className="hidden sm:block text-xs bg-surface px-1 rounded">⌃K</kbd>
+        <kbd className="hidden rounded border border-surface bg-white px-1.5 py-0.5 text-[10px] sm:block dark:bg-bg-card">⌃K</kbd>
       </button>
 
       {/* Search modal/dropdown */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-[min(90vw,420px)] bg-bg-card border border-surface rounded-xl shadow-2xl overflow-hidden z-50 animate-slide-in">
+        <div className="app-panel absolute right-0 top-full z-50 mt-2 w-[min(92vw,460px)] overflow-hidden rounded-2xl animate-slide-in">
           {/* Input */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-surface">
+          <div className="flex items-center gap-2 border-b border-surface/80 px-4 py-3">
             <svg className="h-4 w-4 text-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
             </svg>
@@ -153,13 +153,13 @@ export default function GlobalSearch() {
               placeholder="Cari tugas, personel, pengumuman..."
               value={rawQuery}
               onChange={(e) => setRawQuery(e.target.value)}
-              className="flex-1 bg-transparent text-text-primary placeholder:text-text-muted text-sm focus:outline-none"
+              className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
               autoFocus
             />
             {isLoading && (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface border-t-primary flex-shrink-0" />
             )}
-            <button onClick={() => setIsOpen(false)} className="text-text-muted hover:text-text-primary text-xs">
+            <button onClick={() => setIsOpen(false)} className="text-xs text-text-muted hover:text-text-primary">
               Esc
             </button>
           </div>
@@ -180,7 +180,7 @@ export default function GlobalSearch() {
               <button
                 key={r.id}
                 onClick={() => handleSelect(r)}
-                className="w-full flex items-start gap-3 px-4 py-3 hover:bg-surface/50 transition-colors text-left"
+                className="w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-surface/55"
               >
                 <span className="text-lg flex-shrink-0">{r.icon}</span>
                 <div className="min-w-0">
@@ -192,7 +192,7 @@ export default function GlobalSearch() {
           </div>
 
           {results.length > 0 && (
-            <div className="px-4 py-2 border-t border-surface text-xs text-text-muted text-center">
+            <div className="border-t border-surface/80 px-4 py-2 text-center text-xs text-text-muted">
               {results.length} hasil — klik untuk navigasi
             </div>
           )}
