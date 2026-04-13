@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
+import PageHeader from '../../components/ui/PageHeader';
 import { RoleBadge } from '../../components/common/Badge';
 import { TableSkeleton } from '../../components/common/Skeleton';
 import { useUsers } from '../../hooks/useUsers';
@@ -35,6 +36,11 @@ export default function Personnel() {
   return (
     <DashboardLayout title="Data Personel">
       <div className="space-y-5">
+        <PageHeader
+          title="Data Personel"
+          subtitle="Pantau status online, cari personel, dan lihat data keaktifan satuan secara cepat."
+        />
+
         {/* Stats */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
@@ -56,7 +62,7 @@ export default function Personnel() {
             placeholder="Cari nama, NRP, pangkat..."
             value={searchRaw}
             onChange={(e) => setSearchRaw(e.target.value)}
-            className="flex-1 rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+            className="form-control flex-1"
           />
           <div className="flex gap-1 bg-surface/40 rounded-lg p-1">
             {(['all', 'online', 'offline'] as const).map((opt) => (

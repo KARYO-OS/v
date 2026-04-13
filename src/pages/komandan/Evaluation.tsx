@@ -4,6 +4,7 @@ import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
+import PageHeader from '../../components/ui/PageHeader';
 import { useUsers } from '../../hooks/useUsers';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
@@ -87,11 +88,16 @@ export default function Evaluation() {
   return (
     <DashboardLayout title="Evaluasi & Catatan Disiplin">
       <div className="space-y-5">
+        <PageHeader
+          title="Evaluasi & Catatan Disiplin"
+          subtitle="Catat evaluasi personel, filter berdasarkan prajurit, dan kelola histori disiplin."
+        />
+
         <div className="flex flex-col sm:flex-row gap-3">
           <select
             value={filterUserId}
             onChange={(e) => setFilterUserId(e.target.value)}
-            className="flex-1 rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+            className="form-control flex-1"
           >
             <option value="">Semua Personel</option>
             {users.map((u) => (
@@ -173,7 +179,7 @@ export default function Evaluation() {
           <div>
             <label className="text-sm font-medium text-text-primary">Personel *</label>
             <select
-              className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+              className="form-control mt-1"
               value={form.user_id}
               onChange={(e) => setForm({ ...form, user_id: e.target.value })}
             >
@@ -188,7 +194,7 @@ export default function Evaluation() {
           <div>
             <label className="text-sm font-medium text-text-primary">Jenis Catatan</label>
             <select
-              className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+              className="form-control mt-1"
               value={form.jenis}
               onChange={(e) => setForm({ ...form, jenis: e.target.value as typeof form.jenis })}
             >
@@ -200,7 +206,7 @@ export default function Evaluation() {
           <div>
             <label className="text-sm font-medium text-text-primary">Isi Catatan *</label>
             <textarea
-              className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+              className="form-control mt-1 min-h-28"
               rows={4}
               placeholder="Tuliskan catatan evaluasi..."
               value={form.isi}

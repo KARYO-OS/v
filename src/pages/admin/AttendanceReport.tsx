@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
+import PageHeader from '../../components/ui/PageHeader';
 import { AttendanceBadge } from '../../components/common/Badge';
 import Pagination from '../../components/ui/Pagination';
 import { usePagination } from '../../hooks/usePagination';
@@ -80,6 +81,11 @@ export default function AttendanceReport() {
   return (
     <DashboardLayout title="Rekap Kehadiran">
       <div className="space-y-5">
+        <PageHeader
+          title="Rekap Kehadiran"
+          subtitle="Filter, analisis, dan ekspor data kehadiran personel berdasarkan rentang tanggal."
+        />
+
         {/* Filters + Export */}
         <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
           <div className="flex items-center gap-2">
@@ -88,7 +94,7 @@ export default function AttendanceReport() {
               type="date"
               value={dateFrom}
               onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-              className="rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+              className="form-control"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -97,13 +103,13 @@ export default function AttendanceReport() {
               type="date"
               value={dateTo}
               onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-              className="rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+              className="form-control"
             />
           </div>
           <select
             value={filterStatus}
             onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
-            className="rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+            className="form-control"
           >
             <option value="">Semua Status</option>
             <option value="hadir">Hadir</option>

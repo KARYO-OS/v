@@ -4,6 +4,7 @@ import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
+import PageHeader from '../../components/ui/PageHeader';
 import { RoleBadge } from '../../components/common/Badge';
 import { TableSkeleton } from '../../components/common/Skeleton';
 import Pagination from '../../components/ui/Pagination';
@@ -95,6 +96,11 @@ export default function UserManagement() {
   return (
     <DashboardLayout title="Manajemen Personel">
       <div className="space-y-5">
+        <PageHeader
+          title="Manajemen Personel"
+          subtitle="Kelola akun, role, status aktif, dan reset PIN personel lintas satuan."
+        />
+
         {/* Header actions */}
         <div className="flex flex-col sm:flex-row gap-3">
           <input

@@ -4,6 +4,7 @@ import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
+import PageHeader from '../../components/ui/PageHeader';
 import { useUIStore } from '../../store/uiStore';
 import { useUsers } from '../../hooks/useUsers';
 import { supabase } from '../../lib/supabase';
@@ -73,6 +74,11 @@ export default function ShiftSchedule() {
   return (
     <DashboardLayout title="Jadwal Shift">
       <div className="space-y-5">
+        <PageHeader
+          title="Jadwal Shift"
+          subtitle="Atur pembagian shift harian personel per tanggal operasional."
+        />
+
         {/* Date picker */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <div className="flex items-center gap-3">
@@ -81,7 +87,7 @@ export default function ShiftSchedule() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+              className="form-control"
             />
           </div>
           <Button onClick={() => { setForm({ ...form, tanggal: selectedDate }); setShowCreate(true); }}>
@@ -150,7 +156,7 @@ export default function ShiftSchedule() {
           <div>
             <label className="text-sm font-medium text-text-primary">Personel *</label>
             <select
-              className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+              className="form-control mt-1"
               value={form.user_id}
               onChange={(e) => setForm({ ...form, user_id: e.target.value })}
             >
@@ -185,7 +191,7 @@ export default function ShiftSchedule() {
           <div>
             <label className="text-sm font-medium text-text-primary">Jenis Shift</label>
             <select
-              className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+              className="form-control mt-1"
               value={form.jenis_shift}
               onChange={(e) => setForm({ ...form, jenis_shift: e.target.value as typeof form.jenis_shift })}
             >
