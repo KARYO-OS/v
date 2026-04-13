@@ -102,12 +102,12 @@ export default function UserManagement() {
             placeholder="Cari nama atau NRP..."
             value={searchRaw}
             onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
-            className="flex-1 rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+            className="form-control flex-1"
           />
           <select
             value={filterRole}
             onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
-            className="rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+            className="form-control sm:w-44"
           >
             <option value="">Semua Role</option>
             <option value="admin">Admin</option>
@@ -192,8 +192,8 @@ export default function UserManagement() {
           <Input label="Pangkat" type="text" value={form.pangkat} onChange={(e) => setForm({ ...form, pangkat: e.target.value })} />
           <Input label="Satuan *" type="text" value={form.satuan} onChange={(e) => setForm({ ...form, satuan: e.target.value })} required />
           <div>
-            <label className="text-sm font-medium text-text-primary">Role *</label>
-            <select className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
+            <label className="text-sm font-semibold text-text-primary">Role *</label>
+            <select className="form-control mt-1" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
               <option value="prajurit">Prajurit</option>
               <option value="komandan">Komandan</option>
               <option value="admin">Admin</option>

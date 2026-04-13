@@ -4,6 +4,7 @@ import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
+import PageHeader from '../../components/ui/PageHeader';
 import { useUIStore } from '../../store/uiStore';
 import { supabase } from '../../lib/supabase';
 import type { Document } from '../../types';
@@ -92,26 +93,32 @@ export default function Documents() {
   return (
     <DashboardLayout title="Arsip Dokumen">
       <div className="space-y-5">
+        <PageHeader
+          title="Arsip Dokumen"
+          subtitle="Kelola dokumen satuan, kategori, dan metadata unggahan dalam satu panel terpusat."
+          meta={<span>Total dokumen: {filtered.length}</span>}
+          actions={<Button onClick={() => setShowCreate(true)}>+ Tambah Dokumen</Button>}
+        />
+
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:p-5">
           <input
             type="text"
             placeholder="Cari nama dokumen..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+            className="form-control flex-1"
           />
           <select
             value={filterKategori}
             onChange={(e) => setFilterKategori(e.target.value)}
-            className="rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+            className="form-control sm:w-56"
           >
             <option value="">Semua Kategori</option>
             {categories.map((k) => (
               <option key={k} value={k}>{k}</option>
             ))}
           </select>
-          <Button onClick={() => setShowCreate(true)}>+ Tambah Dokumen</Button>
         </div>
 
         <Table<Document>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Pagination from '../../components/ui/Pagination';
+import PageHeader from '../../components/ui/PageHeader';
 import { useAuditLogs } from '../../hooks/useAuditLogs';
 import { usePagination } from '../../hooks/usePagination';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -35,19 +36,25 @@ export default function AuditLogPage() {
   return (
     <DashboardLayout title="Audit Log">
       <div className="space-y-5">
+        <PageHeader
+          title="Audit Log"
+          subtitle="Lacak aktivitas sistem untuk keperluan monitoring dan investigasi operasional."
+          meta={<span>Total catatan: {filtered.length}</span>}
+        />
+
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:p-5">
           <input
             type="text"
             placeholder="Cari aksi, nama, atau NRP..."
             value={searchRaw}
             onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
-            className="flex-1 rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+            className="form-control flex-1"
           />
           <select
             value={filterAction}
             onChange={(e) => { setFilterAction(e.target.value); setPage(1); }}
-            className="rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+            className="form-control sm:w-56"
           >
             <option value="">Semua Aksi</option>
             {uniqueActions.map((a) => (

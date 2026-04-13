@@ -4,6 +4,7 @@ import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
+import PageHeader from '../../components/ui/PageHeader';
 import { useUIStore } from '../../store/uiStore';
 import { supabase } from '../../lib/supabase';
 import type { LogisticsItem } from '../../types';
@@ -56,15 +57,21 @@ export default function Logistics() {
   return (
     <DashboardLayout title="Manajemen Logistik">
       <div className="space-y-5">
-        <div className="flex flex-col sm:flex-row gap-3">
+        <PageHeader
+          title="Manajemen Logistik"
+          subtitle="Inventaris dan kondisi perlengkapan operasional dipantau secara berkala."
+          meta={<span>Total item: {filtered.length}</span>}
+          actions={<Button onClick={() => setShowCreate(true)}>+ Tambah Item</Button>}
+        />
+
+        <div className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:p-5">
           <input
             type="text"
             placeholder="Cari item..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+            className="form-control flex-1"
           />
-          <Button onClick={() => setShowCreate(true)}>+ Tambah Item</Button>
         </div>
 
         <Table<LogisticsItem>
@@ -110,8 +117,8 @@ export default function Logistics() {
             <Input label="Satuan" type="text" placeholder="pcs, unit, kg..." value={form.satuan_item ?? ''} onChange={(e) => setForm({ ...form, satuan_item: e.target.value })} />
           </div>
           <div>
-            <label className="text-sm font-medium text-text-primary">Kondisi</label>
-            <select className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary" value={form.kondisi ?? 'baik'} onChange={(e) => setForm({ ...form, kondisi: e.target.value as LogisticsItem['kondisi'] })}>
+            <label className="text-sm font-semibold text-text-primary">Kondisi</label>
+            <select className="form-control mt-1" value={form.kondisi ?? 'baik'} onChange={(e) => setForm({ ...form, kondisi: e.target.value as LogisticsItem['kondisi'] })}>
               <option value="baik">Baik</option>
               <option value="rusak_ringan">Rusak Ringan</option>
               <option value="rusak_berat">Rusak Berat</option>

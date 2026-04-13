@@ -4,6 +4,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import Badge from '../../components/common/Badge';
+import PageHeader from '../../components/ui/PageHeader';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useUIStore } from '../../store/uiStore';
 import type { Announcement, Role } from '../../types';
@@ -75,16 +76,19 @@ export default function Announcements() {
   return (
     <DashboardLayout title="Manajemen Pengumuman">
       <div className="space-y-5">
-        <div className="flex justify-end">
-          <Button onClick={() => setShowCreate(true)}>+ Buat Pengumuman</Button>
-        </div>
+        <PageHeader
+          title="Manajemen Pengumuman"
+          subtitle="Publikasikan informasi resmi berdasarkan role dan satuan dengan prioritas pin."
+          meta={<span>Total pengumuman: {announcements.length}</span>}
+          actions={<Button onClick={() => setShowCreate(true)}>+ Buat Pengumuman</Button>}
+        />
 
         {isLoading ? (
           <div className="flex justify-center py-12">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-surface border-t-primary" />
           </div>
         ) : announcements.length === 0 ? (
-          <div className="bg-bg-card border border-surface rounded-xl p-10 text-center text-text-muted">
+          <div className="app-card p-10 text-center text-text-muted">
             Belum ada pengumuman
           </div>
         ) : (
@@ -92,7 +96,7 @@ export default function Announcements() {
             {announcements.map((ann) => (
               <div
                 key={ann.id}
-                className={`bg-bg-card border rounded-xl p-5 ${ann.is_pinned ? 'border-accent-gold/50' : 'border-surface'}`}
+                className={`app-card p-5 ${ann.is_pinned ? 'border-accent-gold/50' : ''}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -164,9 +168,9 @@ export default function Announcements() {
             required
           />
           <div>
-            <label className="text-sm font-medium text-text-primary">Isi Pengumuman *</label>
+            <label className="text-sm font-semibold text-text-primary">Isi Pengumuman *</label>
             <textarea
-              className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+              className="form-control mt-1 min-h-28"
               rows={5}
               placeholder="Tulis pengumuman di sini..."
               value={form.isi}
@@ -181,7 +185,7 @@ export default function Announcements() {
             onChange={(e) => setForm({ ...form, target_satuan: e.target.value })}
           />
           <div>
-            <p className="text-sm font-medium text-text-primary mb-2">Target Role (kosong = semua)</p>
+            <p className="mb-2 text-sm font-semibold text-text-primary">Target Role (kosong = semua)</p>
             <div className="flex gap-4">
               {(['admin', 'komandan', 'prajurit'] as const).map((r) => {
                 const key = `target_${r}` as 'target_admin' | 'target_komandan' | 'target_prajurit';
