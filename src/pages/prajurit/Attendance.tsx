@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { AttendanceBadge } from '../../components/common/Badge';
 import Button from '../../components/common/Button';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { Skeleton, CardListSkeleton } from '../../components/common/Skeleton';
 import { useState } from 'react';
 
 export default function Attendance() {
@@ -51,7 +51,13 @@ export default function Attendance() {
           <p className="text-sm text-text-muted mb-5">{today}</p>
 
           {isLoading ? (
-            <LoadingSpinner size="sm" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-24 rounded-full" />
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-16 rounded-lg" />
+                <Skeleton className="h-16 rounded-lg" />
+              </div>
+            </div>
           ) : todayAttendance ? (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -96,7 +102,7 @@ export default function Attendance() {
         <div>
           <h3 className="font-semibold text-text-primary mb-3">Riwayat Absensi (30 Hari Terakhir)</h3>
           {isLoading ? (
-            <LoadingSpinner />
+            <CardListSkeleton count={5} />
           ) : (
             <div className="bg-bg-card border border-surface rounded-xl overflow-hidden">
               <div className="divide-y divide-surface/50">

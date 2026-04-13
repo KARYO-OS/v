@@ -3,8 +3,12 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import { AttendanceBadge } from '../../components/common/Badge';
+import Pagination, { usePagination } from '../../components/ui/Pagination';
+import { TableSkeleton } from '../../components/common/Skeleton';
 import { supabase } from '../../lib/supabase';
 import type { Attendance } from '../../types';
+
+const PAGE_SIZE = 50;
 
 function downloadCSV(rows: string[][], filename: string) {
   const csv = rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
@@ -70,6 +74,8 @@ export default function AttendanceReport() {
   const sakit = attendances.filter((a) => a.status === 'sakit').length;
   const izin = attendances.filter((a) => a.status === 'izin').length;
 
+  const { currentPage, totalPages, totalItems, paginated, setPage } = usePagination(attendances, PAGE_SIZE);
+
   return (
     <DashboardLayout title="Rekap Kehadiran">
       <div className="space-y-5">
@@ -80,7 +86,7 @@ export default function AttendanceReport() {
             <input
               type="date"
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
+              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
               className="rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
             />
           </div>
@@ -89,13 +95,13 @@ export default function AttendanceReport() {
             <input
               type="date"
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
+              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
               className="rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
             />
           </div>
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
             className="rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
           >
             <option value="">Semua Status</option>
@@ -123,46 +129,60 @@ export default function AttendanceReport() {
           ))}
         </div>
 
-        <Table<Attendance>
-          columns={[
-            {
-              key: 'tanggal',
-              header: 'Tanggal',
-              render: (a) => new Date(a.tanggal).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }),
-            },
-            {
-              key: 'user',
-              header: 'Personel',
-              render: (a) => (
-                <div>
-                  <p className="font-medium text-text-primary">{a.user?.nama ?? '—'}</p>
-                  <p className="font-mono text-xs text-text-muted">{a.user?.nrp}</p>
-                </div>
-              ),
-            },
-            { key: 'satuan', header: 'Satuan', render: (a) => a.user?.satuan ?? '—' },
-            { key: 'status', header: 'Status', render: (a) => <AttendanceBadge status={a.status} /> },
-            {
-              key: 'check_in',
-              header: 'Check-In',
-              render: (a) => a.check_in
-                ? new Date(a.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                : '—',
-            },
-            {
-              key: 'check_out',
-              header: 'Check-Out',
-              render: (a) => a.check_out
-                ? new Date(a.check_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                : '—',
-            },
-          ]}
-          data={attendances}
-          keyExtractor={(a) => a.id}
-          isLoading={isLoading}
-          emptyMessage="Tidak ada data absensi untuk rentang tanggal ini"
-        />
+        {isLoading ? (
+          <TableSkeleton rows={8} cols={6} />
+        ) : (
+          <>
+            <Table<Attendance>
+              columns={[
+                {
+                  key: 'tanggal',
+                  header: 'Tanggal',
+                  render: (a) => new Date(a.tanggal).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }),
+                },
+                {
+                  key: 'user',
+                  header: 'Personel',
+                  render: (a) => (
+                    <div>
+                      <p className="font-medium text-text-primary">{a.user?.nama ?? '—'}</p>
+                      <p className="font-mono text-xs text-text-muted">{a.user?.nrp}</p>
+                    </div>
+                  ),
+                },
+                { key: 'satuan', header: 'Satuan', render: (a) => a.user?.satuan ?? '—' },
+                { key: 'status', header: 'Status', render: (a) => <AttendanceBadge status={a.status} /> },
+                {
+                  key: 'check_in',
+                  header: 'Check-In',
+                  render: (a) => a.check_in
+                    ? new Date(a.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                    : '—',
+                },
+                {
+                  key: 'check_out',
+                  header: 'Check-Out',
+                  render: (a) => a.check_out
+                    ? new Date(a.check_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                    : '—',
+                },
+              ]}
+              data={paginated}
+              keyExtractor={(a) => a.id}
+              isLoading={false}
+              emptyMessage="Tidak ada data absensi untuk rentang tanggal ini"
+            />
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+            />
+          </>
+        )}
       </div>
     </DashboardLayout>
   );
 }
+

@@ -5,7 +5,7 @@ import TaskCard from '../../components/ui/TaskCard';
 import { useTasks } from '../../hooks/useTasks';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { CardListSkeleton } from '../../components/common/Skeleton';
 
 export default function KomandanDashboard() {
   const { user } = useAuthStore();
@@ -56,7 +56,7 @@ export default function KomandanDashboard() {
           </div>
 
           {tasksLoading ? (
-            <LoadingSpinner />
+            <CardListSkeleton count={4} />
           ) : tasks.length === 0 ? (
             <div className="bg-bg-card border border-surface rounded-xl p-8 text-center text-text-muted">
               Belum ada tugas yang dibuat

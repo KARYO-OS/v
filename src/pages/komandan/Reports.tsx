@@ -6,8 +6,8 @@ import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { useLeaveRequests } from '../../hooks/useLeaveRequests';
 import { AttendanceBadge, TaskStatusBadge, LeaveStatusBadge } from '../../components/common/Badge';
+import { CardListSkeleton, StatCardsSkeleton } from '../../components/common/Skeleton';
 import type { Attendance, Task } from '../../types';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 export default function Reports() {
   const { user } = useAuthStore();
@@ -42,7 +42,14 @@ export default function Reports() {
     if (user?.satuan) void fetchData();
   }, [user, fetchData]);
 
-  if (isLoading) return <DashboardLayout title="Laporan"><LoadingSpinner /></DashboardLayout>;
+  if (isLoading) return (
+    <DashboardLayout title="Laporan Harian">
+      <div className="space-y-6">
+        <StatCardsSkeleton />
+        <CardListSkeleton count={3} />
+      </div>
+    </DashboardLayout>
+  );
 
   const presentCount = attendances.filter((a) => a.status === 'hadir').length;
   const absenCount = attendances.filter((a) => a.status === 'alpa').length;

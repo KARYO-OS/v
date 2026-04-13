@@ -6,8 +6,8 @@ import Modal from '../../components/common/Modal';
 import { useTasks } from '../../hooks/useTasks';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
+import { CardListSkeleton } from '../../components/common/Skeleton';
 import type { Task, TaskStatus } from '../../types';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 export default function MyTasks() {
   const { user } = useAuthStore();
@@ -84,7 +84,7 @@ export default function MyTasks() {
         </div>
 
         {isLoading ? (
-          <LoadingSpinner />
+          <CardListSkeleton count={3} />
         ) : filtered.length === 0 ? (
           <div className="bg-bg-card border border-surface rounded-xl p-8 text-center text-text-muted">
             Tidak ada tugas

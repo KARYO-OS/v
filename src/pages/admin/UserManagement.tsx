@@ -6,10 +6,13 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import { RoleBadge } from '../../components/common/Badge';
 import { TableSkeleton } from '../../components/common/Skeleton';
+import Pagination, { usePagination } from '../../components/ui/Pagination';
 import { useUsers } from '../../hooks/useUsers';
 import { useUIStore } from '../../store/uiStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import type { User, Role } from '../../types';
+
+const PAGE_SIZE = 50;
 
 export default function UserManagement() {
   const { users, isLoading, createUser, toggleUserActive, resetUserPin } = useUsers();
@@ -35,6 +38,8 @@ export default function UserManagement() {
     const matchRole = !filterRole || u.role === filterRole;
     return matchSearch && matchRole;
   });
+
+  const { currentPage, totalPages, totalItems, paginated, setPage } = usePagination(filtered, PAGE_SIZE);
 
   const handleCreate = async () => {
     if (!form.nrp || !form.nama || !form.pin || !form.satuan) {
@@ -95,12 +100,12 @@ export default function UserManagement() {
             type="text"
             placeholder="Cari nama atau NRP..."
             value={searchRaw}
-            onChange={(e) => setSearchRaw(e.target.value)}
+            onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
             className="flex-1 rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
           />
           <select
             value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value as Role | '')}
+            onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
             className="rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
           >
             <option value="">Semua Role</option>
@@ -114,47 +119,56 @@ export default function UserManagement() {
         {isLoading ? (
           <TableSkeleton rows={6} cols={6} />
         ) : (
-        <Table
-          columns={[
-            { key: 'nrp', header: 'NRP', render: (u) => <span className="font-mono text-sm">{u.nrp}</span> },
-            { key: 'nama', header: 'Nama' },
-            { key: 'pangkat', header: 'Pangkat', render: (u) => u.pangkat ?? '—' },
-            { key: 'satuan', header: 'Satuan' },
-            { key: 'role', header: 'Role', render: (u) => <RoleBadge role={u.role} /> },
-            {
-              key: 'is_online', header: 'Status', render: (u) => (
-                <div className="flex items-center gap-1.5">
-                  <div className={`h-2 w-2 rounded-full ${u.is_online ? 'bg-success' : 'bg-text-muted'}`} />
-                  <span className="text-xs text-text-muted">{u.is_online ? 'Online' : 'Offline'}</span>
-                </div>
-              ),
-            },
-            {
-              key: 'actions', header: 'Aksi', render: (u) => (
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => { setSelectedUser(u); setShowResetPin(true); }}
-                  >
-                    Reset PIN
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={u.is_active ? 'ghost' : 'secondary'}
-                    onClick={() => handleToggleActive(u)}
-                  >
-                    {u.is_active ? 'Nonaktif' : 'Aktifkan'}
-                  </Button>
-                </div>
-              ),
-            },
-          ]}
-          data={filtered}
-          keyExtractor={(u) => u.id}
-          isLoading={false}
-          emptyMessage="Tidak ada personel ditemukan"
-        />
+          <>
+          <Table
+            columns={[
+              { key: 'nrp', header: 'NRP', render: (u) => <span className="font-mono text-sm">{u.nrp}</span> },
+              { key: 'nama', header: 'Nama' },
+              { key: 'pangkat', header: 'Pangkat', render: (u) => u.pangkat ?? '—' },
+              { key: 'satuan', header: 'Satuan' },
+              { key: 'role', header: 'Role', render: (u) => <RoleBadge role={u.role} /> },
+              {
+                key: 'is_online', header: 'Status', render: (u) => (
+                  <div className="flex items-center gap-1.5">
+                    <div className={`h-2 w-2 rounded-full ${u.is_online ? 'bg-success' : 'bg-text-muted'}`} />
+                    <span className="text-xs text-text-muted">{u.is_online ? 'Online' : 'Offline'}</span>
+                  </div>
+                ),
+              },
+              {
+                key: 'actions', header: 'Aksi', render: (u) => (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => { setSelectedUser(u); setShowResetPin(true); }}
+                    >
+                      Reset PIN
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={u.is_active ? 'ghost' : 'secondary'}
+                      onClick={() => handleToggleActive(u)}
+                    >
+                      {u.is_active ? 'Nonaktif' : 'Aktifkan'}
+                    </Button>
+                  </div>
+                ),
+              },
+            ]}
+            data={paginated}
+            keyExtractor={(u) => u.id}
+            isLoading={false}
+            emptyMessage="Tidak ada personel ditemukan"
+          />
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+          />
+          </>
         )}
       </div>
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -7,6 +7,13 @@ import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { supabase } from '../../lib/supabase';
 
+interface PersonalStats {
+  totalTasks: number;
+  approvedTasks: number;
+  totalAttendance: number;
+  hadirCount: number;
+}
+
 export default function Profile() {
   const { user } = useAuthStore();
   const { showNotification } = useUIStore();
@@ -14,6 +21,39 @@ export default function Profile() {
   const [changingPin, setChangingPin] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [pinForm, setPinForm] = useState({ oldPin: '', newPin: '', confirmPin: '' });
+  const [stats, setStats] = useState<PersonalStats | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchStats = async () => {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
+
+      const [tasksRes, attnRes] = await Promise.all([
+        supabase
+          .from('tasks')
+          .select('status')
+          .eq('assigned_to', user.id),
+        supabase
+          .from('attendance')
+          .select('status')
+          .eq('user_id', user.id)
+          .gte('tanggal', dateFrom),
+      ]);
+
+      const tasks = (tasksRes.data ?? []) as { status: string }[];
+      const attn = (attnRes.data ?? []) as { status: string }[];
+
+      setStats({
+        totalTasks: tasks.length,
+        approvedTasks: tasks.filter((t) => t.status === 'approved').length,
+        totalAttendance: attn.length,
+        hadirCount: attn.filter((a) => a.status === 'hadir').length,
+      });
+    };
+    void fetchStats();
+  }, [user?.id]);
 
   const handleChangePin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,11 +130,55 @@ export default function Profile() {
           </div>
         </div>
 
+        {/* Personal Stats */}
+        <div className="bg-bg-card border border-surface rounded-xl p-6">
+          <h3 className="font-semibold text-text-primary mb-4">📊 Statistik Pribadi</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {
+                label: 'Total Tugas',
+                value: stats?.totalTasks ?? '—',
+                icon: '📋',
+                color: 'text-text-primary',
+              },
+              {
+                label: 'Tugas Disetujui',
+                value: stats?.approvedTasks ?? '—',
+                icon: '✓',
+                color: 'text-success',
+              },
+              {
+                label: 'Kehadiran (30 hr)',
+                value: stats ? `${stats.hadirCount}/${stats.totalAttendance}` : '—',
+                icon: '📅',
+                color: 'text-primary',
+              },
+              {
+                label: 'Tingkat Hadir',
+                value: stats && stats.totalAttendance > 0
+                  ? `${Math.round((stats.hadirCount / stats.totalAttendance) * 100)}%`
+                  : '—',
+                icon: '📈',
+                color: stats && stats.totalAttendance > 0 && (stats.hadirCount / stats.totalAttendance) >= 0.8
+                  ? 'text-success'
+                  : 'text-accent-gold',
+              },
+            ].map((s) => (
+              <div key={s.label} className="bg-surface/30 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-base">{s.icon}</span>
+                  <p className="text-xs text-text-muted">{s.label}</p>
+                </div>
+                <p className={`text-xl font-bold ${s.color}`}>{String(s.value)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Change PIN */}
         <div className="bg-bg-card border border-surface rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-text-primary">Keamanan</h3>
-            {!changingPin && (
+            <h3 className="font-semibold text-text-primary">Keamanan</h3>            {!changingPin && (
               <Button size="sm" variant="outline" onClick={() => setChangingPin(true)}>
                 Ubah PIN
               </Button>
