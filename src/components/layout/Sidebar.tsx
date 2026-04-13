@@ -64,7 +64,7 @@ export default function Sidebar() {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-20 bg-black/60 lg:hidden"
+          className="fixed inset-0 z-20 bg-slate-950/25 backdrop-blur-[2px] lg:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -73,30 +73,32 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed left-0 top-0 z-30 h-full w-60 bg-bg-card border-r border-surface
+          app-panel fixed left-0 top-0 z-30 h-full w-[240px] border-r border-surface/80
           flex flex-col transition-transform duration-300
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-auto
         `}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-surface">
-          <span className="text-2xl">🪖</span>
-          <div>
-            <div className="text-lg font-bold text-text-primary leading-tight">KARYO OS</div>
-            <div className="text-xs text-text-muted">Command & Battalion</div>
+        <div className="border-b border-surface/80 px-5 py-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-lg text-primary">◈</span>
+            <div>
+              <div className="text-base font-extrabold tracking-tight text-text-primary leading-tight">KARYO OS</div>
+              <div className="text-[10px] uppercase tracking-[0.14em] text-text-muted">Operations Suite</div>
+            </div>
           </div>
         </div>
 
         {/* User info */}
-        <div className="px-4 py-4 border-b border-surface">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-surface/50">
-            <div className="h-10 w-10 rounded-full bg-primary/30 flex items-center justify-center text-primary font-bold">
+        <div className="border-b border-surface/80 px-4 py-4">
+          <div className="flex items-center gap-3 rounded-2xl border border-surface/70 bg-slate-50/70 p-3 dark:bg-surface/35">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 font-bold text-primary">
               {user.nama.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium text-text-primary truncate">{user.nama}</div>
-              <div className="text-xs text-text-muted">
+              <div className="truncate text-sm font-semibold text-text-primary">{user.nama}</div>
+              <div className="truncate text-xs text-text-muted">
                 {user.pangkat ?? roleLabelMap[user.role]} — {user.satuan}
               </div>
             </div>
@@ -105,36 +107,36 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200
                 ${
                   isActive
-                    ? 'bg-primary text-white'
-                    : 'text-text-muted hover:text-text-primary hover:bg-surface/60'
+                    ? 'bg-primary text-white shadow-sm shadow-primary/30'
+                    : 'text-text-muted hover:bg-slate-100 hover:text-text-primary dark:hover:bg-surface/60'
                 }`
               }
               onClick={() => {
                 if (window.innerWidth < 1024) setSidebarOpen(false);
               }}
             >
-              <span className="text-base w-5 text-center">{item.icon}</span>
+              <span className="grid h-6 w-6 place-items-center rounded-lg bg-black/[0.04] text-center text-sm dark:bg-white/[0.06]">{item.icon}</span>
               {item.label}
             </NavLink>
           ))}
         </nav>
 
         {/* Logout */}
-        <div className="px-3 py-4 border-t border-surface">
+        <div className="border-t border-surface/80 px-3 py-4">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-accent-red hover:bg-accent-red/10 transition-colors"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-accent-red transition-colors hover:bg-accent-red/10"
           >
-            <span className="text-base w-5 text-center">⏻</span>
+            <span className="grid h-6 w-6 place-items-center rounded-lg bg-accent-red/10 text-center text-sm">⏻</span>
             Keluar
           </button>
         </div>

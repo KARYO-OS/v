@@ -46,17 +46,17 @@ export default function BottomTabBar() {
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-bg-card border-t border-surface safe-area-inset-bottom"
+      className="safe-area-inset-bottom fixed bottom-0 left-0 right-0 z-30 border-t border-surface/80 bg-bg-card/90 backdrop-blur-xl lg:hidden"
       aria-label="Bottom navigation"
     >
-      <div className="flex">
+      <div className="mx-auto grid max-w-xl grid-cols-5 gap-1 px-2 py-1.5">
         {tabs.map((tab) => (
           <NavLink
             key={tab.path}
             to={tab.path}
             className={({ isActive }) =>
-              `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-xs font-medium transition-colors
-              ${isActive ? 'text-primary' : 'text-text-muted hover:text-text-primary'}`
+              `flex flex-col items-center justify-center gap-0.5 rounded-lg py-2 text-xs font-medium transition-colors
+              ${isActive ? 'bg-primary/15 text-primary' : 'text-text-muted hover:bg-surface/60 hover:text-text-primary'}`
             }
           >
             <span className="text-lg leading-none">{tab.icon}</span>
