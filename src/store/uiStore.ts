@@ -2,6 +2,8 @@ import { create } from 'zustand';
 
 type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
+const NOTIFICATION_DURATION_MS = 4000;
+
 interface Notification {
   message: string;
   type: NotificationType;
@@ -29,7 +31,7 @@ export const useUIStore = create<UIStore>((set) => ({
 
   showNotification: (message: string, type: NotificationType) => {
     set({ notification: { message, type } });
-    setTimeout(() => set({ notification: null }), 4000);
+    setTimeout(() => set({ notification: null }), NOTIFICATION_DURATION_MS);
   },
 
   clearNotification: () => set({ notification: null }),

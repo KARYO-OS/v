@@ -345,24 +345,32 @@ ALTER TABLE public.shift_schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.discipline_notes ENABLE ROW LEVEL SECURITY;
 
--- NOTE: RLS policies use anon key because KARYO OS manages
--- its own auth (PIN-based, not Supabase Auth JWT).
--- All table access is via service-role within SECURITY DEFINER functions,
--- or via RLS policies below that allow anon select.
+-- ⚠ DEVELOPMENT-ONLY POLICIES (MUST be replaced before production)
+-- KARYO OS uses its own PIN-based auth (not Supabase Auth JWT), so the
+-- application server is responsible for authorisation logic. These permissive
+-- anon policies are for local development only.
+--
+-- PRODUCTION HARDENING CHECKLIST:
+-- 1. Switch to service-role key server-side and revoke direct anon table access.
+-- 2. Replace these policies with role-specific restrictions, e.g.:
+--      CREATE POLICY "users_own_row" ON public.users FOR SELECT TO anon
+--        USING (id = current_setting('app.current_user_id')::uuid);
+-- 3. Restrict audit_logs, discipline_notes, pin_hash column to admin only.
+-- 4. Enable Supabase Realtime only for the tables that need it.
+-- 5. Review each table's INSERT/UPDATE/DELETE policy individually.
 
--- Minimal anon policies (adjust per security requirements):
-CREATE POLICY "anon_all_users" ON public.users FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "anon_all_tasks" ON public.tasks FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "anon_all_task_reports" ON public.task_reports FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "anon_all_attendance" ON public.attendance FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "anon_all_leave_requests" ON public.leave_requests FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "anon_all_announcements" ON public.announcements FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "anon_all_messages" ON public.messages FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "anon_all_logistics_items" ON public.logistics_items FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "anon_all_audit_logs" ON public.audit_logs FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "anon_all_shift_schedules" ON public.shift_schedules FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "anon_all_documents" ON public.documents FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
-CREATE POLICY "anon_all_discipline_notes" ON public.discipline_notes FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_users" ON public.users FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_tasks" ON public.tasks FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_task_reports" ON public.task_reports FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_attendance" ON public.attendance FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_leave_requests" ON public.leave_requests FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_announcements" ON public.announcements FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_messages" ON public.messages FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_logistics_items" ON public.logistics_items FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_audit_logs" ON public.audit_logs FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_shift_schedules" ON public.shift_schedules FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_documents" ON public.documents FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+CREATE POLICY "dev_anon_all_discipline_notes" ON public.discipline_notes FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 
 -- ============================================================
 -- SEED DATA (optional — sample admin account)
