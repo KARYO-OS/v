@@ -51,97 +51,121 @@ export default function Login() {
   const displayError = localError ?? error;
 
   return (
-    <div className="min-h-screen bg-military-dark flex items-center justify-center p-4">
+    <div className="desktop-shell min-h-screen bg-military-dark p-4 sm:p-6">
       <Notification />
-      <div className="w-full max-w-sm">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/50 mb-4">
-            <span className="text-4xl">🪖</span>
+      <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center gap-8 lg:grid-cols-[1.08fr_0.92fr]">
+        <section className="hidden lg:block">
+          <div className="space-y-5">
+            <div className="inline-flex items-center gap-3 rounded-xl border border-surface bg-white/75 px-4 py-2 text-sm text-text-muted backdrop-blur-sm dark:bg-bg-card/65">
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/20 text-primary">◈</span>
+              Modern Operational Workspace
+            </div>
+            <h1 className="max-w-xl text-4xl font-extrabold leading-tight tracking-tight text-text-primary xl:text-5xl">
+              KARYO OS membantu komando operasional lebih cepat, rapi, dan terukur.
+            </h1>
+            <p className="max-w-lg text-sm text-text-muted xl:text-base">
+              Dashboard terpadu untuk personel, tugas, kehadiran, dan logistik dengan pengalaman setara software SaaS modern.
+            </p>
+            <div className="grid max-w-lg grid-cols-3 gap-3 pt-2">
+              {[
+                { title: 'Realtime', desc: 'Status personel aktif' },
+                { title: 'Secure', desc: 'PIN dan session policy' },
+                { title: 'Integrated', desc: 'Tugas dan audit log' },
+              ].map((item) => (
+                <div key={item.title} className="app-card px-3 py-3">
+                  <p className="text-sm font-bold text-text-primary">{item.title}</p>
+                  <p className="mt-1 text-xs text-text-muted">{item.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-text-primary">KARYO OS</h1>
-          <p className="text-sm text-text-muted mt-1">Command & Battalion Tracking System</p>
-        </div>
+        </section>
 
-        {/* Card */}
-        <div className="bg-bg-card border border-surface rounded-2xl p-6 shadow-2xl">
-          <h2 className="text-lg font-semibold text-text-primary mb-5">Masuk ke Sistem</h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <Input
-              label="NRP"
-              id="nrp"
-              type="text"
-              inputMode="numeric"
-              maxLength={20}
-              placeholder="Nomor Registrasi Pokok"
-              value={nrp}
-              onChange={(e) => {
-                setNrp(e.target.value.replace(/\D/g, ''));
-                setLocalError(null);
-                clearError();
-              }}
-              autoComplete="username"
-              required
-              aria-label="Nomor Registrasi Pokok"
-            />
-
-            <Input
-              label="PIN"
-              id="pin"
-              type={showPin ? 'text' : 'password'}
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="6 digit PIN"
-              value={pin}
-              onChange={(e) => {
-                setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
-                setLocalError(null);
-                clearError();
-              }}
-              autoComplete="current-password"
-              required
-              rightIcon={
-                <button
-                  type="button"
-                  onClick={() => setShowPin(!showPin)}
-                  className="text-xs text-text-muted hover:text-text-primary transition-colors"
-                  aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
-                >
-                  {showPin ? '🙈' : '👁'}
-                </button>
-              }
-            />
-
-            {displayError && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 p-3 rounded-lg bg-accent-red/10 border border-accent-red/30"
-              >
-                <span className="text-accent-red text-sm font-medium flex-1">{displayError}</span>
+        <section className="mx-auto w-full max-w-sm lg:max-w-md">
+          <div className="app-card p-7 sm:p-8">
+            <div className="mb-6 text-center lg:text-left">
+              <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/35 bg-primary/12">
+                <span className="text-2xl text-primary">◈</span>
               </div>
-            )}
+              <h2 className="text-2xl font-bold tracking-tight text-text-primary">Masuk ke Sistem</h2>
+              <p className="mt-1 text-sm text-text-muted">KARYO OS Command and Battalion Tracking</p>
+            </div>
 
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              isLoading={isLoading}
-              className="w-full mt-2"
-            >
-              {isLoading ? 'Memverifikasi...' : 'Masuk'}
-            </Button>
-          </form>
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              <Input
+                label="NRP"
+                id="nrp"
+                type="text"
+                inputMode="numeric"
+                maxLength={20}
+                placeholder="Nomor Registrasi Pokok"
+                value={nrp}
+                onChange={(e) => {
+                  setNrp(e.target.value.replace(/\D/g, ''));
+                  setLocalError(null);
+                  clearError();
+                }}
+                autoComplete="username"
+                required
+                aria-label="Nomor Registrasi Pokok"
+              />
 
-          <p className="text-xs text-text-muted text-center mt-5">
-            Lupa PIN? Hubungi Administrator satuan Anda.
+              <Input
+                label="PIN"
+                id="pin"
+                type={showPin ? 'text' : 'password'}
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="6 digit PIN"
+                value={pin}
+                onChange={(e) => {
+                  setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
+                  setLocalError(null);
+                  clearError();
+                }}
+                autoComplete="current-password"
+                required
+                rightIcon={
+                  <button
+                    type="button"
+                    onClick={() => setShowPin(!showPin)}
+                    className="text-xs text-text-muted transition-colors hover:text-text-primary"
+                    aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
+                  >
+                    {showPin ? '🙈' : '👁'}
+                  </button>
+                }
+              />
+
+              {displayError && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 rounded-xl border border-accent-red/30 bg-accent-red/10 p-3"
+                >
+                  <span className="flex-1 text-sm font-medium text-accent-red">{displayError}</span>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                isLoading={isLoading}
+                className="mt-2 w-full"
+              >
+                {isLoading ? 'Memverifikasi...' : 'Masuk'}
+              </Button>
+            </form>
+
+            <p className="mt-5 text-center text-xs text-text-muted lg:text-left">
+              Lupa PIN? Hubungi Administrator satuan Anda.
+            </p>
+          </div>
+
+          <p className="mt-5 text-center text-xs text-text-muted lg:text-left">
+            © 2026 KARYO OS — Sistem Manajemen Operasional Militer
           </p>
-        </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-text-muted mt-6">
-          © 2026 KARYO OS — Sistem Manajemen Operasional Militer
-        </p>
+        </section>
       </div>
     </div>
   );
