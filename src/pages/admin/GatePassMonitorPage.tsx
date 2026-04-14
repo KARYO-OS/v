@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useGatePassStore } from '../../store/gatePassStore';
 import GatePassStatusBadge from '../../components/gatepass/GatePassStatusBadge';
 

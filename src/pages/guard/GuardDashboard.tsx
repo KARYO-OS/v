@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import QRScanner from '../../components/guard/QRScanner';
 import ScanResultCard from '../../components/guard/ScanResultCard';

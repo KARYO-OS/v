@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import GatePassScanner from '../../components/gatepass/GatePassScanner';
 import { useGatePassStore } from '../../store/gatePassStore';
 

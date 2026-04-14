@@ -1,3 +1,4 @@
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
@@ -48,7 +49,7 @@ export default function KomandanAttendance() {
   useEffect(() => { void fetchAttendance(); }, [fetchAttendance]);
 
   // Gunakan ref agar tidak terjadi duplicate subscription
-  const channelRef = useRef(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!user?.satuan) return undefined;

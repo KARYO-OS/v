@@ -1,3 +1,4 @@
+import { ICONS } from '../../icons';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -62,7 +63,7 @@ export default function GlobalSearch() {
           title: t.judul,
           subtitle: `Status: ${t.status}${t.satuan ? ` · ${t.satuan}` : ''}`,
           href: user.role === 'prajurit' ? '/prajurit/tasks' : '/komandan/tasks',
-          icon: 'clipboard',
+          icon: 'ClipboardCheck' as keyof typeof ICONS,
         })),
         ...((usersRes.data ?? []) as { id: string; nama: string; nrp: string; pangkat: string | null; role: string }[]).map((u) => ({
           id: u.id,
@@ -70,7 +71,7 @@ export default function GlobalSearch() {
           title: u.nama,
           subtitle: `${u.nrp}${u.pangkat ? ` · ${u.pangkat}` : ''} · ${u.role}`,
           href: user.role === 'admin' ? '/admin/users' : '/komandan/personnel',
-          icon: 'usersRound',
+          icon: 'Users' as keyof typeof ICONS,
         })),
         ...((announcementsRes.data ?? []) as { id: string; judul: string; isi: string }[]).map((a) => ({
           id: a.id,
@@ -78,7 +79,7 @@ export default function GlobalSearch() {
           title: a.judul,
           subtitle: a.isi.slice(0, 80),
           href: user.role === 'admin' ? '/admin/announcements' : `/${user.role}/dashboard`,
-          icon: 'announcement',
+          icon: 'Megaphone' as keyof typeof ICONS,
         })),
       ];
       setResults(combined);

@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import GatePassForm from '../../components/gatepass/GatePassForm';
 import GatePassList from '../../components/gatepass/GatePassList';
 import { useGatePassStore } from '../../store/gatePassStore';
 import { useOverdueNotification } from '../../hooks/useOverdueNotification';
-import Notification from '../../components/common/Notification';
+import Notification from '../../components/Notification';
 
 export default function GatePassPage() {
   const gatePasses = useGatePassStore(s => s.gatePasses);

@@ -1,5 +1,4 @@
-import React from 'react';
-import QRCode from 'qrcode.react';
+import QRCode from 'react-qr-code';
 
 interface Props {
   qrToken: string;

@@ -1,3 +1,4 @@
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
@@ -67,7 +68,7 @@ export default function Reports() {
   }, [user, fetchData]);
 
   // Gunakan ref agar tidak terjadi duplicate subscription
-  const channelRef = useRef(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!user?.satuan) return undefined;
