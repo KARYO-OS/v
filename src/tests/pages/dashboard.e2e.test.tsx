@@ -57,12 +57,32 @@ const dataMap = {
   ],
 };
 
+type MockSupabaseQuery = {
+  _table: string;
+  _opts?: { head?: boolean };
+  _single: boolean;
+  _select?: string;
+  select: (columns: string, opts?: unknown) => MockSupabaseQuery;
+  eq: () => MockSupabaseQuery;
+  in: () => MockSupabaseQuery;
+  gte: () => MockSupabaseQuery;
+  lte: () => MockSupabaseQuery;
+  order: () => MockSupabaseQuery;
+  limit: () => MockSupabaseQuery;
+  update: () => MockSupabaseQuery;
+  insert: () => MockSupabaseQuery;
+  delete: () => MockSupabaseQuery;
+  single: () => Promise<{ data: unknown; error: unknown }>;
+  then: <T>(resolve: (value: unknown) => T) => Promise<T>;
+  catch: (reject: (error: unknown) => unknown) => Promise<unknown>;
+};
+
 function buildQuery(table: string) {
-  const q: any = {
+  const q = {
     _table: table,
     _opts: undefined,
     _single: false,
-  };
+  } as MockSupabaseQuery;
 
   const chain = () => q;
   q.select = (columns: string, opts?: unknown) => {
@@ -84,12 +104,12 @@ function buildQuery(table: string) {
     const result = queryResult(q);
     return Promise.resolve(result);
   };
-  q.then = (resolve: (value: unknown) => unknown) => Promise.resolve(queryResult(q)).then(resolve);
-  q.catch = (reject: (error: unknown) => unknown) => Promise.resolve(queryResult(q)).catch(reject);
+  q.then = (resolve) => Promise.resolve(queryResult(q)).then(resolve);
+  q.catch = (reject) => Promise.resolve(queryResult(q)).catch(reject);
   return q;
 }
 
-function queryResult(q: any) {
+function queryResult(q: MockSupabaseQuery) {
   const table = q._table as string;
   const wantsCount = q._opts?.head === true;
   const rawData = dataMap[table] ?? [];

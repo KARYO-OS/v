@@ -83,53 +83,16 @@ export const useGatePassStore = create<GatePassState>((set, get) => {
         throw new Error('Akses hanya untuk petugas jaga');
       }
 
-      const { data, error } = await supabase
-        .from('gate_pass')
-        .select('id,status,actual_keluar,actual_kembali,waktu_keluar,waktu_kembali')
-        .eq('qr_token', qrToken)
-        .single();
+      const { data: rpcData, error: rpcError } = await supabase.rpc('server_scan_gate_pass', {
+        p_qr_token: qrToken,
+      });
 
-      if (error || !data) throw new Error('QR tidak valid');
-
-      if (data.status === 'out' && data.actual_keluar && !data.actual_kembali) {
-        throw new Error('Sudah scan keluar, silakan scan masuk saat kembali.');
+      if (rpcError || !rpcData) {
+        throw new Error(rpcError?.message ?? 'QR tidak valid');
       }
 
-      if (data.status === 'returned' && data.actual_kembali) {
-        throw new Error('Sudah scan kembali, tidak bisa scan lagi.');
-      }
-
-      if (data.status === 'approved') {
-        const { error: err } = await supabase
-          .from('gate_pass')
-          .update({ status: 'out', actual_keluar: new Date().toISOString() })
-          .eq('id', data.id);
-        if (err) throw err;
-        await get().fetchGatePasses();
-        return 'Keluar berhasil';
-      }
-
-      if (data.status === 'out') {
-        const { error: err } = await supabase
-          .from('gate_pass')
-          .update({ status: 'returned', actual_kembali: new Date().toISOString() })
-          .eq('id', data.id);
-        if (err) throw err;
-        await get().fetchGatePasses();
-        return 'Kembali berhasil';
-      }
-
-      if (data.status === 'returned') {
-        throw new Error('Sudah kembali, tidak bisa scan lagi');
-      }
-      if (data.status === 'pending' || data.status === 'rejected') {
-        throw new Error('Gate pass belum di-approve atau sudah ditolak');
-      }
-      if (data.status === 'overdue') {
-        throw new Error('Gate pass overdue, segera lapor ke komandan.');
-      }
-
-      throw new Error('Status gate pass tidak valid untuk scan');
+      await get().fetchGatePasses();
+      return (rpcData as any).message ?? 'Scan berhasil';
     },
   };
 });

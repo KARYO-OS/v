@@ -1,4 +1,6 @@
-import { randomBytes } from "crypto";
 export function generateQrToken(): string {
-  return randomBytes(32).toString("hex"); // 64 char, sulit ditebak
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return Array.from(bytes)
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
 }

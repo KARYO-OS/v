@@ -11,6 +11,7 @@ const ROLE_DEFAULT_PATH: Record<Role, string> = {
   admin: '/admin/dashboard',
   komandan: '/komandan/dashboard',
   prajurit: '/prajurit/dashboard',
+  guard: '/guard/gatepass-scan',
 };
 
 export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {

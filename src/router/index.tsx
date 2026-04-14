@@ -35,6 +35,7 @@ const LeaveRequest = lazy(() => import('../pages/prajurit/LeaveRequest'));
 const Profile = lazy(() => import('../pages/prajurit/Profile'));
 const GatePassPage = lazy(() => import('../pages/prajurit/GatePassPage'));
 const GatePassApprovalPage = lazy(() => import('../pages/komandan/GatePassApprovalPage'));
+const GuardDashboard = lazy(() => import('../pages/guard/GuardDashboard'));
 const GateScannerPage = lazy(() => import('../pages/guard/GateScannerPage'));
 const GatePassMonitorPage = lazy(() => import('../pages/admin/GatePassMonitorPage'));
 
@@ -99,7 +100,7 @@ export const router = createBrowserRouter([
   {
     element: <ProtectedRoute allowedRoles={['guard', 'admin']} />,
     children: [
-      { path: '/guard/gatepass-scan', element: wrap(<GateScannerPage />) },
+      { path: '/guard/gatepass-scan', element: wrap(<GuardDashboard />) },
     ],
   },
   {

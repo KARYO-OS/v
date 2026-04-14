@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useGatePassStore } from '../../store/gatePassStore';
+import Input from '../common/Input';
+import Button from '../common/Button';
 
 export default function GatePassForm() {
   const [keperluan, setKeperluan] = useState('');
@@ -39,12 +41,42 @@ export default function GatePassForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="alert alert-error text-sm">{error}</div>}
-      <input className="input" placeholder="Keperluan" value={keperluan} onChange={e => setKeperluan(e.target.value)} required />
-      <input className="input" placeholder="Tujuan" value={tujuan} onChange={e => setTujuan(e.target.value)} required />
-      <input className="input" type="datetime-local" value={waktuKeluar} onChange={e => setWaktuKeluar(e.target.value)} required />
-      <input className="input" type="datetime-local" value={waktuKembali} onChange={e => setWaktuKembali(e.target.value)} required />
-      <button className="btn btn-primary w-full" type="submit" disabled={loading}>{loading ? 'Mengajukan...' : 'Ajukan Izin'}</button>
+      {error && (
+        <div className="rounded-2xl border border-accent-red/20 bg-accent-red/10 px-4 py-3 text-sm text-accent-red">
+          {error}
+        </div>
+      )}
+      <Input
+        label="Keperluan"
+        placeholder="Keperluan"
+        value={keperluan}
+        onChange={(e) => setKeperluan(e.target.value)}
+        required
+      />
+      <Input
+        label="Tujuan"
+        placeholder="Tujuan"
+        value={tujuan}
+        onChange={(e) => setTujuan(e.target.value)}
+        required
+      />
+      <Input
+        label="Waktu Keluar"
+        type="datetime-local"
+        value={waktuKeluar}
+        onChange={(e) => setWaktuKeluar(e.target.value)}
+        required
+      />
+      <Input
+        label="Waktu Kembali"
+        type="datetime-local"
+        value={waktuKembali}
+        onChange={(e) => setWaktuKembali(e.target.value)}
+        required
+      />
+      <Button type="submit" variant="primary" size="lg" isLoading={loading} className="w-full">
+        {loading ? 'Mengajukan...' : 'Ajukan Izin'}
+      </Button>
     </form>
   );
 }
