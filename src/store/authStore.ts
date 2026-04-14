@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { User, Role, KaryoSession } from '../types';
+import type { User, KaryoSession } from '../types';
 
 const SESSION_KEY = 'karyo_session';
 const CRYPTO_KEY_SESSION = 'karyo_session_key';
