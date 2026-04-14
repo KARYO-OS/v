@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useGatePassStore } from '../../store/gatePassStore';
 import GatePassStatusBadge from '../../components/gatepass/GatePassStatusBadge';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import Button from '../../components/common/Button';
 
 export default function GatePassApprovalPage() {
   const gatePasses = useGatePassStore(s => s.gatePasses);
@@ -24,7 +25,6 @@ export default function GatePassApprovalPage() {
               </div>
               <GatePassStatusBadge gatePass={gp} />
               <div className="flex gap-2">
-                <import Button from '../../components/common/Button';>
                 <Button variant="success" size="sm" onClick={() => approveGatePass(gp.id, true)}>
                   Approve
                 </Button>
