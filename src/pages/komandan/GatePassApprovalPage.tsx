@@ -25,7 +25,7 @@ export default function GatePassApprovalPage() {
               </div>
               <GatePassStatusBadge gatePass={gp} />
               <div className="flex gap-2">
-                <Button variant="success" size="sm" onClick={() => approveGatePass(gp.id, true)}>
+                <Button variant="primary" size="sm" onClick={() => approveGatePass(gp.id, true)}>
                   Approve
                 </Button>
                 <Button variant="danger" size="sm" onClick={() => approveGatePass(gp.id, false)}>
