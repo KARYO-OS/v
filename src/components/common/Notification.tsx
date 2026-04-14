@@ -26,7 +26,10 @@ export default function Notification() {
         className={`flex items-start gap-3 rounded-2xl border px-4 py-3 shadow-lg shadow-slate-900/10 backdrop-blur-sm ${colors[notification.type]}`}
       >
         <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-lg bg-white/70 text-sm font-bold dark:bg-white/10">
-          {iconMap[notification.type] && <iconMap[notification.type] className="w-5 h-5" aria-hidden="true" />}
+          {(() => {
+            const Icon = iconMap[notification.type];
+            return Icon ? <Icon className="w-5 h-5" aria-hidden="true" /> : null;
+          })()}
         </span>
         <p className="text-sm font-medium flex-1">{notification.message}</p>
         <button

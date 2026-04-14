@@ -183,7 +183,12 @@ export default function GlobalSearch() {
                 onClick={() => handleSelect(r)}
                 className="w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-surface/55"
               >
-                <span className="text-lg flex-shrink-0"><icons[r.icon] className="w-5 h-5" aria-hidden="true" /></span>
+                <span className="text-lg flex-shrink-0">{
+                  (() => {
+                    const Icon = icons[r.icon];
+                    return Icon ? <Icon className="w-5 h-5" aria-hidden="true" /> : null;
+                  })()
+                }</span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-text-primary truncate">{r.title}</p>
                   <p className="text-xs text-text-muted truncate mt-0.5">{r.subtitle}</p>
