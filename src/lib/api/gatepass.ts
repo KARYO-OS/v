@@ -48,8 +48,13 @@ export async function patchGatePassStatus(
   if (error) throw error;
 }
 
+/** Response shape returned by the `server_scan_gate_pass` Supabase RPC. */
+interface ScanGatePassResponse {
+  message?: string;
+}
+
 export async function rpcScanGatePass(qrToken: string): Promise<string> {
   const { data, error } = await supabase.rpc('server_scan_gate_pass', { p_qr_token: qrToken });
   if (error || !data) throw new Error(error?.message ?? 'QR tidak valid');
-  return (data as { message?: string }).message ?? 'Scan berhasil';
+  return (data as ScanGatePassResponse).message ?? 'Scan berhasil';
 }

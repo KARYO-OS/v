@@ -118,6 +118,14 @@ const clearSession = (): void => {
   sessionStorage.removeItem(CRYPTO_KEY_SESSION);
 };
 
+// ── RPC response types ───────────────────────────────────────────
+
+/** Row returned by the `verify_user_pin` Supabase RPC. */
+interface VerifyUserPinRow {
+  user_id: string;
+  user_role: string;
+}
+
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   isAuthenticated: false,
@@ -134,7 +142,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const { data, error } = await supabase.rpc('verify_user_pin', { p_nrp: nrp, p_pin: pin }).single();
       if (error) throw new Error('Terjadi kesalahan sistem. Coba lagi nanti.');
       // verify_user_pin returns an array; empty array means wrong credentials
-      const row = Array.isArray(data) ? (data as { user_id: string; user_role: string }[])[0] : (data as { user_id: string; user_role: string } | null);
+      const row = Array.isArray(data)
+        ? (data as VerifyUserPinRow[])[0]
+        : (data as VerifyUserPinRow | null);
       if (!row) throw new Error('NRP atau PIN salah. Periksa kembali dan coba lagi.');
 
       const { user_id, user_role } = row;
@@ -160,7 +170,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         p_detail: JSON.stringify({ nrp, role: user_role })
       });
 
-      await saveSession({ user_id, role: user_role as import('../types').Role, expires_at: makeSessionExpiry() });
+      await saveSession({ user_id, role: user_role as User['role'], expires_at: makeSessionExpiry() });
       set({ user, isAuthenticated: true, isLoading: false, error: null });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Terjadi kesalahan sistem. Coba lagi nanti.';

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { fetchTasks as apiFetchTasks, insertTask, patchTaskStatus, insertTaskReport, fetchLatestTaskReport } from '../lib/api/tasks';
 import { handleError } from '../lib/handleError';
@@ -32,7 +32,13 @@ export function clearTasksCache(): void {
 
 export function useTasks(options: UseTasksOptions = {}) {
   const { user } = useAuthStore();
-  const cacheKey = buildCacheKey(options);
+
+  // Stabilize cacheKey so it only changes when the option values change (not object references)
+  const cacheKey = useMemo(
+    () => buildCacheKey(options),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [options.assignedTo, options.assignedBy, options.status, options.satuan],
+  );
 
   // Seed initial state from cache so the list renders immediately on revisit
   const [tasks, setTasks] = useState<Task[]>(() => tasksCache.get(cacheKey) ?? []);
