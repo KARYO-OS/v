@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { ICONS, IconType } from '../../icons';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
+import { usePlatformStore } from '../../store/platformStore';
 import type { Role } from '../../types';
 
 interface NavItem {
@@ -53,6 +54,7 @@ const NAV_ITEMS: Record<Role, NavItem[]> = {
 export default function Sidebar() {
   const { user, logout } = useAuthStore();
   const { sidebarOpen, setSidebarOpen } = useUIStore();
+  const { settings } = usePlatformStore();
   const navigate = useNavigate();
 
   if (!user) return null;
@@ -94,10 +96,18 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="border-b border-surface/80 px-5 py-5">
           <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-lg text-primary">◈</span>
+            {settings.platformLogoUrl ? (
+              <img
+                src={settings.platformLogoUrl}
+                alt={settings.platformName}
+                className="h-10 w-10 rounded-2xl border border-primary/20 bg-primary/10 object-cover"
+              />
+            ) : (
+              <span className="grid h-10 w-10 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-lg text-primary">◈</span>
+            )}
             <div>
-              <div className="text-base font-extrabold tracking-tight text-text-primary leading-tight">KARYO OS</div>
-              <div className="text-[10px] uppercase tracking-[0.14em] text-text-muted">Operations Suite</div>
+              <div className="text-base font-extrabold tracking-tight text-text-primary leading-tight">{settings.platformName}</div>
+              <div className="text-[10px] uppercase tracking-[0.14em] text-text-muted">{settings.platformTagline}</div>
             </div>
           </div>
         </div>

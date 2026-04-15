@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Download, Upload, AlertTriangle } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
@@ -6,6 +6,7 @@ import Modal from '../../components/common/Modal';
 import PageHeader from '../../components/ui/PageHeader';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
+import { usePlatformStore } from '../../store/platformStore';
 import { useUIStore } from '../../store/uiStore';
 
 /** Tables included in backup/restore. Ordered to satisfy FK constraints on restore. */
@@ -64,6 +65,17 @@ export default function Settings() {
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [restorePreview, setRestorePreview] = useState<BackupData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const { settings, updatePlatformBranding, isSaving: isSavingBranding } = usePlatformStore();
+  const [platformNameInput, setPlatformNameInput] = useState(settings.platformName);
+  const [platformTaglineInput, setPlatformTaglineInput] = useState(settings.platformTagline);
+  const [platformLogoInput, setPlatformLogoInput] = useState(settings.platformLogoUrl ?? '');
+
+  useEffect(() => {
+    setPlatformNameInput(settings.platformName);
+    setPlatformTaglineInput(settings.platformTagline);
+    setPlatformLogoInput(settings.platformLogoUrl ?? '');
+  }, [settings]);
 
   /** Export all tables as a single JSON backup file */
   const handleExport = async () => {
@@ -145,6 +157,54 @@ export default function Settings() {
     setSidebarOpen(true);
   };
 
+  const handleBrandingSave = async () => {
+    const normalizedName = platformNameInput.trim();
+    if (!normalizedName) {
+      showNotification('Nama platform tidak boleh kosong', 'error');
+      return;
+    }
+
+    try {
+      await updatePlatformBranding({
+        platformName: normalizedName,
+        platformTagline: platformTaglineInput.trim() || 'Command and Battalion Tracking',
+        platformLogoUrl: platformLogoInput.trim() || null,
+      });
+      showNotification('Branding platform berhasil diperbarui', 'success');
+    } catch (error) {
+      showNotification(error instanceof Error ? error.message : 'Gagal menyimpan branding platform', 'error');
+    }
+  };
+
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showNotification('File logo harus berupa gambar', 'error');
+      return;
+    }
+
+    if (file.size > 1024 * 1024) {
+      showNotification('Ukuran logo maksimal 1MB', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = String(ev.target?.result ?? '');
+      if (!dataUrl.startsWith('data:image/')) {
+        showNotification('Format file logo tidak valid', 'error');
+        return;
+      }
+      setPlatformLogoInput(dataUrl);
+      showNotification('Logo berhasil dipilih, klik Simpan Branding untuk menerapkan', 'info');
+    };
+    reader.readAsDataURL(file);
+
+    if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+  };
+
   return (
     <DashboardLayout title="Pengaturan Sistem">
       <div className="space-y-6 max-w-4xl">
@@ -162,11 +222,104 @@ export default function Settings() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="app-card p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-bold tracking-tight text-text-primary">Branding Platform</h2>
+              <Button
+                size="sm"
+                onClick={() => { void handleBrandingSave(); }}
+                disabled={isSavingBranding}
+              >
+                {isSavingBranding ? 'Menyimpan...' : 'Simpan Branding'}
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="platform-name" className="text-sm font-semibold text-text-primary">Nama Platform</label>
+                <input
+                  id="platform-name"
+                  type="text"
+                  className="form-control mt-1"
+                  value={platformNameInput}
+                  onChange={(e) => setPlatformNameInput(e.target.value)}
+                  placeholder="Contoh: KARYO OS"
+                  maxLength={60}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="platform-tagline" className="text-sm font-semibold text-text-primary">Tagline Platform</label>
+                <input
+                  id="platform-tagline"
+                  type="text"
+                  className="form-control mt-1"
+                  value={platformTaglineInput}
+                  onChange={(e) => setPlatformTaglineInput(e.target.value)}
+                  placeholder="Contoh: Command and Battalion Tracking"
+                  maxLength={120}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="platform-logo-url" className="text-sm font-semibold text-text-primary">URL Logo Platform</label>
+                <input
+                  id="platform-logo-url"
+                  type="url"
+                  className="form-control mt-1"
+                  value={platformLogoInput}
+                  onChange={(e) => setPlatformLogoInput(e.target.value)}
+                  placeholder="https://example.com/logo.png"
+                />
+                <p className="mt-1 text-xs text-text-muted">Bisa pakai URL publik atau unggah file gambar di bawah ini.</p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  ref={logoFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoFileChange}
+                />
+                <Button size="sm" variant="outline" onClick={() => logoFileInputRef.current?.click()}>
+                  Unggah Logo
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setPlatformLogoInput('')}
+                >
+                  Hapus Logo
+                </Button>
+              </div>
+
+              <div className="rounded-xl border border-surface/70 bg-surface/20 p-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">Preview</p>
+                <div className="flex items-center gap-3">
+                  {platformLogoInput.trim() ? (
+                    <img
+                      src={platformLogoInput.trim()}
+                      alt={platformNameInput || 'Platform'}
+                      className="h-12 w-12 rounded-xl border border-primary/20 bg-primary/10 object-cover"
+                    />
+                  ) : (
+                    <span className="grid h-12 w-12 place-items-center rounded-xl border border-primary/20 bg-primary/10 text-lg text-primary">◈</span>
+                  )}
+                  <div>
+                    <p className="text-sm font-bold text-text-primary">{platformNameInput || 'KARYO OS'}</p>
+                    <p className="text-xs uppercase tracking-[0.1em] text-text-muted">{platformTaglineInput || 'Command and Battalion Tracking'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="app-card p-6">
             <h2 className="mb-4 text-lg font-bold tracking-tight text-text-primary">Informasi Sistem</h2>
             <div className="space-y-3">
               {[
                 { label: 'Versi Aplikasi', value: 'v1.0.0' },
-                { label: 'Platform', value: 'KARYO OS — Command & Battalion Tracking' },
+                { label: 'Platform', value: `${settings.platformName} — ${settings.platformTagline}` },
                 { label: 'Satuan', value: user?.satuan ?? '—' },
                 { label: 'Admin', value: user?.nama ?? '—' },
                 { label: 'NRP Admin', value: user?.nrp ?? '—' },

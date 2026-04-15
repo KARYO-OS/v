@@ -9,15 +9,21 @@ import { RouterProvider } from 'react-router-dom';
 import './index.css';
 import { router } from './router';
 import { useAuthStore } from './store/authStore';
+import { usePlatformStore } from './store/platformStore';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
 export function App() {
   const { restoreSession, isLoading } = useAuthStore();
+  const { loadPlatformBranding } = usePlatformStore();
 
   useEffect(() => {
     void restoreSession();
   }, [restoreSession]);
+
+  useEffect(() => {
+    void loadPlatformBranding();
+  }, [loadPlatformBranding]);
 
   if (isLoading) return <LoadingSpinner fullScreen />;
 

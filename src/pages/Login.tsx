@@ -5,6 +5,7 @@ import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Notification from '../components/common/Notification';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { usePlatformStore } from '../store/platformStore';
 
 const ROLE_DEFAULT_PATH = {
   admin: '/admin/dashboard',
@@ -15,6 +16,7 @@ const ROLE_DEFAULT_PATH = {
 
 export default function Login() {
   const { login, isAuthenticated, user, isLoading, error, clearError } = useAuthStore();
+  const { settings } = usePlatformStore();
   const navigate = useNavigate();
 
   const [nrp, setNrp] = useState('');
@@ -86,7 +88,7 @@ export default function Login() {
               Modern Operational Workspace
             </div>
             <h1 className="max-w-xl text-4xl font-extrabold leading-tight tracking-tight text-text-primary xl:text-5xl">
-              KARYO OS membantu komando operasional lebih cepat, rapi, dan terukur.
+              {settings.platformName} membantu komando operasional lebih cepat, rapi, dan terukur.
             </h1>
             <p className="max-w-lg text-sm text-text-muted xl:text-base">
               Dashboard terpadu untuk personel, tugas, kehadiran, dan logistik dengan pengalaman setara software SaaS modern.
@@ -110,10 +112,18 @@ export default function Login() {
           <div className="app-card p-7 sm:p-8">
             <div className="mb-6 text-center lg:text-left">
               <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/35 bg-primary/12">
-                <span className="text-2xl text-primary">◈</span>
+                {settings.platformLogoUrl ? (
+                  <img
+                    src={settings.platformLogoUrl}
+                    alt={settings.platformName}
+                    className="h-10 w-10 rounded-xl object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl text-primary">◈</span>
+                )}
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-text-primary">Masuk ke Sistem</h2>
-              <p className="mt-1 text-sm text-text-muted">KARYO OS Command and Battalion Tracking</p>
+              <p className="mt-1 text-sm text-text-muted">{settings.platformName} {settings.platformTagline}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -188,7 +198,7 @@ export default function Login() {
           </div>
 
           <p className="mt-5 text-center text-xs text-text-muted lg:text-left">
-            © 2026 KARYO OS — Sistem Manajemen Operasional Militer
+            © 2026 {settings.platformName} — Sistem Manajemen Operasional Militer
           </p>
         </section>
       </div>
