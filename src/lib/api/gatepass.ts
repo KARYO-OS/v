@@ -32,13 +32,13 @@ export async function patchGatePassStatus(
 ): Promise<void> {
   const { error } = await supabase
     .from('gate_pass')
-    .update({ status, ...(approvedBy ? { approved_by: approvedBy } : {}) })
+    .update({ status, approved_by: approvedBy })
     .eq('id', id);
   if (error) throw error;
 }
 
 export async function rpcScanGatePass(qrToken: string): Promise<string> {
   const { data, error } = await supabase.rpc('server_scan_gate_pass', { p_qr_token: qrToken });
-  if (error ?? !data) throw new Error(error?.message ?? 'QR tidak valid');
+  if (error || !data) throw new Error(error?.message ?? 'QR tidak valid');
   return (data as { message?: string }).message ?? 'Scan berhasil';
 }
