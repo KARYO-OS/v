@@ -130,48 +130,19 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   login: async (nrp: string, pin: string) => {
     set({ isLoading: true, error: null });
     try {
-      // Call Supabase RPC to verify PIN
-      const { data, error } = await supabase.rpc('verify_user_pin', {
-        p_nrp: nrp,
-        p_pin: pin,
-      });
+      // Step 1: Verify PIN and get user_id, user_role
+      const { data, error } = await supabase.rpc('verify_user_pin', { p_nrp: nrp, p_pin: pin }).single();
+      if (error || !data) throw new Error('NRP/PIN salah');
 
-      if (error) {
-        // Log error detail to console for debugging
-        // @ts-ignore
-        if (typeof window !== 'undefined') console.error('Supabase verify_user_pin error:', error);
-        throw new Error('Terjadi kesalahan sistem. Coba lagi.');
-      }
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        throw new Error('NRP atau PIN salah, atau akun tidak aktif.');
-      }
+      const { user_id, user_role } = data;
 
-      const result = Array.isArray(data) ? data[0] : data;
-      const userId: string = result.user_id as string;
-
-      // Fetch full user data (exclude server-only columns such as pin_hash)
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select(USER_COLUMNS)
-        .eq('id', userId)
-        .single();
-
-      if (userError || !userData) {
-        // Log error detail to console for debugging
-        // @ts-ignore
-        if (typeof window !== 'undefined') console.error('Supabase users fetch error:', userError);
-        throw new Error('Gagal memuat data pengguna.');
-      }
+      // Step 2: Get user data via RPC (not direct select)
+      const { data: userData, error: userError } = await supabase.rpc('get_user_by_id', { p_user_id: user_id }).single();
+      if (userError || !userData) throw new Error('User tidak ditemukan');
 
       const user = userData as User;
 
-      // Bind user identity to DB session so RLS policies can read it
-      await supabase.rpc('set_session_context', {
-        p_user_id: userId,
-        p_role: user.role,
-      });
-
-      // Update last_login and is_online
+      // Step 3: Update last_login and is_online
       await supabase
         .from('users')
         .update({
@@ -180,30 +151,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           login_attempts: 0,
           locked_until: null,
         })
-        .eq('id', userId);
+        .eq('id', user_id);
 
-      // Log the login action
+      // Step 4: Log the login action
       await supabase.from('audit_logs').insert({
-        user_id: userId,
+        user_id: user_id,
         action: 'LOGIN',
         resource: 'auth',
-        detail: { nrp, role: user.role },
+        detail: { nrp, role: user_role },
       });
 
-      await saveSession({ user_id: userId, role: user.role, expires_at: makeSessionExpiry() });
+      await saveSession({ user_id, role: user_role, expires_at: makeSessionExpiry() });
       set({ user, isAuthenticated: true, isLoading: false, error: null });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Login gagal.';
-
-      // Handle failed login attempts
-      if (message.includes('NRP atau PIN salah')) {
-        await supabase.rpc('increment_login_attempts', { p_nrp: nrp });
-      }
-
-      // Log error detail to console for debugging
-      // @ts-ignore
-      if (typeof window !== 'undefined') console.error('Login error:', err);
-
       set({ isLoading: false, error: message, isAuthenticated: false, user: null });
       throw err;
     }
