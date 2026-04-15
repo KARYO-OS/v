@@ -24,6 +24,18 @@ function buildQuery(result: { data: unknown; error: unknown }) {
   return q;
 }
 
+/**
+ * Build a chainable RPC mock that supports `.single()`.
+ * Use this instead of `mockResolvedValue` so that `.single()` can be chained on `supabase.rpc(...)`.
+ */
+function buildRpcQuery(result: { data: unknown; error: unknown }) {
+  return {
+    single: () => Promise.resolve(result),
+    then: (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve),
+    catch: (reject: (e: unknown) => unknown) => Promise.resolve(result).catch(reject),
+  };
+}
+
 const SESSION_KEY = 'karyo_session';
 
 // Session helpers that use the real AES-GCM encryption so tests match production behaviour.
@@ -97,18 +109,17 @@ describe('authStore', () => {
 
     it('restores user and sets isAuthenticated when session is valid', async () => {
       await makeValidEncryptedSession('u1', 'admin');
-      mockSupabase.from.mockReturnValue(buildQuery({ data: mockUser, error: null }));
-      mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
+      // Current implementation fetches the user via RPC, not supabase.from
+      mockSupabase.rpc.mockReturnValue(buildRpcQuery({ data: mockUser, error: null }));
 
       await act(async () => {
         await useAuthStore.getState().restoreSession();
       });
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
       expect(useAuthStore.getState().user?.id).toBe('u1');
-      // Verify set_session_context was called with correct args
-      expect(mockSupabase.rpc).toHaveBeenCalledWith('set_session_context', {
+      // Verify get_user_by_id was called with the session user_id
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('get_user_by_id', {
         p_user_id: 'u1',
-        p_role: 'admin',
       });
     });
 
@@ -182,9 +193,8 @@ describe('authStore', () => {
   // ── login ─────────────────────────────────────────────────
   describe('login', () => {
     it('sets error state on wrong credentials', async () => {
-      mockSupabase.rpc
-        .mockResolvedValueOnce({ data: [], error: null })  // verify_user_pin → empty
-        .mockResolvedValue({ data: null, error: null });    // increment_login_attempts
+      // verify_user_pin returns empty array → wrong credentials
+      mockSupabase.rpc.mockReturnValue(buildRpcQuery({ data: [], error: null }));
 
       let thrown = false;
       await act(async () => {
@@ -201,7 +211,8 @@ describe('authStore', () => {
     });
 
     it('sets error state on system error', async () => {
-      mockSupabase.rpc.mockResolvedValue({ data: null, error: new Error('db error') });
+      // verify_user_pin returns a Supabase error → system error
+      mockSupabase.rpc.mockReturnValue(buildRpcQuery({ data: null, error: new Error('db error') }));
 
       await expect(
         act(async () => {
@@ -213,21 +224,11 @@ describe('authStore', () => {
     });
 
     it('authenticates on successful login', async () => {
-      // verify_user_pin → user_id; set_session_context → void; increment_login_attempts unused
+      // Sequence: verify_user_pin → user row; get_user_by_id → user data; other RPCs → null
       mockSupabase.rpc
-        .mockResolvedValueOnce({ data: [{ user_id: 'u1' }], error: null }) // verify_user_pin
-        .mockResolvedValue({ data: null, error: null });                    // set_session_context
-      // Build a from mock that handles all chained calls
-      const fromMock = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockUser, error: null }),
-        update: vi.fn().mockReturnThis(),
-        insert: vi.fn().mockResolvedValue({ error: null }),
-        then: (resolve: (v: unknown) => unknown) =>
-          Promise.resolve({ data: mockUser, error: null }).then(resolve),
-      };
-      mockSupabase.from.mockReturnValue(fromMock);
+        .mockReturnValueOnce(buildRpcQuery({ data: [{ user_id: 'u1', user_role: 'admin' }], error: null })) // verify_user_pin
+        .mockReturnValueOnce(buildRpcQuery({ data: mockUser, error: null }))                                 // get_user_by_id
+        .mockReturnValue(buildRpcQuery({ data: null, error: null }));                                        // update_user_login, insert_audit_log
 
       await act(async () => {
         await useAuthStore.getState().login('12345', '1234');
@@ -236,11 +237,10 @@ describe('authStore', () => {
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
       expect(useAuthStore.getState().user?.id).toBe('u1');
       expect(localStorage.getItem('karyo_session')).not.toBeNull();
-      // Verify set_session_context was called
-      expect(mockSupabase.rpc).toHaveBeenCalledWith('set_session_context', {
-        p_user_id: 'u1',
-        p_role: 'admin',
-      });
+      // Verify verify_user_pin was called
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('verify_user_pin', { p_nrp: '12345', p_pin: '1234' });
+      // Verify get_user_by_id was called with the resolved user_id
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('get_user_by_id', { p_user_id: 'u1' });
     });
   });
 });

@@ -30,7 +30,16 @@ export const useGatePassStore = create<GatePassState>((set, get) => {
       const user = useAuthStore.getState().user;
       if (!user) throw new Error('User tidak ditemukan');
       const data = await fetchGatePassesByUser(user.id);
-      set({ gatePasses: data });
+      // Client-side overdue detection: mark passes with status 'out' whose
+      // waktu_kembali has already passed as 'overdue'.
+      const now = new Date();
+      const processed = data.map((gp) => {
+        if (gp.status === 'out' && gp.waktu_kembali && new Date(gp.waktu_kembali) < now) {
+          return { ...gp, status: 'overdue' as GatePassStatus };
+        }
+        return gp;
+      });
+      set({ gatePasses: processed });
     },
 
     async createGatePass(payload) {
