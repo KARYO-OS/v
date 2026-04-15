@@ -18,7 +18,7 @@ export function useOverdueNotification() {
       }
     };
     void fetchOverdue();
-    const interval = setInterval(() => void fetchOverdue(), 60000); // cek tiap 1 menit
+    const interval = setInterval(() => { void fetchOverdue(); }, 60000); // cek tiap 1 menit
     return () => clearInterval(interval);
   }, [user]);
 

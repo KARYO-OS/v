@@ -64,7 +64,7 @@ export function useTasks(options: UseTasksOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [cacheKey, options.assignedTo, options.assignedBy, options.status, options.satuan]);
+  }, [cacheKey]);
 
   useEffect(() => {
     void fetchTasks();

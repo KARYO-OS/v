@@ -1,12 +1,13 @@
 /**
  * Feature: Users (Manajemen Pengguna)
  *
- * Barrel export untuk fitur manajemen user.
+ * Barrel export untuk fitur manajemen user dan audit log.
+ *
+ * Catatan: useAnnouncements tersedia di '@/features/announcements'
  *
  * Penggunaan:
- *   import { useUsers, useAnnouncements } from '@/features/users';
+ *   import { useUsers, useAuditLogs } from '@/features/users';
  */
 export { useUsers } from '@/hooks/useUsers';
-export { useAnnouncements } from '@/hooks/useAnnouncements';
 export { useAuditLogs } from '@/hooks/useAuditLogs';
-export type { User, Role, Announcement, AuditLog } from '@/types';
+export type { User, Role, AuditLog } from '@/types';
