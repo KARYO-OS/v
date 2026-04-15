@@ -64,7 +64,7 @@ export default function Reports() {
 
   useEffect(() => {
     if (user?.satuan) void fetchData();
-  }, [user, fetchData]);
+  }, [user?.satuan, fetchData]);
 
   useEffect(() => {
     if (!user?.satuan) return;
@@ -75,7 +75,7 @@ export default function Reports() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => { void fetchData(); })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [user?.satuan, fetchData]);
 
   const leaveByStatus = useMemo(() => ({
     pending: leaveRequests.filter((r) => r.status === 'pending').length,

@@ -28,12 +28,7 @@ describe('Login page', () => {
       isLoading: false,
       isInitialized: false,
       error: null,
-      login: vi.fn(async () => {}),
-      logout: vi.fn(async () => {}),
-      restoreSession: vi.fn(async () => {}),
-      updateOnlineStatus: vi.fn(async () => {}),
-      clearError: vi.fn(() => {}),
-    } as any);
+    });
   });
 
   afterEach(() => {

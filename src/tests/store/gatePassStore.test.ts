@@ -46,10 +46,17 @@ const approvedGatePass = {
   waktu_kembali: new Date(now.getTime() + 1000 * 60 * 60).toISOString(),
 };
 
-const mockSupabase = supabase as unknown as { from: (table: string) => MockQuery; channel: () => any };
+type MockRealtimeChannel = {
+  on: (...args: unknown[]) => MockRealtimeChannel;
+  subscribe: () => MockRealtimeChannel;
+};
+
+const mockSupabase = supabase as unknown as {
+  from: (table: string) => MockQuery;
+  channel: () => MockRealtimeChannel;
+};
 
 function queryResult(q: MockQuery) {
-  const table = q._table;
   if (q._single) {
     return { data: q._data ?? approvedGatePass, error: null };
   }
@@ -63,13 +70,19 @@ function buildQuery(table: string) {
     _data: undefined,
   } as MockQuery;
 
-  const chain = () => q;
   q.select = (columns: string, opts?: unknown) => {
+    void opts;
     q._select = columns;
     return q;
   };
-  q.eq = (..._args: unknown[]) => q;
-  q.order = (..._args: unknown[]) => q;
+  q.eq = (...args: unknown[]) => {
+    void args;
+    return q;
+  };
+  q.order = (...args: unknown[]) => {
+    void args;
+    return q;
+  };
   q.insert = vi.fn(() => q);
   q.update = vi.fn(() => q);
   q.single = () => {

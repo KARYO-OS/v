@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { supabase } from '../../lib/supabase';
-import { fetchAuditLogs } from '../../lib/api/auditLogs';
-import type { AuditLog } from '../../types';
+import { supabase } from '../../../lib/supabase';
+import { fetchAuditLogs } from '../../../lib/api/auditLogs';
+import type { AuditLog } from '../../../types';
 
 const mockSupabase = supabase as unknown as {
   from: ReturnType<typeof vi.fn>;

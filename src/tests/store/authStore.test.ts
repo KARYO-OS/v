@@ -31,6 +31,7 @@ function buildQuery(result: { data: unknown; error: unknown }) {
 function buildRpcQuery(result: { data: unknown; error: unknown }) {
   return {
     single: () => Promise.resolve(result),
+    maybeSingle: () => Promise.resolve(result),
     then: (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve),
     catch: (reject: (e: unknown) => unknown) => Promise.resolve(result).catch(reject),
   };
@@ -193,8 +194,8 @@ describe('authStore', () => {
   // ── login ─────────────────────────────────────────────────
   describe('login', () => {
     it('sets error state on wrong credentials', async () => {
-      // verify_user_pin returns empty array → wrong credentials
-      mockSupabase.rpc.mockReturnValue(buildRpcQuery({ data: [], error: null }));
+      // verify_user_pin returns null → wrong credentials
+      mockSupabase.rpc.mockReturnValue(buildRpcQuery({ data: null, error: null }));
 
       let thrown = false;
       await act(async () => {
@@ -224,9 +225,10 @@ describe('authStore', () => {
     });
 
     it('authenticates on successful login', async () => {
-      // Sequence: verify_user_pin → user row; get_user_by_id → user data; other RPCs → null
+      // Sequence: verify_user_pin → set_session_context → get_user_by_id → update_user_login → insert_audit_log
       mockSupabase.rpc
-        .mockReturnValueOnce(buildRpcQuery({ data: [{ user_id: 'u1', user_role: 'admin' }], error: null })) // verify_user_pin
+        .mockReturnValueOnce(buildRpcQuery({ data: { user_id: 'u1', user_role: 'admin' }, error: null }))   // verify_user_pin
+        .mockReturnValueOnce(buildRpcQuery({ data: null, error: null }))                                      // set_session_context
         .mockReturnValueOnce(buildRpcQuery({ data: mockUser, error: null }))                                 // get_user_by_id
         .mockReturnValue(buildRpcQuery({ data: null, error: null }));                                        // update_user_login, insert_audit_log
 

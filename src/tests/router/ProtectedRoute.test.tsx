@@ -13,12 +13,7 @@ describe('ProtectedRoute', () => {
       isInitialized: false,
       isLoading: false,
       error: null,
-      login: vi.fn(async () => {}),
-      logout: vi.fn(async () => {}),
-      restoreSession: vi.fn(async () => {}),
-      updateOnlineStatus: vi.fn(async () => {}),
-      clearError: vi.fn(() => {}),
-    } as any);
+    });
   });
 
   it('renders loading spinner when not initialized', () => {

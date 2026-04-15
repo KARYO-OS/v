@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../../lib/supabase';
 import {
   fetchAllPosJaga,
   insertPosJaga,
   patchPosJagaActive,
   rpcScanPosJaga,
-} from '../../lib/api/posJaga';
+} from '../../../lib/api/posJaga';
 
 const mockSupabase = supabase as unknown as {
   from: ReturnType<typeof vi.fn>;

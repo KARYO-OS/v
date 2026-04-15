@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../../lib/supabase';
 import {
   fetchLeaveRequests,
   insertLeaveRequest,
   patchLeaveRequestStatus,
-} from '../../lib/api/leaveRequests';
-import type { LeaveRequest } from '../../types';
+} from '../../../lib/api/leaveRequests';
+import type { LeaveRequest } from '../../../types';
 
 const mockSupabase = supabase as unknown as {
   from: ReturnType<typeof vi.fn>;
