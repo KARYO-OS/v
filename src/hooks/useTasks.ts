@@ -1,5 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
+import { fetchTasks as apiFetchTasks, insertTask, patchTaskStatus, insertTaskReport, fetchLatestTaskReport } from '../lib/api/tasks';
+import { handleError } from '../lib/handleError';
+import { SimpleCache } from '../lib/cache';
 import type { Task, TaskStatus } from '../types';
 import { useAuthStore } from '../store/authStore';
 
@@ -10,35 +13,64 @@ interface UseTasksOptions {
   satuan?: string;
 }
 
+/** Module-level cache: data tasks di-cache 5 menit per kombinasi filter */
+const tasksCache = new SimpleCache<Task[]>();
+
+function buildCacheKey(opts: UseTasksOptions): string {
+  return JSON.stringify({
+    a: opts.assignedTo ?? '',
+    b: opts.assignedBy ?? '',
+    s: opts.status ?? '',
+    t: opts.satuan ?? '',
+  });
+}
+
+/** Hapus semua cache tugas — berguna untuk pengujian unit. */
+export function clearTasksCache(): void {
+  tasksCache.clear();
+}
+
 export function useTasks(options: UseTasksOptions = {}) {
   const { user } = useAuthStore();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Stabilize cacheKey so it only changes when the option values change (not object references)
+  const cacheKey = useMemo(
+    () => buildCacheKey(options),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [options.assignedTo, options.assignedBy, options.status, options.satuan],
+  );
+
+  // Seed initial state from cache so the list renders immediately on revisit
+  const [tasks, setTasks] = useState<Task[]>(() => tasksCache.get(cacheKey) ?? []);
+  const [isLoading, setIsLoading] = useState(() => !tasksCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = useCallback(async (force = false) => {
+    if (!force) {
+      const cached = tasksCache.get(cacheKey);
+      if (cached) {
+        setTasks(cached);
+        setIsLoading(false);
+        return;
+      }
+    }
     setIsLoading(true);
     setError(null);
     try {
-      let query = supabase
-        .from('tasks')
-        .select('*, assignee:assigned_to(id,nama,nrp,pangkat), assigner:assigned_by(id,nama,nrp)')
-        .order('created_at', { ascending: false });
-
-      if (options.assignedTo) query = query.eq('assigned_to', options.assignedTo);
-      if (options.assignedBy) query = query.eq('assigned_by', options.assignedBy);
-      if (options.status) query = query.eq('status', options.status);
-      if (options.satuan) query = query.eq('satuan', options.satuan);
-
-      const { data, error: err } = await query;
-      if (err) throw err;
-      setTasks((data as Task[]) ?? []);
+      const data = await apiFetchTasks({
+        assignedTo: options.assignedTo,
+        assignedBy: options.assignedBy,
+        status: options.status,
+        satuan: options.satuan,
+      });
+      tasksCache.set(cacheKey, data);
+      setTasks(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal memuat data tugas');
+      setError(handleError(err, 'Gagal memuat data tugas'));
     } finally {
       setIsLoading(false);
     }
-  }, [options.assignedTo, options.assignedBy, options.status, options.satuan]);
+  }, [cacheKey]);
 
   useEffect(() => {
     void fetchTasks();
@@ -64,19 +96,15 @@ export function useTasks(options: UseTasksOptions = {}) {
     prioritas: 1 | 2 | 3;
     satuan?: string;
   }) => {
-    const { error } = await supabase.from('tasks').insert({
-      ...taskData,
-      assigned_by: user?.id,
-      status: 'pending',
-    });
-    if (error) throw error;
-    await fetchTasks();
+    await insertTask({ ...taskData, assigned_by: user?.id });
+    tasksCache.invalidate(cacheKey);
+    await fetchTasks(true);
   };
 
   const updateTaskStatus = async (taskId: string, status: TaskStatus) => {
-    const { error } = await supabase.from('tasks').update({ status }).eq('id', taskId);
-    if (error) throw error;
-    await fetchTasks();
+    await patchTaskStatus(taskId, status);
+    tasksCache.invalidate(cacheKey);
+    await fetchTasks(true);
   };
 
   /**
@@ -93,7 +121,7 @@ export function useTasks(options: UseTasksOptions = {}) {
    */
   const rejectTask = async (taskId: string, catatan?: string) => {
     if (catatan?.trim()) {
-      await supabase.from('task_reports').insert({
+      await insertTaskReport({
         task_id: taskId,
         user_id: user?.id,
         isi_laporan: `[DITOLAK] ${catatan.trim()}`,
@@ -103,14 +131,7 @@ export function useTasks(options: UseTasksOptions = {}) {
   };
 
   const submitTaskReport = async (taskId: string, isiLaporan: string, fileUrl?: string) => {
-    const { error: reportError } = await supabase.from('task_reports').insert({
-      task_id: taskId,
-      user_id: user?.id,
-      isi_laporan: isiLaporan,
-      file_url: fileUrl,
-    });
-    if (reportError) throw reportError;
-
+    await insertTaskReport({ task_id: taskId, user_id: user?.id, isi_laporan: isiLaporan, file_url: fileUrl });
     await updateTaskStatus(taskId, 'done');
   };
 
@@ -118,21 +139,14 @@ export function useTasks(options: UseTasksOptions = {}) {
    * Fetch the most recent task report for a given task_id (for approval review).
    */
   const getTaskReport = async (taskId: string) => {
-    const { data } = await supabase
-      .from('task_reports')
-      .select('*')
-      .eq('task_id', taskId)
-      .order('submitted_at', { ascending: false })
-      .limit(1)
-      .single();
-    return data;
+    return fetchLatestTaskReport(taskId);
   };
 
   return {
     tasks,
     isLoading,
     error,
-    refetch: fetchTasks,
+    refetch: () => fetchTasks(true),
     createTask,
     updateTaskStatus,
     approveTask,

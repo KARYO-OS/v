@@ -118,6 +118,14 @@ const clearSession = (): void => {
   sessionStorage.removeItem(CRYPTO_KEY_SESSION);
 };
 
+// ── RPC response types ───────────────────────────────────────────
+
+/** Row returned by the `verify_user_pin` Supabase RPC. */
+interface VerifyUserPinRow {
+  user_id: string;
+  user_role: string;
+}
+
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   isAuthenticated: false,
@@ -132,13 +140,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       // Step 1: Verify PIN and get user_id, user_role
       const { data, error } = await supabase.rpc('verify_user_pin', { p_nrp: nrp, p_pin: pin }).single();
-      if (error || !data) throw new Error('NRP/PIN salah');
+      if (error) throw new Error('Terjadi kesalahan sistem. Coba lagi nanti.');
+      // verify_user_pin returns an array; empty array means wrong credentials
+      const row = Array.isArray(data)
+        ? (data as VerifyUserPinRow[])[0]
+        : (data as VerifyUserPinRow | null);
+      if (!row) throw new Error('NRP atau PIN salah. Periksa kembali dan coba lagi.');
 
-      const { user_id, user_role } = data;
+      const { user_id, user_role } = row;
 
       // Step 2: Get user data via RPC (not direct select)
       const { data: userData, error: userError } = await supabase.rpc('get_user_by_id', { p_user_id: user_id }).single();
-      if (userError || !userData) throw new Error('User tidak ditemukan');
+      if (userError || !userData) throw new Error('Data pengguna tidak ditemukan.');
 
       const user = userData as User;
 
@@ -157,10 +170,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         p_detail: JSON.stringify({ nrp, role: user_role })
       });
 
-      await saveSession({ user_id, role: user_role, expires_at: makeSessionExpiry() });
+      await saveSession({ user_id, role: user_role as User['role'], expires_at: makeSessionExpiry() });
       set({ user, isAuthenticated: true, isLoading: false, error: null });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Login gagal.';
+      const message = err instanceof Error ? err.message : 'Terjadi kesalahan sistem. Coba lagi nanti.';
       set({ isLoading: false, error: message, isAuthenticated: false, user: null });
       throw err;
     }
