@@ -7,7 +7,7 @@ import { useAuthStore } from './authStore';
 interface GatePassState {
   gatePasses: GatePass[];
   fetchGatePasses: () => Promise<void>;
-  createGatePass: (data: Partial<GatePass>) => Promise<void>;
+  createGatePass: (payload: Partial<GatePass>) => Promise<void>;
   approveGatePass: (id: string, approved: boolean) => Promise<void>;
   scanGatePass: (qrToken: string) => Promise<string>;
 }
@@ -28,8 +28,20 @@ export const useGatePassStore = create<GatePassState>((set, get) => {
     async fetchGatePasses() {
       const user = useAuthStore.getState().user;
       if (!user) throw new Error('User tidak ditemukan');
+      const { data, error } = await supabase
+        .from('gate_pass')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      set({ gatePasses: data ?? [] });
+    },
+
+    async createGatePass(payload) {
+      const user = useAuthStore.getState().user;
+      if (!user) throw new Error('User tidak ditemukan');
       const qr_token = generateQrToken();
-      const { error } = await supabase.from('gate_pass').insert([{ ...data, user_id: user.id, qr_token }]);
+      const { error } = await supabase.from('gate_pass').insert([{ ...payload, user_id: user.id, qr_token }]);
       if (error) throw error;
       await get().fetchGatePasses();
     },

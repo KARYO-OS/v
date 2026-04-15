@@ -1,5 +1,4 @@
-import type { RealtimeChannel } from '@supabase/supabase-js';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import { AttendanceBadge } from '../../components/common/Badge';

@@ -1,5 +1,4 @@
-import type { RealtimeChannel } from '@supabase/supabase-js';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import BarChart from '../../components/ui/BarChart';
