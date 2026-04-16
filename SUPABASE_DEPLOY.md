@@ -1,6 +1,6 @@
 # 🚀 Panduan Deploy via Terminal (Codespace) — KARYO OS
 
-Panduan lengkap untuk setup dan deploy **KARYO OS** ke Supabase + Netlify langsung dari terminal GitHub Codespaces — tanpa perlu membuka browser dashboard selama proses berlangsung.
+Panduan lengkap untuk setup dan deploy **KARYO OS** ke Supabase + GitHub Pages langsung dari terminal GitHub Codespaces — tanpa perlu membuka browser dashboard selama proses berlangsung.
 
 ---
 
@@ -8,7 +8,7 @@ Panduan lengkap untuk setup dan deploy **KARYO OS** ke Supabase + Netlify langsu
 
 1. [Prasyarat](#1-prasyarat)
 2. [Setup Pertama Kali](#2-setup-pertama-kali)
-3. [Deploy ke Supabase + Netlify](#3-deploy-ke-supabase--netlify)
+3. [Deploy ke Supabase + GitHub Pages](#3-deploy-ke-supabase--github-pages)
 4. [Seed Data Sample](#4-seed-data-sample)
 5. [Aktifkan Realtime](#5-aktifkan-realtime)
 6. [Verifikasi Deploy](#6-verifikasi-deploy)
@@ -25,7 +25,7 @@ Sebelum memulai, siapkan:
 |---|---|
 | **GitHub Codespaces** | Atau Linux terminal dengan Node.js >= 20 |
 | **Akun Supabase** | Daftar gratis di [supabase.com](https://supabase.com) |
-| **Akun Netlify** | Daftar gratis di [netlify.com](https://netlify.com) |
+| **Akun GitHub** | Repository ini dideploy ke GitHub Pages via GitHub Actions |
 | **Supabase Project** | Buat project baru di dashboard, catat **Project ID** dan **API keys** |
 
 ### Cara mendapatkan Supabase credentials:
@@ -54,7 +54,6 @@ Script ini secara otomatis akan:
 |---|---|
 | ✅ Cek Node.js | Memastikan versi >= 20 |
 | ✅ Install Supabase CLI | Via npm global |
-| ✅ Install Netlify CLI | Via npm global |
 | ✅ Install dependensi | `npm ci` |
 | ✅ Buat `.env.local` | Interaktif — masukkan URL + anon key Supabase |
 | ✅ Login Supabase | `supabase login` |
@@ -86,29 +85,27 @@ Applying migration 004_production_rls.sql...
 
 ---
 
-## 3. Deploy ke Supabase + Netlify
+## 3. Deploy ke Supabase + GitHub Pages
 
 Setelah setup selesai, jalankan:
 
 ```bash
-bash scripts/deploy.sh
+git push origin main
 ```
 
-Script ini akan:
+Workflow ini akan:
 
 | Langkah | Perintah yang dijalankan |
 |---|---|
 | Terapkan migrasi terbaru | `supabase db push` |
 | Build production | `npm run build` |
-| Login Netlify (jika belum) | `netlify login` |
-| Buat atau link site Netlify | `netlify sites:create` / `netlify link` |
-| Sinkronisasi env variables | `netlify env:set ...` (dari `.env.local`) |
-| Deploy ke production | `netlify deploy --dir=dist --prod` |
+| Upload artifact Pages | `actions/upload-pages-artifact` |
+| Deploy ke production | `actions/deploy-pages` |
 
 ### Catatan penting:
-- Script otomatis membaca `.env.local` dan menyinkronkannya ke Netlify
-- Jika sudah pernah deploy, script akan menggunakan site yang sama (dari `.netlify/state.json`)
-- Setiap kali ada perubahan kode, cukup jalankan ulang `bash scripts/deploy.sh`
+- Workflow membaca `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` dari GitHub Secrets saat build
+- GitHub Pages menggunakan base path `/v/` dan hash routing agar refresh/deep-link tetap aman
+- Setiap kali ada perubahan kode, cukup jalankan `git push origin main`
 
 ---
 
@@ -203,12 +200,10 @@ leave_requests, logistics_items, logistics_requests, messages,
 shift_schedules, task_reports, tasks, users
 ```
 
-### Cek status Netlify:
+### Cek status GitHub Pages:
 
-```bash
-netlify status
-netlify open   # Buka site di browser
-```
+- Buka tab **Actions** dan lihat workflow **GitHub Pages Deploy**
+- URL produksi: `https://yuniamagsila.github.io/v/`
 
 ### Test RLS:
 
@@ -239,12 +234,6 @@ npm install -g supabase
 npx supabase --version
 ```
 
-### ❌ `netlify: command not found`
-
-```bash
-npm install -g netlify-cli
-```
-
 ### ❌ `Error: project not linked`
 
 ```bash
@@ -263,19 +252,14 @@ supabase migration list
 supabase migration repair --status applied <versi_migration>
 ```
 
-### ❌ Build Netlify gagal — env variable tidak terdeteksi
+### ❌ Build GitHub Pages gagal — env variable tidak terdeteksi
 
-```bash
-# Lihat env yang tersimpan di Netlify
-netlify env:list
+Pastikan secrets berikut sudah ditambahkan di repository:
 
-# Set ulang secara manual
-netlify env:set VITE_SUPABASE_URL "https://xxxx.supabase.co"
-netlify env:set VITE_SUPABASE_ANON_KEY "eyJhbGci..."
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 
-# Deploy ulang
-netlify deploy --dir=dist --prod
-```
+Lalu jalankan ulang workflow **GitHub Pages Deploy** dari tab Actions.
 
 ### ❌ Login gagal padahal NRP & PIN benar
 

@@ -41,7 +41,7 @@ npm install qrcode.react html5-qrcode
 | **Zustand** | 5.x | State Management |
 | **Tailwind CSS** | 4.x | Styling |
 | **React Router** | 6.x | Client-side Routing |
-| **Netlify** | — | Hosting & Deployment |
+| **GitHub Pages** | — | Hosting & Deployment |
 
 ---
 
