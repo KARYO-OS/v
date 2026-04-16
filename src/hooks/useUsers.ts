@@ -20,56 +20,52 @@ export function useUsers(options: UseUsersOptions = {}) {
 
   const canUseDirectFallback = user?.role === 'admin' && options.role === undefined && options.satuan === undefined && options.isActive === undefined;
 
+  const requestParams = {
+    callerId: user?.id ?? '',
+    callerRole: user?.role ?? '',
+    role: options.role,
+    satuan: options.satuan,
+    isActive: options.isActive,
+    orderBy: options.orderBy,
+    ascending: options.ascending,
+  };
+
+  const loadUsersData = useCallback(async () => {
+    if (!user) return [] as User[];
+
+    if (canUseDirectFallback) {
+      const directResult = await apiFetchUsersDirect(requestParams);
+      if (directResult.length > 0) {
+        return directResult;
+      }
+
+      const rpcResult = await apiFetchUsers(requestParams);
+      return rpcResult;
+    }
+
+    return apiFetchUsers(requestParams);
+  }, [user, canUseDirectFallback, requestParams]);
+
   const fetchUsers = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiFetchUsers({
-        callerId: user.id,
-        callerRole: user.role,
-        role: options.role,
-        satuan: options.satuan,
-        isActive: options.isActive,
-        orderBy: options.orderBy,
-        ascending: options.ascending,
-      });
-      if (data.length > 0 || !canUseDirectFallback) {
-        setUsers(data);
-        return;
-      }
-
-      const fallbackData = await apiFetchUsersDirect({
-        callerId: user.id,
-        callerRole: user.role,
-        role: options.role,
-        satuan: options.satuan,
-        isActive: options.isActive,
-        orderBy: options.orderBy,
-        ascending: options.ascending,
-      });
-      setUsers(fallbackData);
+      const data = await loadUsersData();
+      setUsers(data);
     } catch (err) {
       setError(handleError(err, 'Gagal memuat data user'));
     } finally {
       setIsLoading(false);
     }
-  }, [user, options.role, options.satuan, options.isActive, options.orderBy, options.ascending]);
+  }, [user, loadUsersData]);
 
   const fetchUsersOrThrow = useCallback(async () => {
     if (!user) throw new Error('Not authenticated');
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiFetchUsers({
-        callerId: user.id,
-        callerRole: user.role,
-        role: options.role,
-        satuan: options.satuan,
-        isActive: options.isActive,
-        orderBy: options.orderBy,
-        ascending: options.ascending,
-      });
+      const data = await loadUsersData();
       setUsers(data);
     } catch (err) {
       const message = handleError(err, 'Gagal memuat data user');
@@ -78,7 +74,7 @@ export function useUsers(options: UseUsersOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, options.role, options.satuan, options.isActive, options.orderBy, options.ascending]);
+  }, [user, loadUsersData]);
 
   useEffect(() => {
     void fetchUsers();

@@ -25,6 +25,10 @@ describe('useUsers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({ user: mockAdminUser, isAuthenticated: true });
+    mockSupabase.from.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: mockUsers, error: null }),
+    });
   });
 
   it('loads users on mount', async () => {
@@ -40,6 +44,10 @@ describe('useUsers', () => {
 
   it('sets error when fetch fails', async () => {
     mockSupabase.rpc.mockResolvedValue({ data: null, error: new Error('connection refused') });
+    mockSupabase.from.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: new Error('connection refused') }),
+    });
 
     const { result } = renderHook(() => useUsers());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
