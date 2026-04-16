@@ -1,7 +1,15 @@
 import { supabase } from '../supabase';
 import type { PosJaga, ScanPosJagaResult } from '../../types';
 
-export async function fetchAllPosJaga(): Promise<PosJaga[]> {
+async function ensureSessionContext(callerId: string, callerRole: string): Promise<void> {
+  await supabase.rpc('set_session_context', {
+    p_user_id: callerId,
+    p_role: callerRole,
+  });
+}
+
+export async function fetchAllPosJaga(callerId: string, callerRole: string): Promise<PosJaga[]> {
+  await ensureSessionContext(callerId, callerRole);
   const { data, error } = await supabase
     .from('pos_jaga')
     .select('*')
@@ -10,12 +18,14 @@ export async function fetchAllPosJaga(): Promise<PosJaga[]> {
   return (data as PosJaga[]) ?? [];
 }
 
-export async function insertPosJaga(payload: { nama: string }): Promise<void> {
+export async function insertPosJaga(callerId: string, callerRole: string, payload: { nama: string }): Promise<void> {
+  await ensureSessionContext(callerId, callerRole);
   const { error } = await supabase.from('pos_jaga').insert([payload]);
   if (error) throw error;
 }
 
-export async function patchPosJagaActive(id: string, is_active: boolean): Promise<void> {
+export async function patchPosJagaActive(callerId: string, callerRole: string, id: string, is_active: boolean): Promise<void> {
+  await ensureSessionContext(callerId, callerRole);
   const { error } = await supabase
     .from('pos_jaga')
     .update({ is_active })

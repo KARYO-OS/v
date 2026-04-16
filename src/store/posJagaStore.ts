@@ -20,17 +20,23 @@ export const usePosJagaStore = create<PosJagaState>()((set, get) => ({
   posJagaList: [],
 
   async fetchPosJaga() {
-    const data = await fetchAllPosJaga();
+    const user = useAuthStore.getState().user;
+    if (!user) throw new Error('User tidak ditemukan');
+    const data = await fetchAllPosJaga(user.id, user.role);
     set({ posJagaList: data });
   },
 
   async createPosJaga(nama) {
-    await insertPosJaga({ nama });
+    const user = useAuthStore.getState().user;
+    if (!user) throw new Error('User tidak ditemukan');
+    await insertPosJaga(user.id, user.role, { nama });
     await get().fetchPosJaga();
   },
 
   async setActive(id, is_active) {
-    await patchPosJagaActive(id, is_active);
+    const user = useAuthStore.getState().user;
+    if (!user) throw new Error('User tidak ditemukan');
+    await patchPosJagaActive(user.id, user.role, id, is_active);
     await get().fetchPosJaga();
   },
 
