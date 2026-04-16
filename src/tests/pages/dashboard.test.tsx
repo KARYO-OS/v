@@ -175,7 +175,11 @@ describe('End-to-end dashboard rendering', () => {
     await waitFor(() => expect(screen.getByText(/Selamat datang, Admin One/i)).toBeInTheDocument());
     expect(screen.getByText(/Muat Ulang/i)).toBeInTheDocument();
     expect(screen.getByText(/Gate Pass keluar/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Pos Jaga/i })).toHaveAttribute('href', '/admin/pos-jaga');
+    expect(
+      screen
+        .getAllByRole('link', { name: /Pos Jaga/i })
+        .some((link) => link.getAttribute('href') === '/admin/pos-jaga')
+    ).toBe(true);
   });
 
   it('renders the komandan dashboard for komandan role', async () => {
@@ -210,8 +214,16 @@ describe('End-to-end dashboard rendering', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: /Sersan Prajurit C/i })).toBeInTheDocument());
     expect(screen.getByText('Pesan belum dibaca', { exact: true })).toBeInTheDocument();
     expect(screen.getByText('Tugas aktif', { exact: true })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^Gate Pass$/i })).toHaveAttribute('href', '/prajurit/gatepass');
-    expect(screen.getByRole('link', { name: /Scan Pos Jaga/i })).toHaveAttribute('href', '/prajurit/scan-pos');
+    expect(
+      screen
+        .getAllByRole('link', { name: /^Gate Pass$/i })
+        .some((link) => link.getAttribute('href') === '/prajurit/gatepass')
+    ).toBe(true);
+    expect(
+      screen
+        .getAllByRole('link', { name: /Scan Pos Jaga/i })
+        .some((link) => link.getAttribute('href') === '/prajurit/scan-pos')
+    ).toBe(true);
   });
 
   it('renders the guard dashboard for guard role', async () => {
