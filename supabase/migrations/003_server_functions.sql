@@ -40,6 +40,7 @@ CREATE TRIGGER update_logistics_requests_updated_at
 
 -- RLS (dev: open)
 ALTER TABLE public.logistics_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "dev_anon_all_logistics_requests" ON public.logistics_requests;
 CREATE POLICY "dev_anon_all_logistics_requests"
   ON public.logistics_requests FOR ALL TO anon
   USING (TRUE) WITH CHECK (TRUE);

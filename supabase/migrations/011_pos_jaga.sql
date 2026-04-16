@@ -19,10 +19,12 @@ CREATE INDEX IF NOT EXISTS idx_pos_jaga_qr_token ON public.pos_jaga(qr_token);
 ALTER TABLE public.pos_jaga ENABLE ROW LEVEL SECURITY;
 
 -- Semua user terautentikasi dapat melihat pos jaga aktif
+DROP POLICY IF EXISTS pos_jaga_select ON public.pos_jaga;
 CREATE POLICY pos_jaga_select ON public.pos_jaga
   FOR SELECT USING (public.current_karyo_user_id() IS NOT NULL);
 
 -- Hanya admin dan guard yang dapat mengelola pos jaga
+DROP POLICY IF EXISTS pos_jaga_insert ON public.pos_jaga;
 CREATE POLICY pos_jaga_insert ON public.pos_jaga
   FOR INSERT WITH CHECK (
     EXISTS (
@@ -31,6 +33,7 @@ CREATE POLICY pos_jaga_insert ON public.pos_jaga
     )
   );
 
+DROP POLICY IF EXISTS pos_jaga_update ON public.pos_jaga;
 CREATE POLICY pos_jaga_update ON public.pos_jaga
   FOR UPDATE USING (
     EXISTS (

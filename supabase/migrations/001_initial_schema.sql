@@ -370,17 +370,29 @@ ALTER TABLE public.discipline_notes ENABLE ROW LEVEL SECURITY;
 -- 4. Enable Supabase Realtime only for the tables that need it.
 -- 5. Review each table's INSERT/UPDATE/DELETE policy individually.
 
+DROP POLICY IF EXISTS "dev_anon_all_users" ON public.users;
 CREATE POLICY "dev_anon_all_users" ON public.users FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "dev_anon_all_tasks" ON public.tasks;
 CREATE POLICY "dev_anon_all_tasks" ON public.tasks FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "dev_anon_all_task_reports" ON public.task_reports;
 CREATE POLICY "dev_anon_all_task_reports" ON public.task_reports FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "dev_anon_all_attendance" ON public.attendance;
 CREATE POLICY "dev_anon_all_attendance" ON public.attendance FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "dev_anon_all_leave_requests" ON public.leave_requests;
 CREATE POLICY "dev_anon_all_leave_requests" ON public.leave_requests FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "dev_anon_all_announcements" ON public.announcements;
 CREATE POLICY "dev_anon_all_announcements" ON public.announcements FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "dev_anon_all_messages" ON public.messages;
 CREATE POLICY "dev_anon_all_messages" ON public.messages FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "dev_anon_all_logistics_items" ON public.logistics_items;
 CREATE POLICY "dev_anon_all_logistics_items" ON public.logistics_items FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "dev_anon_all_audit_logs" ON public.audit_logs;
 CREATE POLICY "dev_anon_all_audit_logs" ON public.audit_logs FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "dev_anon_all_shift_schedules" ON public.shift_schedules;
 CREATE POLICY "dev_anon_all_shift_schedules" ON public.shift_schedules FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "dev_anon_all_documents" ON public.documents;
 CREATE POLICY "dev_anon_all_documents" ON public.documents FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "dev_anon_all_discipline_notes" ON public.discipline_notes;
 CREATE POLICY "dev_anon_all_discipline_notes" ON public.discipline_notes FOR ALL TO anon USING (TRUE) WITH CHECK (TRUE);
 
 -- ============================================================
