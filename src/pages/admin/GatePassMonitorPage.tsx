@@ -1,56 +1,364 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useGatePassStore } from '../../store/gatePassStore';
 import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
 import GatePassStatusBadge from '../../components/gatepass/GatePassStatusBadge';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import Input from '../../components/common/Input';
+import Button from '../../components/common/Button';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import type { GatePass, GatePassStatus } from '../../types';
+
+interface MonitorGatePass extends GatePass {
+  effectiveStatus: GatePassStatus;
+}
+
+function getEffectiveStatus(gatePass: GatePass, now: Date): GatePassStatus {
+  if (gatePass.status === 'out' && gatePass.waktu_kembali) {
+    const backAt = new Date(gatePass.waktu_kembali);
+    if (!Number.isNaN(backAt.getTime()) && backAt < now) return 'overdue';
+  }
+  return gatePass.status;
+}
+
+function formatDateTime(value?: string) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatDuration(ms: number) {
+  const totalMinutes = Math.max(0, Math.floor(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours === 0) return `${minutes}m`;
+  return `${hours}j ${minutes}m`;
+}
+
+function getStatusLabel(status: GatePassStatus | 'all') {
+  const labels: Record<GatePassStatus | 'all', string> = {
+    all: 'Semua status',
+    pending: 'Pending',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    out: 'Sedang keluar',
+    returned: 'Sudah kembali',
+    overdue: 'Overdue',
+  };
+  return labels[status];
+}
+
+function parseTimeMs(value?: string) {
+  if (!value) return Number.POSITIVE_INFINITY;
+  const ms = new Date(value).getTime();
+  return Number.isNaN(ms) ? Number.POSITIVE_INFINITY : ms;
+}
+
+function compareMonitorPriority(a: MonitorGatePass, b: MonitorGatePass, now: Date) {
+  const rank: Record<GatePassStatus, number> = {
+    overdue: 0,
+    out: 1,
+    approved: 2,
+    pending: 3,
+    returned: 4,
+    rejected: 5,
+  };
+
+  const statusDelta = rank[a.effectiveStatus] - rank[b.effectiveStatus];
+  if (statusDelta !== 0) return statusDelta;
+
+  if (a.effectiveStatus === 'overdue' && b.effectiveStatus === 'overdue') {
+    const aLateMs = now.getTime() - parseTimeMs(a.waktu_kembali);
+    const bLateMs = now.getTime() - parseTimeMs(b.waktu_kembali);
+    return bLateMs - aLateMs;
+  }
+
+  if (a.effectiveStatus === 'out' && b.effectiveStatus === 'out') {
+    return parseTimeMs(a.waktu_kembali) - parseTimeMs(b.waktu_kembali);
+  }
+
+  return parseTimeMs(b.waktu_keluar) - parseTimeMs(a.waktu_keluar);
+}
+
+function isWithinDateRange(value: string | undefined, startDate: string, endDate: string) {
+  if (!startDate && !endDate) return true;
+  if (!value) return false;
+
+  const valueMs = new Date(value).getTime();
+  if (Number.isNaN(valueMs)) return false;
+
+  const startMs = startDate ? new Date(`${startDate}T00:00:00`).getTime() : Number.NEGATIVE_INFINITY;
+  const endMs = endDate ? new Date(`${endDate}T23:59:59.999`).getTime() : Number.POSITIVE_INFINITY;
+
+  return valueMs >= startMs && valueMs <= endMs;
+}
+
+function csvEscape(value: string | number | undefined) {
+  if (value === undefined) return '""';
+  const text = String(value).replace(/"/g, '""');
+  return `"${text}"`;
+}
 
 export default function GatePassMonitorPage() {
   const gatePasses = useGatePassStore(s => s.gatePasses);
   const fetchGatePasses = useGatePassStore(s => s.fetchGatePasses);
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<GatePassStatus | 'all'>('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [now, setNow] = useState(() => new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   useGatePassRealtime();
 
-  useEffect(() => { void fetchGatePasses(); }, [fetchGatePasses]);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const keluar = gatePasses.filter(gp => gp.status === 'out');
-  const overdue = gatePasses.filter(gp => gp.status === 'overdue');
+  useEffect(() => {
+    (async () => {
+      setError(null);
+      try {
+        await fetchGatePasses();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Gagal memuat data gate pass');
+      } finally {
+        setIsInitialLoading(false);
+      }
+    })();
+  }, [fetchGatePasses]);
+
+  const monitorRows = useMemo<MonitorGatePass[]>(
+    () => gatePasses.map(gp => ({ ...gp, effectiveStatus: getEffectiveStatus(gp, now) })),
+    [gatePasses, now],
+  );
+
+  const filteredRows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return monitorRows
+      .filter(gp => {
+        const statusMatch = statusFilter === 'all' || gp.effectiveStatus === statusFilter;
+        if (!statusMatch) return false;
+        const dateMatch = isWithinDateRange(gp.waktu_keluar || gp.created_at, startDate, endDate);
+        if (!dateMatch) return false;
+        if (!q) return true;
+        const haystack = [gp.user?.nama, gp.user?.nrp, gp.tujuan, gp.keperluan].join(' ').toLowerCase();
+        return haystack.includes(q);
+      })
+      .sort((a, b) => compareMonitorPriority(a, b, now));
+  }, [monitorRows, query, statusFilter, startDate, endDate, now]);
+
+  const totalActive = monitorRows.filter(gp => ['approved', 'out', 'overdue'].includes(gp.effectiveStatus)).length;
+  const approved = monitorRows.filter(gp => gp.effectiveStatus === 'approved').length;
+  const keluar = monitorRows.filter(gp => gp.effectiveStatus === 'out').length;
+  const overdue = monitorRows.filter(gp => gp.effectiveStatus === 'overdue').length;
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setError(null);
+    try {
+      await fetchGatePasses();
+      setNow(new Date());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal memuat ulang data gate pass');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const resetFilters = () => {
+    setQuery('');
+    setStatusFilter('all');
+    setStartDate('');
+    setEndDate('');
+  };
+
+  const handleExportCsv = () => {
+    if (filteredRows.length === 0) return;
+
+    const header = [
+      'ID',
+      'Nama',
+      'NRP',
+      'Status',
+      'Tujuan',
+      'Keperluan',
+      'Waktu Keluar',
+      'Batas Kembali',
+      'Durasi Kritis (menit)',
+    ];
+
+    const rows = filteredRows.map((gp) => {
+      const kembaliMs = parseTimeMs(gp.waktu_kembali);
+      const criticalMinutes = Number.isFinite(kembaliMs)
+        ? Math.max(0, Math.floor(Math.abs(now.getTime() - kembaliMs) / 60000))
+        : 0;
+      return [
+        gp.id,
+        gp.user?.nama ?? '-',
+        gp.user?.nrp ?? '-',
+        gp.effectiveStatus,
+        gp.tujuan,
+        gp.keperluan,
+        gp.waktu_keluar,
+        gp.waktu_kembali,
+        criticalMinutes,
+      ].map(csvEscape).join(',');
+    });
+
+    const csv = [header.map(csvEscape).join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const fileDate = new Date().toISOString().slice(0, 10);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gatepass-monitor-${fileDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (isInitialLoading) {
+    return (
+      <DashboardLayout title="Monitoring Gate Pass">
+        <LoadingSpinner />
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Monitoring Gate Pass">
-      <div className="max-w-2xl mx-auto py-8 space-y-8">
-        <h1 className="text-2xl font-bold">Monitoring Gate Pass</h1>
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Sedang Keluar</h2>
-          {keluar.length === 0 && <div className="text-text-muted">Tidak ada prajurit di luar.</div>}
-          {keluar.map(gp => (
-            <div key={gp.id} className="p-3 border rounded flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-              <div>
-                {gp.user && (
-                  <div className="text-sm font-semibold text-primary mb-0.5">{gp.user.nama} ({gp.user.nrp})</div>
-                )}
-                <div className="font-bold">{gp.tujuan}</div>
-                <div className="text-xs text-text-muted">{gp.keperluan}</div>
-                <div className="text-xs">{gp.waktu_keluar} - {gp.waktu_kembali}</div>
-              </div>
-              <GatePassStatusBadge gatePass={gp} />
-            </div>
-          ))}
+      <div className="mx-auto max-w-5xl py-6 space-y-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Monitoring Gate Pass</h1>
+            <p className="text-sm text-text-muted">Pantau personel yang disetujui keluar, sedang keluar, dan terlambat kembali.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={resetFilters}>Reset Filter</Button>
+            <Button variant="outline" onClick={handleExportCsv} disabled={filteredRows.length === 0}>Export CSV</Button>
+            <Button variant="outline" onClick={() => void handleRefresh()} isLoading={isRefreshing}>Muat Ulang</Button>
+          </div>
         </div>
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Overdue (Terlambat Kembali)</h2>
-          {overdue.length === 0 && <div className="text-text-muted">Tidak ada yang overdue.</div>}
-          {overdue.map(gp => (
-            <div key={gp.id} className="p-3 border border-error/40 bg-error/5 rounded flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
-              <div>
-                {gp.user && (
-                  <div className="text-sm font-semibold text-accent-red mb-0.5">{gp.user.nama} ({gp.user.nrp})</div>
-                )}
-                <div className="font-bold">{gp.tujuan}</div>
-                <div className="text-xs text-text-muted">{gp.keperluan}</div>
-                <div className="text-xs">{gp.waktu_keluar} - {gp.waktu_kembali}</div>
-              </div>
-              <GatePassStatusBadge gatePass={gp} />
+
+        {error && (
+          <div className="rounded-xl border border-accent-red/40 bg-accent-red/10 px-4 py-3 text-sm text-accent-red">
+            {error}
+          </div>
+        )}
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="app-card p-4">
+            <div className="text-xs text-text-muted">Total aktif</div>
+            <div className="mt-1 text-2xl font-bold text-text-primary">{totalActive}</div>
+          </div>
+          <div className="app-card p-4">
+            <div className="text-xs text-text-muted">Approved</div>
+            <div className="mt-1 text-2xl font-bold text-blue-500">{approved}</div>
+          </div>
+          <div className="app-card p-4">
+            <div className="text-xs text-text-muted">Sedang keluar</div>
+            <div className="mt-1 text-2xl font-bold text-orange-500">{keluar}</div>
+          </div>
+          <div className="app-card p-4">
+            <div className="text-xs text-text-muted">Overdue</div>
+            <div className="mt-1 text-2xl font-bold text-pink-600">{overdue}</div>
+          </div>
+        </div>
+
+        <div className="app-card p-4">
+          <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+            <Input
+              placeholder="Cari nama, NRP, tujuan, atau keperluan"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <select
+              className="w-full rounded-xl border border-surface bg-bg-card px-3 py-2.5 text-sm text-text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as GatePassStatus | 'all')}
+            >
+              <option value="all">{getStatusLabel('all')}</option>
+              <option value="approved">{getStatusLabel('approved')}</option>
+              <option value="out">{getStatusLabel('out')}</option>
+              <option value="overdue">{getStatusLabel('overdue')}</option>
+              <option value="returned">{getStatusLabel('returned')}</option>
+              <option value="pending">{getStatusLabel('pending')}</option>
+              <option value="rejected">{getStatusLabel('rejected')}</option>
+            </select>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <Input
+              label="Tanggal keluar dari"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            <Input
+              label="Tanggal keluar sampai"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+          <p className="mt-2 text-xs text-text-muted">
+            Urutan prioritas: overdue terlama, lalu out terdekat batas kembali, lalu status lainnya.
+          </p>
+        </div>
+
+        <div className="space-y-2" data-testid="monitor-list">
+          {filteredRows.length === 0 && (
+            <div className="rounded-xl border border-surface/80 bg-bg-card p-5 text-sm text-text-muted">
+              Tidak ada data yang cocok dengan filter saat ini.
             </div>
-          ))}
+          )}
+
+          {filteredRows.map(gp => {
+            const kembaliAt = gp.waktu_kembali ? new Date(gp.waktu_kembali) : null;
+            const isValidKembali = kembaliAt && !Number.isNaN(kembaliAt.getTime());
+            const deltaMs = isValidKembali ? Math.abs(kembaliAt.getTime() - now.getTime()) : 0;
+            const showLate = gp.effectiveStatus === 'overdue' && isValidKembali;
+            const showRemaining = gp.effectiveStatus === 'out' && isValidKembali;
+
+            return (
+              <div
+                key={gp.id}
+                data-testid={`monitor-card-${gp.id}`}
+                className={
+                  gp.effectiveStatus === 'overdue'
+                    ? 'rounded-xl border border-accent-red/40 bg-accent-red/5 p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between'
+                    : 'rounded-xl border border-surface/80 bg-bg-card p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between'
+                }
+              >
+                <div className="space-y-1">
+                  {gp.user && (
+                    <div className="text-sm font-semibold text-primary">
+                      {gp.user.nama} ({gp.user.nrp})
+                    </div>
+                  )}
+                  <div className="font-bold text-text-primary">{gp.tujuan}</div>
+                  <div className="text-sm text-text-muted">{gp.keperluan}</div>
+                  <div className="text-xs text-text-muted">
+                    Rencana keluar: {formatDateTime(gp.waktu_keluar)} | Batas kembali: {formatDateTime(gp.waktu_kembali)}
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-start md:items-end gap-1.5">
+                  <GatePassStatusBadge gatePass={{ ...gp, status: gp.effectiveStatus }} />
+                  {showLate && <div className="text-xs font-semibold text-accent-red">Terlambat {formatDuration(deltaMs)}</div>}
+                  {showRemaining && <div className="text-xs font-semibold text-orange-500">Sisa waktu {formatDuration(deltaMs)}</div>}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </DashboardLayout>
