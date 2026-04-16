@@ -45,8 +45,6 @@ export default function ScanPosJagaPage() {
 
   const handleScan = useCallback(
     async (token: string) => {
-      // Ref is intentionally excluded from dependency array because useRef
-      // returns a stable object across renders.
       if (state === 'success' || state === 'error' || isProcessingScanRef.current) return;
       isProcessingScanRef.current = true;
       setState('scanning');
@@ -64,7 +62,12 @@ export default function ScanPosJagaPage() {
         isProcessingScanRef.current = false;
       }
     },
-    [state, scanPosJaga, fetchGatePasses],
+    [
+      state,
+      scanPosJaga,
+      fetchGatePasses,
+      // isProcessingScanRef is intentionally excluded because useRef identity is stable.
+    ],
   );
 
   const handleReset = () => {
