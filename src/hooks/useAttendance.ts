@@ -16,11 +16,11 @@ export function useAttendance(userId?: string) {
   const today = new Date().toISOString().split('T')[0];
 
   const fetchAttendance = useCallback(async () => {
-    if (!targetUserId) return;
+    if (!user || !targetUserId) return;
     setIsLoading(true);
     setError(null);
     try {
-      const list = await apiFetchAttendance(targetUserId);
+      const list = await apiFetchAttendance(user.id, user.role, targetUserId);
       setAttendances(list);
       setTodayAttendance(list.find((a) => a.tanggal === today) ?? null);
     } catch (err) {
@@ -28,7 +28,7 @@ export function useAttendance(userId?: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [targetUserId, today]);
+  }, [user, targetUserId, today]);
 
   useEffect(() => {
     void fetchAttendance();

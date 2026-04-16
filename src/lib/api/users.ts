@@ -1,10 +1,9 @@
 import { supabase } from '../supabase';
 import type { User, Role } from '../../types';
 
-const USER_COLUMNS =
-  'id, nrp, nama, role, pangkat, jabatan, satuan, foto_url, is_active, is_online, login_attempts, locked_until, last_login, created_at, updated_at, tempat_lahir, tanggal_lahir, no_telepon, alamat, tanggal_masuk_dinas, pendidikan_terakhir, agama, status_pernikahan, golongan_darah, kontak_darurat_nama, kontak_darurat_telp';
-
 export interface FetchUsersParams {
+  callerId: string;
+  callerRole: string;
   role?: Role;
   satuan?: string;
   isActive?: boolean;
@@ -12,15 +11,16 @@ export interface FetchUsersParams {
   ascending?: boolean;
 }
 
-export async function fetchUsers(params: FetchUsersParams = {}): Promise<User[]> {
-  let query = supabase
-    .from('users')
-    .select(USER_COLUMNS)
-    .order(params.orderBy ?? 'nama', { ascending: params.ascending ?? true });
-  if (params.role) query = query.eq('role', params.role);
-  if (params.satuan) query = query.eq('satuan', params.satuan);
-  if (params.isActive !== undefined) query = query.eq('is_active', params.isActive);
-  const { data, error } = await query;
+export async function fetchUsers(params: FetchUsersParams): Promise<User[]> {
+  const { data, error } = await supabase.rpc('api_get_users', {
+    p_user_id: params.callerId,
+    p_role: params.callerRole,
+    p_role_filter: params.role ?? null,
+    p_satuan_filter: params.satuan ?? null,
+    p_is_active: params.isActive ?? null,
+    p_order_by: params.orderBy ?? 'nama',
+    p_ascending: params.ascending ?? true,
+  });
   if (error) throw error;
   return (data as User[]) ?? [];
 }
@@ -47,8 +47,13 @@ export async function createUserWithPin(userData: {
   return data;
 }
 
-export async function patchUser(id: string, updates: Partial<User>): Promise<void> {
-  const { error } = await supabase.from('users').update(updates).eq('id', id);
+export async function patchUser(callerId: string, callerRole: string, id: string, updates: Partial<User>): Promise<void> {
+  const { error } = await supabase.rpc('api_update_user', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_target_id: id,
+    p_updates: updates,
+  });
   if (error) throw error;
 }
 

@@ -1,13 +1,13 @@
 import { supabase } from '../supabase';
 import type { Attendance } from '../../types';
 
-export async function fetchAttendance(userId: string, limit = 30): Promise<Attendance[]> {
-  const { data, error } = await supabase
-    .from('attendance')
-    .select('*, user:user_id(id,nama,nrp,pangkat)')
-    .eq('user_id', userId)
-    .order('tanggal', { ascending: false })
-    .limit(limit);
+export async function fetchAttendance(callerId: string, callerRole: string, userId: string, limit = 30): Promise<Attendance[]> {
+  const { data, error } = await supabase.rpc('api_get_attendance', {
+    p_user_id: callerId,
+    p_role: callerRole,
+    p_target_user_id: userId,
+    p_limit: limit,
+  });
   if (error) throw error;
   return (data as Attendance[]) ?? [];
 }

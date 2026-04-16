@@ -1,41 +1,48 @@
 import { supabase } from '../supabase';
 import type { Message } from '../../types';
 
-export async function fetchInbox(userId: string): Promise<Message[]> {
-  const { data, error } = await supabase
-    .from('messages')
-    .select('*, sender:from_user(id,nama,nrp,pangkat), receiver:to_user(id,nama,nrp)')
-    .eq('to_user', userId)
-    .order('created_at', { ascending: false });
+export async function fetchInbox(callerId: string, callerRole: string, userId: string): Promise<Message[]> {
+  const { data, error } = await supabase.rpc('api_get_inbox', {
+    p_user_id: callerId,
+    p_role: callerRole,
+  });
   if (error) throw error;
   return (data as Message[]) ?? [];
 }
 
-export async function fetchSent(userId: string): Promise<Message[]> {
-  const { data, error } = await supabase
-    .from('messages')
-    .select('*, sender:from_user(id,nama,nrp), receiver:to_user(id,nama,nrp,pangkat)')
-    .eq('from_user', userId)
-    .order('created_at', { ascending: false });
+export async function fetchSent(callerId: string, callerRole: string, userId: string): Promise<Message[]> {
+  const { data, error } = await supabase.rpc('api_get_sent', {
+    p_user_id: callerId,
+    p_role: callerRole,
+  });
   if (error) throw error;
   return (data as Message[]) ?? [];
 }
 
-export async function insertMessage(fromUser: string, toUser: string, isi: string): Promise<void> {
-  const { error } = await supabase.from('messages').insert({ from_user: fromUser, to_user: toUser, isi });
+export async function insertMessage(callerId: string, callerRole: string, fromUser: string, toUser: string, isi: string): Promise<void> {
+  const { error } = await supabase.rpc('api_insert_message', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_from_user: fromUser,
+    p_to_user: toUser,
+    p_isi: isi,
+  });
   if (error) throw error;
 }
 
-export async function markMessageRead(messageId: string): Promise<void> {
-  const { error } = await supabase.from('messages').update({ is_read: true }).eq('id', messageId);
+export async function markMessageRead(callerId: string, callerRole: string, messageId: string): Promise<void> {
+  const { error } = await supabase.rpc('api_mark_message_read', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_message_id: messageId,
+  });
   if (error) throw error;
 }
 
-export async function markAllMessagesRead(toUserId: string): Promise<void> {
-  const { error } = await supabase
-    .from('messages')
-    .update({ is_read: true })
-    .eq('to_user', toUserId)
-    .eq('is_read', false);
+export async function markAllMessagesRead(callerId: string, callerRole: string, toUserId: string): Promise<void> {
+  const { error } = await supabase.rpc('api_mark_all_messages_read', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+  });
   if (error) throw error;
 }
