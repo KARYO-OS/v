@@ -1,17 +1,16 @@
 import { supabase } from '../supabase';
 import type { Announcement, Role } from '../../types';
 
-export async function fetchAnnouncements(): Promise<Announcement[]> {
-  const { data, error } = await supabase
-    .from('announcements')
-    .select('*, creator:created_by(id,nama,nrp,role)')
-    .order('is_pinned', { ascending: false })
-    .order('created_at', { ascending: false });
+export async function fetchAnnouncements(callerId: string, callerRole: string): Promise<Announcement[]> {
+  const { data, error } = await supabase.rpc('api_get_announcements', {
+    p_user_id: callerId,
+    p_role: callerRole,
+  });
   if (error) throw error;
   return (data as Announcement[]) ?? [];
 }
 
-export async function insertAnnouncement(data: {
+export async function insertAnnouncement(callerId: string, callerRole: string, data: {
   judul: string;
   isi: string;
   created_by?: string;
@@ -19,16 +18,34 @@ export async function insertAnnouncement(data: {
   target_satuan?: string;
   is_pinned?: boolean;
 }): Promise<void> {
-  const { error } = await supabase.from('announcements').insert(data);
+  const { error } = await supabase.rpc('api_insert_announcement', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_judul: data.judul,
+    p_isi: data.isi,
+    p_created_by: data.created_by ?? null,
+    p_target_role: data.target_role ?? null,
+    p_target_satuan: data.target_satuan ?? null,
+    p_is_pinned: data.is_pinned ?? false,
+  });
   if (error) throw error;
 }
 
-export async function patchAnnouncement(id: string, updates: Partial<Announcement>): Promise<void> {
-  const { error } = await supabase.from('announcements').update(updates).eq('id', id);
+export async function patchAnnouncement(callerId: string, callerRole: string, id: string, updates: Partial<Announcement>): Promise<void> {
+  const { error } = await supabase.rpc('api_update_announcement', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_id: id,
+    p_updates: updates,
+  });
   if (error) throw error;
 }
 
-export async function deleteAnnouncement(id: string): Promise<void> {
-  const { error } = await supabase.from('announcements').delete().eq('id', id);
+export async function deleteAnnouncement(callerId: string, callerRole: string, id: string): Promise<void> {
+  const { error } = await supabase.rpc('api_delete_announcement', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_id: id,
+  });
   if (error) throw error;
 }

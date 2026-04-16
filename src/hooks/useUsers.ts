@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchUsers as apiFetchUsers, fetchUserById as apiFetchUserById, createUserWithPin, patchUser, resetUserPin as apiResetUserPin, updateOwnProfile as apiUpdateOwnProfile, type UpdateOwnProfileParams } from '../lib/api/users';
 import { handleError } from '../lib/handleError';
 import type { User, Role } from '../types';
+import { useAuthStore } from '../store/authStore';
 
 interface UseUsersOptions {
   role?: Role;
@@ -12,15 +13,19 @@ interface UseUsersOptions {
 }
 
 export function useUsers(options: UseUsersOptions = {}) {
+  const { user } = useAuthStore();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
+    if (!user) return;
     setIsLoading(true);
     setError(null);
     try {
       const data = await apiFetchUsers({
+        callerId: user.id,
+        callerRole: user.role,
         role: options.role,
         satuan: options.satuan,
         isActive: options.isActive,
@@ -33,7 +38,7 @@ export function useUsers(options: UseUsersOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [options.role, options.satuan, options.isActive]);
+  }, [user, options.role, options.satuan, options.isActive]);
 
   useEffect(() => {
     void fetchUsers();
@@ -55,7 +60,8 @@ export function useUsers(options: UseUsersOptions = {}) {
   };
 
   const updateUser = async (id: string, updates: Partial<User>) => {
-    await patchUser(id, updates);
+    if (!user) throw new Error('Not authenticated');
+    await patchUser(user.id, user.role, id, updates);
     await fetchUsers();
   };
 

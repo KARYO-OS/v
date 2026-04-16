@@ -46,6 +46,7 @@ export function useTasks(options: UseTasksOptions = {}) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchTasks = useCallback(async (force = false) => {
+    if (!user) return;
     if (!force) {
       const cached = tasksCache.get(cacheKey);
       if (cached) {
@@ -58,6 +59,8 @@ export function useTasks(options: UseTasksOptions = {}) {
     setError(null);
     try {
       const data = await apiFetchTasks({
+        callerId: user.id,
+        callerRole: user.role,
         assignedTo: options.assignedTo,
         assignedBy: options.assignedBy,
         status: options.status,
@@ -70,7 +73,7 @@ export function useTasks(options: UseTasksOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [cacheKey, options.assignedTo, options.assignedBy, options.status, options.satuan]);
+  }, [user, cacheKey, options.assignedTo, options.assignedBy, options.status, options.satuan]);
 
   useEffect(() => {
     void fetchTasks();
@@ -96,13 +99,15 @@ export function useTasks(options: UseTasksOptions = {}) {
     prioritas: 1 | 2 | 3;
     satuan?: string;
   }) => {
-    await insertTask({ ...taskData, assigned_by: user?.id });
+    if (!user) throw new Error('Not authenticated');
+    await insertTask(user.id, user.role, { ...taskData, assigned_by: user.id });
     tasksCache.invalidate(cacheKey);
     await fetchTasks(true);
   };
 
   const updateTaskStatus = async (taskId: string, status: TaskStatus) => {
-    await patchTaskStatus(taskId, status);
+    if (!user) throw new Error('Not authenticated');
+    await patchTaskStatus(user.id, user.role, taskId, status);
     tasksCache.invalidate(cacheKey);
     await fetchTasks(true);
   };
@@ -120,10 +125,11 @@ export function useTasks(options: UseTasksOptions = {}) {
    * as a new task_report row (type = 'rejection').
    */
   const rejectTask = async (taskId: string, catatan?: string) => {
+    if (!user) throw new Error('Not authenticated');
     if (catatan?.trim()) {
-      await insertTaskReport({
+      await insertTaskReport(user.id, user.role, {
         task_id: taskId,
-        user_id: user?.id,
+        user_id: user.id,
         isi_laporan: `[DITOLAK] ${catatan.trim()}`,
       });
     }
@@ -131,7 +137,8 @@ export function useTasks(options: UseTasksOptions = {}) {
   };
 
   const submitTaskReport = async (taskId: string, isiLaporan: string, fileUrl?: string) => {
-    await insertTaskReport({ task_id: taskId, user_id: user?.id, isi_laporan: isiLaporan, file_url: fileUrl });
+    if (!user) throw new Error('Not authenticated');
+    await insertTaskReport(user.id, user.role, { task_id: taskId, user_id: user.id, isi_laporan: isiLaporan, file_url: fileUrl });
     await updateTaskStatus(taskId, 'done');
   };
 
@@ -139,7 +146,8 @@ export function useTasks(options: UseTasksOptions = {}) {
    * Fetch the most recent task report for a given task_id (for approval review).
    */
   const getTaskReport = async (taskId: string) => {
-    return fetchLatestTaskReport(taskId);
+    if (!user) return null;
+    return fetchLatestTaskReport(user.id, user.role, taskId);
   };
 
   return {

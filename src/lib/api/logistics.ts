@@ -2,25 +2,26 @@ import { supabase } from '../supabase';
 import type { LogisticsRequest, LogisticsRequestStatus } from '../../types';
 
 export interface FetchLogisticsRequestsParams {
+  callerId: string;
+  callerRole: string;
   satuan?: string;
   requestedBy?: string;
 }
 
 export async function fetchLogisticsRequests(
-  params: FetchLogisticsRequestsParams = {},
+  params: FetchLogisticsRequestsParams,
 ): Promise<LogisticsRequest[]> {
-  let query = supabase
-    .from('logistics_requests')
-    .select('*, requester:requested_by(id,nama,nrp,pangkat,satuan), reviewer:reviewed_by(id,nama)')
-    .order('created_at', { ascending: false });
-  if (params.requestedBy) query = query.eq('requested_by', params.requestedBy);
-  if (params.satuan) query = query.eq('satuan', params.satuan);
-  const { data, error } = await query;
+  const { data, error } = await supabase.rpc('api_get_logistics_requests', {
+    p_user_id: params.callerId,
+    p_role: params.callerRole,
+    p_satuan_filter: params.satuan ?? null,
+    p_requested_by: params.requestedBy ?? null,
+  });
   if (error) throw error;
   return (data as LogisticsRequest[]) ?? [];
 }
 
-export async function insertLogisticsRequest(data: {
+export async function insertLogisticsRequest(callerId: string, callerRole: string, data: {
   nama_item: string;
   jumlah: number;
   satuan_item?: string;
@@ -28,24 +29,32 @@ export async function insertLogisticsRequest(data: {
   requested_by: string;
   satuan: string;
 }): Promise<void> {
-  const { error } = await supabase.from('logistics_requests').insert({ ...data, status: 'pending' });
+  const { error } = await supabase.rpc('api_insert_logistics_request', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_satuan: data.satuan,
+    p_nama_item: data.nama_item,
+    p_jumlah: data.jumlah,
+    p_satuan_item: data.satuan_item ?? null,
+    p_alasan: data.alasan,
+  });
   if (error) throw error;
 }
 
 export async function patchLogisticsRequestStatus(
+  callerId: string,
+  callerRole: string,
   id: string,
   status: Extract<LogisticsRequestStatus, 'approved' | 'rejected'>,
   reviewedBy: string,
   adminNote?: string,
 ): Promise<void> {
-  const { error } = await supabase
-    .from('logistics_requests')
-    .update({
-      status,
-      admin_note: adminNote ?? null,
-      reviewed_by: reviewedBy,
-      reviewed_at: new Date().toISOString(),
-    })
-    .eq('id', id);
+  const { error } = await supabase.rpc('api_update_logistics_status', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_id: id,
+    p_status: status,
+    p_admin_note: adminNote ?? null,
+  });
   if (error) throw error;
 }
