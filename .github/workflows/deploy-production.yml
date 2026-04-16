@@ -15,35 +15,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  supabase-migrate:
-    name: Supabase Migrate
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && secrets.SUPABASE_PROJECT_REF != '' }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Link Supabase project
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: npx -y supabase@2.91.2 link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
-
-      - name: Push Supabase migrations
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: npx -y supabase@2.91.2 db push
-
   deploy-pages:
     name: Deploy GitHub Pages
     runs-on: ubuntu-latest
