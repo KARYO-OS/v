@@ -13,7 +13,7 @@ import type { User } from '../../types';
 
 export default function Personnel() {
   const { user } = useAuthStore();
-  const { users, isLoading, getUserById } = useUsers({ satuan: user?.satuan, isActive: true });
+  const { users, isLoading, error, getUserById } = useUsers({ satuan: user?.satuan, isActive: true });
 
   const [searchRaw, setSearchRaw] = useState('');
   const [filterOnline, setFilterOnline] = useState<'all' | 'online' | 'offline'>('all');
@@ -54,6 +54,12 @@ export default function Personnel() {
           title="Data Personel"
           subtitle="Pantau status online, cari personel, dan lihat data keaktifan satuan secara cepat."
         />
+
+        {error && (
+          <div className="rounded-xl border border-accent-red/40 bg-accent-red/10 p-4 text-sm text-accent-red">
+            {error}
+          </div>
+        )}
 
         {/* Stats */}
         <div className="flex items-center gap-4">

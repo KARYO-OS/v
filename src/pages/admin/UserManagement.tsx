@@ -30,7 +30,7 @@ function parseCSV(text: string): Record<string, string>[] {
 }
 
 export default function UserManagement() {
-  const { users, isLoading, createUser, updateUser, toggleUserActive, resetUserPin, getUserById } = useUsers({ orderBy: 'created_at', ascending: false });
+  const { users, isLoading, error, createUser, updateUser, toggleUserActive, resetUserPin, getUserById } = useUsers({ orderBy: 'created_at', ascending: false });
   const { showNotification } = useUIStore();
 
   const [searchRaw, setSearchRaw] = useState('');
@@ -252,6 +252,12 @@ export default function UserManagement() {
           title="Manajemen Personel"
           subtitle="Kelola akun, role, status aktif, reset PIN personel, dan impor data massal."
         />
+
+        {error && (
+          <div className="rounded-xl border border-accent-red/40 bg-accent-red/10 p-4 text-sm text-accent-red">
+            {error}
+          </div>
+        )}
 
         {/* Header actions */}
         <div className="flex flex-col sm:flex-row gap-3">

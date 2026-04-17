@@ -4,6 +4,7 @@ import { fetchUsers as apiFetchUsers, fetchUserById as apiFetchUserById, createU
 import { handleError } from '../lib/handleError';
 import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
 import { supabase } from '../lib/supabase';
+import { readSessionContext } from '../lib/sessionContext';
 import type { User, Role } from '../types';
 import { useAuthStore } from '../store/authStore';
 
@@ -22,25 +23,29 @@ export function useUsers(options: UseUsersOptions = {}) {
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
+  const sessionContext = readSessionContext();
+  const callerId = user?.id ?? sessionContext?.user_id ?? '';
+  const callerRole = user?.role ?? sessionContext?.role ?? '';
+
   // Memoize requestParams so its reference only changes when actual values change,
   // preventing useCallback/useEffect from re-running on every render.
   const requestParams = useMemo(() => ({
-    callerId: user?.id ?? '',
-    callerRole: user?.role ?? '',
+    callerId,
+    callerRole,
     role: options.role,
     satuan: options.satuan,
     isActive: options.isActive,
     orderBy: options.orderBy,
     ascending: options.ascending,
-  }), [user?.id, user?.role, options.role, options.satuan, options.isActive, options.orderBy, options.ascending]);
+  }), [callerId, callerRole, options.role, options.satuan, options.isActive, options.orderBy, options.ascending]);
 
   const loadUsersData = useCallback(async () => {
-    if (!user) return [] as User[];
+    if (!callerId || !callerRole) return [] as User[];
     return apiFetchUsers(requestParams);
-  }, [user, requestParams]);
+  }, [callerId, callerRole, requestParams]);
 
   const fetchUsers = useCallback(async () => {
-    if (!user) {
+    if (!callerId || !callerRole) {
       setUsers([]);
       setIsLoading(false);
       return;
@@ -55,7 +60,7 @@ export function useUsers(options: UseUsersOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, loadUsersData]);
+  }, [callerId, callerRole, loadUsersData]);
 
   useEffect(() => {
     void fetchUsers();
@@ -101,16 +106,16 @@ export function useUsers(options: UseUsersOptions = {}) {
       jabatan: rest.jabatan,
     });
     // Refresh list without masking successful mutation when read path is flaky.
-    await fetchUsers();
+    void fetchUsers();
     notifyDataChanged('users');
     return data;
   };
 
   const updateUser = async (id: string, updates: Partial<User>) => {
-    if (!user) throw new Error('Not authenticated');
-    await patchUser(user.id, user.role, id, updates);
+    if (!callerId || !callerRole) throw new Error('Not authenticated');
+    await patchUser(callerId, callerRole, id, updates);
     // Do not throw if refresh fails after a successful update.
-    await fetchUsers();
+    void fetchUsers();
     notifyDataChanged('users');
   };
 
