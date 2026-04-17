@@ -12,6 +12,8 @@ import { useUIStore } from '../../store/uiStore';
 import type { AuditLog, Attendance } from '../../types';
 import type { LogisticsItem } from '../../types';
 import AttendanceHeatmap from '../../components/ui/AttendanceHeatmap';
+import type { IconName } from '../../icons';
+import { ICONS } from '../../icons';
 
 interface DashboardStats {
   totalPersonel: number;
@@ -25,24 +27,31 @@ interface DashboardStats {
 }
 
 const actionLabels: Record<string, string> = {
-  LOGIN: '🔑 Login',
-  LOGOUT: '🚪 Logout',
-  CREATE: '➕ Buat',
-  UPDATE: '✏ Ubah',
-  DELETE: '🗑 Hapus',
+  LOGIN: 'Login',
+  LOGOUT: 'Logout',
+  CREATE: 'Buat',
+  UPDATE: 'Ubah',
+  DELETE: 'Hapus',
 };
 
-const quickLinks = [
-  { href: '/admin/users', icon: '👥', title: 'Personel', desc: 'CRUD user & reset PIN' },
-  { href: '/admin/logistics', icon: '📦', title: 'Logistik', desc: 'Inventaris perlengkapan' },
-  { href: '/admin/gatepass-monitor', icon: '🛂', title: 'Gate Pass', desc: 'Monitoring keluar/masuk batalion' },
-  { href: '/admin/pos-jaga', icon: '📍', title: 'Pos Jaga', desc: 'Kelola pos jaga & QR statis' },
-  { href: '/admin/documents', icon: '📄', title: 'Dokumen', desc: 'Arsip & unduh dokumen' },
-  { href: '/admin/announcements', icon: '📢', title: 'Pengumuman', desc: 'Broadcast & pin' },
-  { href: '/admin/schedule', icon: '📅', title: 'Jadwal Shift', desc: 'Atur shift personel' },
-  { href: '/admin/attendance', icon: '✅', title: 'Rekap Absensi', desc: 'Laporan & export CSV' },
-  { href: '/admin/audit', icon: '📋', title: 'Audit Log', desc: 'Riwayat aktivitas' },
-  { href: '/admin/settings', icon: '⚙', title: 'Pengaturan', desc: 'Konfigurasi sistem' },
+interface QuickLink {
+  href: string;
+  icon: IconName;
+  title: string;
+  desc: string;
+}
+
+const quickLinks: QuickLink[] = [
+  { href: '/admin/users', icon: 'UsersRound', title: 'Personel', desc: 'CRUD user & reset PIN' },
+  { href: '/admin/logistics', icon: 'Package', title: 'Logistik', desc: 'Inventaris perlengkapan' },
+  { href: '/admin/gatepass-monitor', icon: 'ClipboardCheck', title: 'Gate Pass', desc: 'Monitoring keluar/masuk batalion' },
+  { href: '/admin/pos-jaga', icon: 'MapPin', title: 'Pos Jaga', desc: 'Kelola pos jaga & QR statis' },
+  { href: '/admin/documents', icon: 'FileText', title: 'Dokumen', desc: 'Arsip & unduh dokumen' },
+  { href: '/admin/announcements', icon: 'Megaphone', title: 'Pengumuman', desc: 'Broadcast & pin' },
+  { href: '/admin/schedule', icon: 'CalendarDays', title: 'Jadwal Shift', desc: 'Atur shift personel' },
+  { href: '/admin/attendance', icon: 'BadgeCheck', title: 'Rekap Absensi', desc: 'Laporan & export CSV' },
+  { href: '/admin/audit', icon: 'ScrollText', title: 'Audit Log', desc: 'Riwayat aktivitas' },
+  { href: '/admin/settings', icon: 'Settings', title: 'Pengaturan', desc: 'Konfigurasi sistem' },
 ];
 
 export default function AdminDashboard() {
@@ -239,10 +248,10 @@ export default function AdminDashboard() {
           <StatCardsSkeleton />
         ) : (
           <StatsGrid>
-            <StatCard icon="👥" label="Total Personel Aktif" value={stats?.totalPersonel ?? 0} />
-            <StatCard icon="🟢" label="Sedang Online" value={stats?.totalOnline ?? 0} trend="saat ini" trendUp />
-            <StatCard icon="📋" label="Total Tugas" value={stats?.totalTugas ?? 0} />
-            <StatCard icon="⏳" label="Tugas Aktif" value={stats?.tugasAktif ?? 0} />
+            <StatCard icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Personel Aktif" value={stats?.totalPersonel ?? 0} />
+            <StatCard icon={<ICONS.UserCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Sedang Online" value={stats?.totalOnline ?? 0} trend="saat ini" trendUp />
+            <StatCard icon={<ICONS.ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Tugas" value={stats?.totalTugas ?? 0} />
+            <StatCard icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={stats?.tugasAktif ?? 0} />
           </StatsGrid>
         )}
 
@@ -256,21 +265,26 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-                {quickLinks.map((item) => (
+                {quickLinks.map((item) => {
+                  const Icon = ICONS[item.icon];
+                  return (
                   <Link
                     key={item.href}
                     to={item.href}
                     className="rounded-xl border border-surface/80 bg-bg-card/90 p-4 transition-colors hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-surface/35"
                   >
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xl">{item.icon}</span>
+                      <span className="grid h-8 w-8 place-items-center rounded-lg border border-surface/80 bg-slate-50 text-primary dark:bg-surface/35">
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                      </span>
                       <h3 className="font-semibold text-text-primary text-sm transition-colors">
                         {item.title}
                       </h3>
                     </div>
                     <p className="text-xs text-text-muted">{item.desc}</p>
                   </Link>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
