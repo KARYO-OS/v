@@ -10,6 +10,7 @@ import { useTasks } from '../../hooks/useTasks';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
+import { ICONS } from '../../icons';
 
 export default function KomandanDashboard() {
   const navigate = useNavigate();
@@ -81,10 +82,10 @@ export default function KomandanDashboard() {
         />
 
         <StatsGrid>
-          <StatCard icon="👥" label="Total Personel" value={totalPersonel} />
-          <StatCard icon="🟢" label="Sedang Online" value={onlineCount} trend="aktif sekarang" trendUp />
-          <StatCard icon="⏳" label="Tugas Aktif" value={pendingTasks.length} />
-          <StatCard icon="✓" label="Tugas Disetujui" value={approvedTasks.length} trend={doneTasks.length > 0 ? `${doneTasks.length} menunggu review` : 'belum ada'} />
+          <StatCard icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Personel" value={totalPersonel} />
+          <StatCard icon={<ICONS.UserCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Sedang Online" value={onlineCount} trend="aktif sekarang" trendUp />
+          <StatCard icon={<ICONS.CheckSquare className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={pendingTasks.length} />
+          <StatCard icon={<ICONS.BadgeCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Tugas Disetujui" value={approvedTasks.length} trend={doneTasks.length > 0 ? `${doneTasks.length} menunggu review` : 'belum ada'} />
         </StatsGrid>
 
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">

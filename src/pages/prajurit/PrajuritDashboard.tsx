@@ -13,6 +13,7 @@ import { CardListSkeleton } from '../../components/common/Skeleton';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
+import { ICONS } from '../../icons';
 
 export default function PrajuritDashboard() {
   const navigate = useNavigate();
@@ -118,7 +119,7 @@ export default function PrajuritDashboard() {
         {/* Alert: rejected tasks */}
         {rejectedTasks.length > 0 && (
           <div className="flex items-start gap-3 bg-accent-red/10 border border-accent-red/30 rounded-xl p-4">
-            <span className="text-accent-red text-xl">⚠</span>
+            <ICONS.AlertTriangle className="mt-0.5 h-5 w-5 text-accent-red" aria-hidden="true" />
             <div>
               <p className="font-semibold text-accent-red text-sm">
                 {rejectedTasks.length} tugas dikembalikan untuk direvisi
@@ -135,11 +136,11 @@ export default function PrajuritDashboard() {
 
         {/* Stats */}
         <StatsGrid>
-          <StatCard icon="⏳" label="Tugas Aktif" value={activeTasks.length} />
-          <StatCard icon="✓" label="Tugas Selesai" value={doneTasks.length} />
-          <StatCard icon="📋" label="Total Tugas" value={tasks.length} />
+          <StatCard icon={<ICONS.CheckSquare className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={activeTasks.length} />
+          <StatCard icon={<ICONS.BadgeCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Tugas Selesai" value={doneTasks.length} />
+          <StatCard icon={<ICONS.ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Tugas" value={tasks.length} />
           <StatCard
-            icon="📅"
+            icon={<ICONS.CalendarDays className="h-5 w-5 text-primary" aria-hidden="true" />}
             label="Status Hari Ini"
             value={todayAttendance ? '✓' : '—'}
           />
@@ -149,7 +150,10 @@ export default function PrajuritDashboard() {
         {(annLoading || recentAnnouncements.length > 0) && (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-text-primary">📢 Pengumuman</h3>
+              <h3 className="flex items-center gap-2 font-semibold text-text-primary">
+                <ICONS.Megaphone className="h-4 w-4 text-primary" aria-hidden="true" />
+                Pengumuman
+              </h3>
             </div>
             {annLoading ? (
               <div className="space-y-2">
@@ -165,7 +169,7 @@ export default function PrajuritDashboard() {
                     className={`bg-bg-card border rounded-xl px-4 py-3 ${ann.is_pinned ? 'border-accent-gold/40' : 'border-surface'}`}
                   >
                     <div className="flex items-start gap-2">
-                      {ann.is_pinned && <span className="text-accent-gold text-xs mt-0.5">📌</span>}
+                      {ann.is_pinned && <ICONS.Pin className="mt-0.5 h-3.5 w-3.5 text-accent-gold" aria-hidden="true" />}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-text-primary">{ann.judul}</p>
                         <p className="text-xs text-text-muted mt-0.5 line-clamp-2">{ann.isi}</p>
@@ -192,7 +196,7 @@ export default function PrajuritDashboard() {
             <CardListSkeleton count={2} />
           ) : activeTasks.length === 0 ? (
             <div className="bg-bg-card border border-surface rounded-xl p-8 text-center text-text-muted">
-              🎉 Tidak ada tugas aktif saat ini
+              Tidak ada tugas aktif saat ini
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3">

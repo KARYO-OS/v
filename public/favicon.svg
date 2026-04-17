@@ -1,4 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <circle cx="50" cy="50" r="48" fill="#0a0e17" stroke="#2563eb" stroke-width="3"/>
-  <text y=".9em" font-size="68" x="50%" text-anchor="middle" dy="0.15em">🪖</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <circle cx="50" cy="50" r="48" fill="#0a0e17" stroke="#2563eb" stroke-width="3" />
+  <path d="M29 50.5V44c0-10.49 9.51-19 21-19s21 8.51 21 19v6.5" stroke="#60A5FA" stroke-width="6" stroke-linecap="round" />
+  <path d="M35 53h30c3.31 0 6 2.69 6 6v8c0 3.31-2.69 6-6 6H35c-3.31 0-6-2.69-6-6v-8c0-3.31 2.69-6 6-6Z" fill="#2563EB" />
+  <path d="M42 61h16" stroke="#E2E8F0" stroke-width="4" stroke-linecap="round" />
 </svg>
