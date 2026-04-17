@@ -8,6 +8,14 @@ on:
         required: true
         default: https://yuniamagsila.github.io/v/
         type: string
+      mode:
+        description: Test mode
+        required: true
+        default: extended
+        type: choice
+        options:
+          - core
+          - extended
 
 permissions:
   contents: read
@@ -16,7 +24,7 @@ jobs:
   smoke:
     name: Smoke Test Production
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -35,10 +43,18 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run production core tests (smoke + gatepass monitor)
+        if: ${{ inputs.mode == 'core' }}
         env:
           E2E_BASE_URL: ${{ inputs.base_url }}
           E2E_USE_WEBSERVER: 'false'
         run: npm run test:prod:core -- --retries=1
+
+      - name: Run production extended tests
+        if: ${{ inputs.mode == 'extended' }}
+        env:
+          E2E_BASE_URL: ${{ inputs.base_url }}
+          E2E_USE_WEBSERVER: 'false'
+        run: npm run test:prod:extended -- --retries=1
 
       - name: Upload Playwright report
         if: always()
