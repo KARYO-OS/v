@@ -82,11 +82,22 @@ export function useAttendance(userId?: string) {
     }
 
     const channel = supabase.channel(`attendance-changes-${user.id}`);
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
-      attendanceCache.invalidate(cacheKey);
-      void fetchAttendance(true);
-    });
-    channel.subscribe();
+    channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
+        attendanceCache.invalidate(cacheKey);
+        void fetchAttendance(true);
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          if (import.meta.env.DEV) console.log('[Realtime] Attendance subscription active');
+        } else if (status === 'CHANNEL_ERROR') {
+          setError('Koneksi realtime terputus. Refresh otomatis...');
+          attendanceCache.invalidate(cacheKey);
+          void fetchAttendance(true);
+        } else if (status === 'CLOSED') {
+          if (import.meta.env.DEV) console.warn('[Realtime] Attendance channel closed');
+        }
+      });
     channelRef.current = channel;
 
     return () => {

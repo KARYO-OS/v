@@ -184,20 +184,34 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: async () => {
     const { user } = get();
-    if (user) {
-      await supabase.rpc('update_user_login', {
-        p_user_id: user.id,
-        p_is_online: false
-      });
-      await supabase.rpc('insert_audit_log', {
-        p_user_id: user.id,
-        p_action: 'LOGOUT',
-        p_resource: 'auth',
-        p_detail: null
-      });
+    try {
+      if (user) {
+        // Try to update is_online and log the action, but don't let failures block cleanup
+        try {
+          await supabase.rpc('update_user_login', {
+            p_user_id: user.id,
+            p_is_online: false
+          });
+        } catch (err) {
+          if (import.meta.env.DEV) console.warn('Failed to update is_online:', err);
+        }
+
+        try {
+          await supabase.rpc('insert_audit_log', {
+            p_user_id: user.id,
+            p_action: 'LOGOUT',
+            p_resource: 'auth',
+            p_detail: null
+          });
+        } catch (err) {
+          if (import.meta.env.DEV) console.warn('Failed to insert audit log:', err);
+        }
+      }
+    } finally {
+      // Always cleanup session state, regardless of RPC success/failure
+      clearSession();
+      set({ user: null, isAuthenticated: false, isLoading: false, error: null });
     }
-    clearSession();
-    set({ user: null, isAuthenticated: false, isLoading: false, error: null });
   },
 
   restoreSession: async () => {
@@ -208,23 +222,38 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ isLoading: false, isInitialized: true });
       return;
     }
-    try {
-      await supabase.rpc('set_session_context', {
-        p_user_id: session.user_id,
-        p_role: session.role,
-      });
 
-      const { data: userData, error } = await supabase.rpc('get_user_by_id', { p_user_id: session.user_id }).single();
-      if (error || !userData) {
-        clearSession();
-        set({ isLoading: false, isInitialized: true });
-        return;
+    // Retry logic dengan exponential backoff untuk resilience pada network hiccups
+    const maxRetries = 3;
+    const delays = [500, 1000, 2000]; // ms
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        await supabase.rpc('set_session_context', {
+          p_user_id: session.user_id,
+          p_role: session.role,
+        });
+
+        const { data: userData, error } = await supabase.rpc('get_user_by_id', { p_user_id: session.user_id }).single();
+        if (error || !userData) {
+          clearSession();
+          set({ isLoading: false, isInitialized: true });
+          return;
+        }
+        const user = userData as User;
+        set({ user, isAuthenticated: true, isLoading: false, isInitialized: true });
+        return; // Success - exit retry loop
+      } catch (err) {
+        if (attempt < maxRetries - 1) {
+          // Wait before next attempt
+          await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+        } else {
+          // All retries exhausted
+          clearSession();
+          const errorMsg = err instanceof Error ? err.message : 'Session restore failed';
+          set({ isLoading: false, isInitialized: true, error: errorMsg });
+        }
       }
-      const user = userData as User;
-      set({ user, isAuthenticated: true, isLoading: false, isInitialized: true });
-    } catch {
-      clearSession();
-      set({ isLoading: false, isInitialized: true });
     }
   },
 

@@ -73,11 +73,12 @@ export async function insertTaskReport(callerId: string, callerRole: string, rep
 }
 
 export async function fetchLatestTaskReport(callerId: string, callerRole: string, taskId: string): Promise<TaskReport | null> {
-  const { data } = await supabase.rpc('api_get_latest_task_report', {
+  const { data, error } = await supabase.rpc('api_get_latest_task_report', {
     p_user_id: callerId,
     p_role: callerRole,
     p_task_id: taskId,
   });
+  if (error) throw error;
   if (!data || !Array.isArray(data) || data.length === 0) return null;
   return (data[0] as TaskReport) ?? null;
 }

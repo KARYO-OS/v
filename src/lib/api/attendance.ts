@@ -14,10 +14,10 @@ export async function fetchAttendance(callerId: string, callerRole: string, user
 
 export async function rpcCheckIn(userId: string): Promise<void> {
   const { error } = await supabase.rpc('server_checkin', { p_user_id: userId });
-  if (error) throw new Error(error.message);
+  if (error) throw error;
 }
 
 export async function rpcCheckOut(userId: string): Promise<void> {
   const { error } = await supabase.rpc('server_checkout', { p_user_id: userId });
-  if (error) throw new Error(error.message);
+  if (error) throw error;
 }

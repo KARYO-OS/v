@@ -1,6 +1,14 @@
 import { supabase } from '../supabase';
 import type { User, Role } from '../../types';
 
+// Helper: validate ID format (strict for real UUID, lenient for test IDs)
+function validateId(value: string): boolean {
+  if (!value) return false;
+  const uuidLike = /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(value);
+  const testLike = /^[a-z0-9-]{2,64}$/i.test(value);
+  return uuidLike || testLike;
+}
+
 export interface FetchUsersParams {
   callerId: string;
   callerRole: string;
@@ -71,6 +79,9 @@ export async function createUserWithPin(userData: {
 }
 
 export async function patchUser(callerId: string, callerRole: string, id: string, updates: Partial<User>): Promise<void> {
+  if (!validateId(callerId)) throw new Error('Invalid caller ID format');
+  if (!validateId(id)) throw new Error('Invalid user ID format');
+
   const { error } = await supabase.rpc('api_update_user', {
     p_caller_id: callerId,
     p_caller_role: callerRole,
@@ -81,6 +92,8 @@ export async function patchUser(callerId: string, callerRole: string, id: string
 }
 
 export async function resetUserPin(userId: string, newPin: string): Promise<void> {
+  if (!validateId(userId)) throw new Error('Invalid user ID format');
+
   const { error } = await supabase.rpc('reset_user_pin', {
     p_user_id: userId,
     p_new_pin: newPin,
@@ -89,6 +102,8 @@ export async function resetUserPin(userId: string, newPin: string): Promise<void
 }
 
 export async function fetchUserById(userId: string): Promise<User> {
+  if (!validateId(userId)) throw new Error('Invalid user ID format');
+
   const { data, error } = await supabase.rpc('get_user_detail', { p_user_id: userId }).single();
   if (error) throw error;
   return data as User;
@@ -102,6 +117,8 @@ export interface UpdateOwnProfileParams {
 }
 
 export async function updateOwnProfile(userId: string, params: UpdateOwnProfileParams): Promise<void> {
+  if (!validateId(userId)) throw new Error('Invalid user ID format');
+
   const { error } = await supabase.rpc('update_own_profile', {
     p_user_id: userId,
     p_no_telepon: params.no_telepon ?? null,
