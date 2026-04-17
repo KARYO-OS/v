@@ -49,22 +49,6 @@ export function useUsers(options: UseUsersOptions = {}) {
     }
   }, [user, loadUsersData]);
 
-  const fetchUsersOrThrow = useCallback(async () => {
-    if (!user) throw new Error('Not authenticated');
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await loadUsersData();
-      setUsers(data);
-    } catch (err) {
-      const message = handleError(err, 'Gagal memuat data user');
-      setError(message);
-      throw new Error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, loadUsersData]);
-
   useEffect(() => {
     void fetchUsers();
   }, [fetchUsers]);
