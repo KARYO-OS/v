@@ -11,6 +11,12 @@ const DISPLAY_DENSITY_KEY = 'karyo_display_density';
 const DASHBOARD_AUTO_REFRESH_ENABLED_KEY = 'karyo_dashboard_auto_refresh_enabled';
 const DASHBOARD_AUTO_REFRESH_MINUTES_KEY = 'karyo_dashboard_auto_refresh_minutes';
 
+const normalizeNotificationMessage = (message: string): string => {
+  return message
+    .replace(/menabah/gi, 'menambah')
+    .replace(/menambh/gi, 'menambah');
+};
+
 interface Notification {
   message: string;
   type: NotificationType;
@@ -149,7 +155,7 @@ export const useUIStore = create<UIStore>((set) => ({
   },
 
   showNotification: (message: string, type: NotificationType) => {
-    set({ notification: { message, type } });
+    set({ notification: { message: normalizeNotificationMessage(message), type } });
     setTimeout(() => set({ notification: null }), NOTIFICATION_DURATION_MS);
   },
 
