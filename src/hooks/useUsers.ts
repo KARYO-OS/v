@@ -80,16 +80,16 @@ export function useUsers(options: UseUsersOptions = {}) {
       pangkat: rest.pangkat,
       jabatan: rest.jabatan,
     });
-    // Refresh the list after creation; use the non-throwing variant so a
-    // temporary read failure does not mask the successful create.
-    void fetchUsers();
+    // Refresh list without masking successful mutation when read path is flaky.
+    await fetchUsers();
     return data;
   };
 
   const updateUser = async (id: string, updates: Partial<User>) => {
     if (!user) throw new Error('Not authenticated');
     await patchUser(user.id, user.role, id, updates);
-    await fetchUsersOrThrow();
+    // Do not throw if refresh fails after a successful update.
+    await fetchUsers();
   };
 
   const toggleUserActive = async (id: string, isActive: boolean) => {

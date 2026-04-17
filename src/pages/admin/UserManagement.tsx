@@ -233,9 +233,13 @@ export default function UserManagement() {
 
   const handleSaveDetail = async (id: string, updates: Partial<User>) => {
     await updateUser(id, updates);
-    // Refresh detail user after save
-    const refreshed = await getUserById(id);
-    setDetailUser(refreshed);
+    // Best-effort detail refresh; the update is already committed.
+    try {
+      const refreshed = await getUserById(id);
+      setDetailUser(refreshed);
+    } catch {
+      setDetailUser((prev) => (prev && prev.id === id ? { ...prev, ...updates } : prev));
+    }
   };
 
   return (
