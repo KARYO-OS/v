@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Download, Upload, AlertTriangle } from 'lucide-react';
+import { handleError } from '../../lib/handleError';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -97,7 +98,7 @@ export default function Settings() {
       downloadJson(backup, filename);
       showNotification('Backup berhasil diunduh', 'success');
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal membuat backup', 'error');
+      showNotification(handleError(err, 'Gagal membuat backup', 'exportBackup'), 'error');
     } finally {
       setIsExporting(false);
     }
@@ -141,7 +142,7 @@ export default function Settings() {
       setRestorePreview(null);
       
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal merestore data', 'error');
+      showNotification(handleError(err, 'Gagal merestore data', 'restoreBackup'), 'error');
     } finally {
       setIsRestoring(false);
     }

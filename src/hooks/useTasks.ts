@@ -59,7 +59,7 @@ export function useTasks(options: UseTasksOptions = {}) {
       tasksCache.set(cacheKey, data);
       setTasks(data);
     } catch (err) {
-      setError(handleError(err, 'Gagal memuat data tugas'));
+      setError(handleError(err, 'Gagal memuat data tugas', 'fetchTasks'));
     } finally {
       setIsLoading(false);
     }

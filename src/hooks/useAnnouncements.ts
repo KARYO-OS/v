@@ -39,7 +39,7 @@ export function useAnnouncements() {
       announcementsCache.set(cacheKey, data);
       setAnnouncements(data);
     } catch (err) {
-      setError(handleError(err, 'Gagal memuat pengumuman'));
+      setError(handleError(err, 'Gagal memuat pengumuman', 'fetchAnnouncements'));
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +62,7 @@ export function useAnnouncements() {
       announcementsCache.set(cacheKey, data);
       setAnnouncements(data);
     } catch (err) {
-      const message = handleError(err, 'Gagal memuat pengumuman');
+      const message = handleError(err, 'Gagal memuat pengumuman', 'fetchAnnouncements');
       setError(message);
       throw new Error(message);
     } finally {

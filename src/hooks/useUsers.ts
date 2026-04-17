@@ -43,7 +43,7 @@ export function useUsers(options: UseUsersOptions = {}) {
       const data = await loadUsersData();
       setUsers(data);
     } catch (err) {
-      setError(handleError(err, 'Gagal memuat data user'));
+      setError(handleError(err, 'Gagal memuat data user', 'fetchUsers'));
     } finally {
       setIsLoading(false);
     }

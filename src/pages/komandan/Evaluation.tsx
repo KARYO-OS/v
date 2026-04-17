@@ -3,6 +3,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import { handleError } from '../../lib/handleError';
 import Badge from '../../components/common/Badge';
 import PageHeader from '../../components/ui/PageHeader';
 import { useUsers } from '../../hooks/useUsers';
@@ -63,7 +64,7 @@ export default function Evaluation() {
       setForm({ user_id: '', jenis: 'catatan', isi: '' });
       await fetchNotes();
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal menyimpan', 'error');
+      showNotification(handleError(err, 'Gagal menyimpan', 'insertDisciplineNote'), 'error');
     } finally {
       setIsSaving(false);
     }

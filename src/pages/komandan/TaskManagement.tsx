@@ -3,6 +3,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import TaskCard from '../../components/ui/TaskCard';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import { handleError } from '../../lib/handleError';
 import Input from '../../components/common/Input';
 import { TaskStatusBadge } from '../../components/common/Badge';
 import { useTasks } from '../../hooks/useTasks';
@@ -88,7 +89,7 @@ export default function TaskManagement() {
       setShowCreate(false);
       setForm({ judul: '', deskripsi: '', assigned_to: '', deadline: '', prioritas: 2 });
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal membuat tugas', 'error');
+      showNotification(handleError(err, 'Gagal membuat tugas', 'createTask'), 'error');
     } finally {
       setIsSaving(false);
     }

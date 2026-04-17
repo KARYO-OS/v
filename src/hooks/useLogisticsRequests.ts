@@ -58,7 +58,7 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
       logisticsCache.set(cacheKey, data);
       setRequests(data);
     } catch (err) {
-      setError(handleError(err, 'Gagal memuat permintaan logistik'));
+      setError(handleError(err, 'Gagal memuat permintaan logistik', 'fetchLogisticsRequests'));
     } finally {
       setIsLoading(false);
     }

@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { handleError } from '../../lib/handleError';
+import { getMetricsSummary, resetMetrics } from '../../lib/metrics';
 
 describe('handleError', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    resetMetrics();
   });
 
   it('returns the Error message when passed an Error instance', () => {
@@ -44,5 +46,28 @@ describe('handleError', () => {
     // Vitest runs with import.meta.env.DEV = true in test mode
     handleError(new Error('dev error'), 'fallback');
     expect(consoleSpy).toHaveBeenCalled();
+  });
+
+  it('records to metrics when operation is provided', () => {
+    handleError(new Error('network failure'), 'Fallback pesan', 'fetchTasks');
+    const summary = getMetricsSummary();
+    expect(summary.apiErrors).toHaveLength(1);
+    expect(summary.apiErrors[0].operation).toBe('fetchTasks');
+    expect(summary.apiErrors[0].count).toBe(1);
+    expect(summary.apiErrors[0].lastMessage).toBe('network failure');
+  });
+
+  it('increments metrics count on repeated failure of same operation', () => {
+    handleError(new Error('err1'), 'Fallback', 'fetchTasks');
+    handleError(new Error('err2'), 'Fallback', 'fetchTasks');
+    const summary = getMetricsSummary();
+    expect(summary.apiErrors[0].count).toBe(2);
+    expect(summary.apiErrors[0].lastMessage).toBe('err2');
+  });
+
+  it('does NOT record to metrics when operation is omitted', () => {
+    handleError(new Error('silent error'), 'Fallback pesan');
+    const summary = getMetricsSummary();
+    expect(summary.apiErrors).toHaveLength(0);
   });
 });

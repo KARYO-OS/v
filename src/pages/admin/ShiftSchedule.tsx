@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CalendarDays, List } from 'lucide-react';
+import { handleError } from '../../lib/handleError';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
@@ -130,7 +131,7 @@ export default function ShiftSchedule() {
       if (viewMode === 'list') await fetchSchedules();
       else await fetchMonthSchedules();
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal menyimpan', 'error');
+      showNotification(handleError(err, 'Gagal menyimpan', 'insertShiftSchedule'), 'error');
     } finally {
       setIsSaving(false);
     }

@@ -48,7 +48,7 @@ export function useAttendance(userId?: string) {
       setAttendances(list);
       setTodayAttendance(list.find((a) => a.tanggal === today) ?? null);
     } catch (err) {
-      setError(handleError(err, 'Gagal memuat absensi'));
+      setError(handleError(err, 'Gagal memuat absensi', 'fetchAttendance'));
     } finally {
       setIsLoading(false);
     }

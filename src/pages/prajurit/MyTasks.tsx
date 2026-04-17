@@ -5,6 +5,7 @@ import TaskCard from '../../components/ui/TaskCard';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import PageHeader from '../../components/ui/PageHeader';
+import { handleError } from '../../lib/handleError';
 import { useTasks } from '../../hooks/useTasks';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
@@ -50,7 +51,7 @@ export default function MyTasks() {
       setSelectedTask(null);
       setReportText('');
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal mengirim laporan', 'error');
+      showNotification(handleError(err, 'Gagal mengirim laporan', 'submitTaskReport'), 'error');
     } finally {
       setIsSaving(false);
     }

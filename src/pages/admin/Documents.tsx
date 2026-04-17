@@ -78,7 +78,7 @@ export default function Documents() {
       setForm({ nama: '', kategori: '', file_url: '', satuan: '', file_size: '' });
       await fetchDocs();
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal menyimpan', 'error');
+      showNotification(handleError(err, 'Gagal menyimpan', 'insertDocument'), 'error');
     } finally {
       setIsSaving(false);
     }

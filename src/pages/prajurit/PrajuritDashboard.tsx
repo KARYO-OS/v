@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
 import { ICONS } from '../../icons';
+import { handleError } from '../../lib/handleError';
 
 export default function PrajuritDashboard() {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ export default function PrajuritDashboard() {
       await checkIn();
       showNotification('Check-in berhasil!', 'success');
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal check-in', 'error');
+      showNotification(handleError(err, 'Gagal check-in', 'checkIn'), 'error');
     } finally {
       setCheckingIn(false);
     }
@@ -53,7 +54,7 @@ export default function PrajuritDashboard() {
       await checkOut();
       showNotification('Check-out berhasil!', 'success');
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal check-out', 'error');
+      showNotification(handleError(err, 'Gagal check-out', 'checkOut'), 'error');
     } finally {
       setCheckingOut(false);
     }

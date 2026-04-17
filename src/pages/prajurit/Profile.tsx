@@ -6,6 +6,7 @@ import AvatarUpload from '../../components/common/AvatarUpload';
 import { RoleBadge } from '../../components/common/Badge';
 import AttendanceHeatmap from '../../components/ui/AttendanceHeatmap';
 import PageHeader from '../../components/ui/PageHeader';
+import { handleError } from '../../lib/handleError';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { useAttendance } from '../../hooks/useAttendance';
@@ -104,7 +105,7 @@ export default function Profile() {
       setChangingPin(false);
       setPinForm({ oldPin: '', newPin: '', confirmPin: '' });
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal mengubah PIN', 'error');
+      showNotification(handleError(err, 'Gagal mengubah PIN', 'changePin'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -119,7 +120,7 @@ export default function Profile() {
       showNotification('Profil berhasil diperbarui', 'success');
       setEditingProfile(false);
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal memperbarui profil', 'error');
+      showNotification(handleError(err, 'Gagal memperbarui profil', 'updateOwnProfile'), 'error');
     } finally {
       setIsSaving(false);
     }

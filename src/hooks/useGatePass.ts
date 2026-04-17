@@ -19,7 +19,7 @@ export function useGatePass() {
       const data = await fetchGatePassesByUser(user.id, user.role, user.id);
       setGatePasses(data);
     } catch (err) {
-      setError(handleError(err, 'Gagal memuat gate pass'));
+      setError(handleError(err, 'Gagal memuat gate pass', 'fetchGatePass'));
     } finally {
       setIsLoading(false);
     }

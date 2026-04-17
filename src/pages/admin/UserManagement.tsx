@@ -3,6 +3,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import { handleError } from '../../lib/handleError';
 import Input from '../../components/common/Input';
 import PageHeader from '../../components/ui/PageHeader';
 import { RoleBadge } from '../../components/common/Badge';
@@ -85,9 +86,8 @@ export default function UserManagement() {
       setShowCreate(false);
       setForm({ nrp: '', nama: '', pin: '', role: 'prajurit', satuan: '', pangkat: '' });
     } catch (err) {
-      const message = err instanceof Error
-        ? err.message.replace(/menabah/gi, 'menambah')
-        : 'Gagal menambah personel';
+      const message = handleError(err, 'Gagal menambah personel', 'createUser')
+        .replace(/menabah/gi, 'menambah');
       showNotification(message, 'error');
     } finally {
       setIsSaving(false);
@@ -107,7 +107,7 @@ export default function UserManagement() {
       setShowResetPin(false);
       setNewPin('');
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal reset PIN', 'error');
+      showNotification(handleError(err, 'Gagal reset PIN', 'resetUserPin'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -135,7 +135,7 @@ export default function UserManagement() {
       setBulkPin('');
       setSelectedUserIds(new Set());
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal reset PIN massal', 'error');
+      showNotification(handleError(err, 'Gagal reset PIN massal', 'bulkResetPins'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -188,7 +188,7 @@ export default function UserManagement() {
         setPage(1);
       }
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal mengimpor data', 'error');
+      showNotification(handleError(err, 'Gagal mengimpor data', 'importUsersCSV'), 'error');
     } finally {
       setIsImporting(false);
     }

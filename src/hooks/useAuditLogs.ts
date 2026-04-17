@@ -58,7 +58,7 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
       auditLogsCache.set(cacheKey, data);
       setLogs(data);
     } catch (err) {
-      setError(handleError(err, 'Gagal memuat audit log'));
+      setError(handleError(err, 'Gagal memuat audit log', 'fetchAuditLogs'));
     } finally {
       setIsLoading(false);
     }

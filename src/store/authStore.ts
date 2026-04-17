@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { clearSessionContext, writeSessionContext } from '../lib/sessionContext';
+import { handleError } from '../lib/handleError';
 import type { User, KaryoSession } from '../types';
 
 const SESSION_KEY = 'karyo_session';
@@ -176,7 +177,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       await saveSession({ user_id, role: user_role as User['role'], expires_at: makeSessionExpiry() });
       set({ user, isAuthenticated: true, isLoading: false, error: null });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Terjadi kesalahan sistem. Coba lagi nanti.';
+      const message = handleError(err, 'Terjadi kesalahan sistem. Coba lagi nanti.', 'login');
       set({ isLoading: false, error: message, isAuthenticated: false, user: null });
       throw err;
     }

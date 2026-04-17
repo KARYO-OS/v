@@ -3,6 +3,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
+import { handleError } from '../../lib/handleError';
 import Badge from '../../components/common/Badge';
 import PageHeader from '../../components/ui/PageHeader';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
@@ -48,7 +49,7 @@ export default function Announcements() {
       setShowCreate(false);
       setForm({ judul: '', isi: '', target_satuan: '', is_pinned: false, target_admin: false, target_komandan: false, target_prajurit: false });
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal menerbitkan', 'error');
+      showNotification(handleError(err, 'Gagal menerbitkan', 'insertAnnouncement'), 'error');
     } finally {
       setIsSaving(false);
     }

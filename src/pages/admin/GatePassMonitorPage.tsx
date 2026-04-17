@@ -3,6 +3,7 @@ import { useGatePassStore } from '../../store/gatePassStore';
 import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
 import GatePassStatusBadge from '../../components/gatepass/GatePassStatusBadge';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import { handleError } from '../../lib/handleError';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -136,7 +137,7 @@ export default function GatePassMonitorPage() {
       try {
         await fetchGatePasses();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Gagal memuat data gate pass');
+        setError(handleError(err, 'Gagal memuat data gate pass', 'fetchGatePassMonitor'));
       } finally {
         setIsInitialLoading(false);
       }
@@ -175,7 +176,7 @@ export default function GatePassMonitorPage() {
       await fetchGatePasses();
       setNow(new Date());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal memuat ulang data gate pass');
+      setError(handleError(err, 'Gagal memuat ulang data gate pass', 'fetchGatePassMonitor'));
     } finally {
       setIsRefreshing(false);
     }

@@ -12,10 +12,21 @@ import { useAuthStore } from './store/authStore';
 import { usePlatformStore } from './store/platformStore';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import { measurePageLoad } from './lib/metrics';
+import { measurePageLoad, logMetricsSummary, getMetricsSummary } from './lib/metrics';
 
 // Mulai pengukuran load halaman sebelum render pertama
 measurePageLoad();
+
+// Expose debug namespace di mode development agar engineer bisa menginspeksi
+// metrik API dari browser console dengan: __karyoDebug.logMetrics()
+if (import.meta.env.DEV) {
+  (window as unknown as Record<string, unknown>).__karyoDebug = {
+    /** Cetak ringkasan error API dan page-load time ke console. */
+    logMetrics: logMetricsSummary,
+    /** Kembalikan metrik sebagai objek (bisa di-inspect di DevTools). */
+    getMetrics: getMetricsSummary,
+  };
+}
 
 export function App() {
   const { restoreSession, isLoading } = useAuthStore();

@@ -7,6 +7,7 @@ import Button from '../../components/common/Button';
 import { Skeleton, CardListSkeleton } from '../../components/common/Skeleton';
 import PageHeader from '../../components/ui/PageHeader';
 import { useState } from 'react';
+import { handleError } from '../../lib/handleError';
 
 export default function Attendance() {
   const { user } = useAuthStore();
@@ -21,7 +22,7 @@ export default function Attendance() {
       await checkIn();
       showNotification('Check-in berhasil!', 'success');
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal check-in', 'error');
+      showNotification(handleError(err, 'Gagal check-in', 'checkIn'), 'error');
     } finally {
       setCheckingIn(false);
     }
@@ -33,7 +34,7 @@ export default function Attendance() {
       await checkOut();
       showNotification('Check-out berhasil!', 'success');
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal check-out', 'error');
+      showNotification(handleError(err, 'Gagal check-out', 'checkOut'), 'error');
     } finally {
       setCheckingOut(false);
     }

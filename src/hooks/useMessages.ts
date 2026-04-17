@@ -27,7 +27,7 @@ export function useMessages() {
       setSent(sentData);
       setUnreadCount(inboxData.filter((m) => !m.is_read).length);
     } catch (err) {
-      setError(handleError(err, 'Gagal memuat pesan'));
+      setError(handleError(err, 'Gagal memuat pesan', 'fetchMessages'));
     } finally {
       setIsLoading(false);
     }

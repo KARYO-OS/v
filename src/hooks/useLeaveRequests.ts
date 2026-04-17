@@ -61,7 +61,7 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
       leaveRequestsCache.set(cacheKey, result);
       setRequests(result);
     } catch (err) {
-      setError(handleError(err, 'Gagal memuat permintaan izin'));
+      setError(handleError(err, 'Gagal memuat permintaan izin', 'fetchLeaveRequests'));
     } finally {
       setIsLoading(false);
     }
