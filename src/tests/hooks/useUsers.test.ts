@@ -7,7 +7,6 @@ import type { User } from '../../types';
 
 const mockSupabase = supabase as unknown as {
   rpc: ReturnType<typeof vi.fn>;
-  from: ReturnType<typeof vi.fn>;
 };
 
 const mockAdminUser = {
@@ -25,10 +24,6 @@ describe('useUsers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({ user: mockAdminUser, isAuthenticated: true });
-    mockSupabase.from.mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      order: vi.fn().mockResolvedValue({ data: mockUsers, error: null }),
-    });
   });
 
   it('loads users on mount', async () => {
@@ -44,10 +39,6 @@ describe('useUsers', () => {
 
   it('sets error when fetch fails', async () => {
     mockSupabase.rpc.mockResolvedValue({ data: null, error: new Error('connection refused') });
-    mockSupabase.from.mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      order: vi.fn().mockResolvedValue({ data: [], error: new Error('connection refused') }),
-    });
 
     const { result } = renderHook(() => useUsers());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -57,29 +48,11 @@ describe('useUsers', () => {
 
   it('returns empty list and no error for empty dataset', async () => {
     mockSupabase.rpc.mockResolvedValue({ data: [], error: null });
-    mockSupabase.from.mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      order: vi.fn().mockResolvedValue({ data: [], error: null }),
-    });
 
     const { result } = renderHook(() => useUsers());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.users).toHaveLength(0);
     expect(result.current.error).toBeNull();
-  });
-
-  it('falls back to a direct users query for admin when RPC returns no rows', async () => {
-    mockSupabase.rpc.mockResolvedValue({ data: [], error: null });
-    mockSupabase.from.mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      order: vi.fn().mockResolvedValue({ data: mockUsers, error: null }),
-    });
-
-    const { result } = renderHook(() => useUsers());
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.users).toHaveLength(2);
-    expect(mockSupabase.from).toHaveBeenCalledWith('users');
   });
 
   describe('createUser', () => {

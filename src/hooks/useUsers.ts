@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { fetchUsers as apiFetchUsers, fetchUsersDirect as apiFetchUsersDirect, fetchUserById as apiFetchUserById, createUserWithPin, patchUser, resetUserPin as apiResetUserPin, updateOwnProfile as apiUpdateOwnProfile, type UpdateOwnProfileParams } from '../lib/api/users';
+import { fetchUsers as apiFetchUsers, fetchUserById as apiFetchUserById, createUserWithPin, patchUser, resetUserPin as apiResetUserPin, updateOwnProfile as apiUpdateOwnProfile, type UpdateOwnProfileParams } from '../lib/api/users';
 import { handleError } from '../lib/handleError';
 import type { User, Role } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -18,8 +18,6 @@ export function useUsers(options: UseUsersOptions = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const canUseDirectFallback = user?.role === 'admin' && options.role === undefined && options.satuan === undefined && options.isActive === undefined;
-
   // Memoize requestParams so its reference only changes when actual values change,
   // preventing useCallback/useEffect from re-running on every render.
   const requestParams = useMemo(() => ({
@@ -34,19 +32,8 @@ export function useUsers(options: UseUsersOptions = {}) {
 
   const loadUsersData = useCallback(async () => {
     if (!user) return [] as User[];
-
-    if (canUseDirectFallback) {
-      const directResult = await apiFetchUsersDirect(requestParams);
-      if (directResult.length > 0) {
-        return directResult;
-      }
-
-      const rpcResult = await apiFetchUsers(requestParams);
-      return rpcResult;
-    }
-
     return apiFetchUsers(requestParams);
-  }, [user, canUseDirectFallback, requestParams]);
+  }, [user, requestParams]);
 
   const fetchUsers = useCallback(async () => {
     if (!user) return;
