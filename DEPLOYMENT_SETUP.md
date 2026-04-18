@@ -4,7 +4,7 @@
 
 | Komponen | Status | Detail |
 |----------|--------|--------|
-| **Supabase CLI** | ✓ Linked | Project: `combat` (hilxwcwllxvmlfqwmppl) |
+| **Supabase CLI** | ✓ Linked | Project: `combat` (upvrcaivdzuxozdwzvdq) |
 | **.env.local** | ✓ Ada | Frontend configured untuk Supabase |
 | **Frontend Build** | ✓ Berhasil | `npm run build` successful |
 | **GitHub Remote** | ✓ Ada | https://github.com/yuniamagsila/v |
@@ -30,13 +30,13 @@ GitHub Actions memerlukan env vars untuk build production. Ikuti langkah berikut
 **Secret 1: VITE_SUPABASE_URL**
 ```
 Name:  VITE_SUPABASE_URL
-Value: https://hilxwcwllxvmlfqwmppl.supabase.co
+Value: https://upvrcaivdzuxozdwzvdq.supabase.co
 ```
 
 **Secret 2: VITE_SUPABASE_ANON_KEY**
 ```
 Name:  VITE_SUPABASE_ANON_KEY
-Value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpbHh3Y3dsbHh2bWxmcXdtcHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxODgwNTEsImV4cCI6MjA5MTc2NDA1MX0.RlDeFBWkDx7DNxt4ngIfAabFZhjYYvQUmLWBb7efHX0
+Value: <ANON_PUBLIC_KEY_DARI_PROJECT_UPVRCAIVDZUXOZDWZVDQ>
 ```
 
 > ⚠️ **JANGAN** gunakan `service_role` key. Hanya gunakan `anon public` key.
@@ -87,7 +87,7 @@ https://yuniamagsila.github.io/v/
 ### Check 3: Supabase API Connectivity
 ```bash
 # Test dari deployed app
-curl -X POST https://hilxwcwllxvmlfqwmppl.supabase.co/rest/v1/rpc/api_get_users \
+curl -X POST https://upvrcaivdzuxozdwzvdq.supabase.co/rest/v1/rpc/api_get_users \
   -H "Authorization: Bearer <ANON_KEY>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -138,7 +138,7 @@ GitHub Actions akan secara otomatis:
 
 | Purpose | URL |
 |---------|-----|
-| **Database** | https://hilxwcwllxvmlfqwmppl.supabase.co |
+| **Database** | https://upvrcaivdzuxozdwzvdq.supabase.co |
 | **Frontend (Dev)** | `http://localhost:5173` |
 | **Frontend (Prod)** | https://yuniamagsila.github.io/v/ |
 | **GitHub Repo** | https://github.com/yuniamagsila/v |
@@ -168,6 +168,20 @@ npm exec --yes supabase@latest -- db query --linked "select pg_notify('pgrst', '
 2. Verify `.env.local` di lokal: `env | grep VITE`
 3. Ensure `npm run build` berhasil lokal terlebih dahulu
 
+### Perintah CLI salah ke project lama
+
+Jika Supabase CLI tiba-tiba mengarah ke project lama, biasanya ada environment variable shell yang override project aktif.
+
+```bash
+printenv | grep -E '^SUPABASE_PROJECT_ID=|^VITE_SUPABASE_URL=|^VITE_SUPABASE_ANON_KEY='
+
+# bersihkan override untuk sesi terminal saat ini
+unset SUPABASE_PROJECT_ID VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY
+
+# jalankan ulang command dengan project ref eksplisit
+SUPABASE_PROJECT_ID=upvrcaivdzuxozdwzvdq npm exec --yes supabase@latest -- db push
+```
+
 ---
 
 ## 📝 Checklist Deployment
@@ -190,5 +204,5 @@ npm exec --yes supabase@latest -- db query --linked "select pg_notify('pgrst', '
 
 ---
 
-**Last Updated:** 2026-04-17  
+**Last Updated:** 2026-04-18  
 **Status:** ✅ Ready for Deployment
