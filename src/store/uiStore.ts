@@ -1,8 +1,13 @@
 import { create } from 'zustand';
+import { useAuthStore } from './authStore';
+import {
+  getUserPreferences,
+  updateUserPreferences,
+  type DisplayDensity,
+  type UserPreferencesPayload,
+} from '../lib/api/userPreferences';
 
 type NotificationType = 'success' | 'error' | 'info' | 'warning';
-type DisplayDensity = 'comfortable' | 'compact';
-
 const NOTIFICATION_DURATION_MS = 4000;
 const DARK_MODE_KEY = 'karyo_dark_mode';
 const SIDEBAR_OPEN_KEY = 'karyo_sidebar_open';
@@ -38,6 +43,7 @@ interface UIStore {
   toggleDisplayDensity: () => void;
   setDashboardAutoRefreshEnabled: (enabled: boolean) => void;
   setDashboardAutoRefreshMinutes: (minutes: number) => void;
+  loadUserPreferences: () => Promise<void>;
   showNotification: (message: string, type: NotificationType) => void;
   clearNotification: () => void;
 }
@@ -85,6 +91,45 @@ const savePreference = (key: string, value: string) => {
   }
 };
 
+const getCurrentPreferences = (state: Pick<
+  UIStore,
+  | 'isDarkMode'
+  | 'sidebarOpen'
+  | 'notificationsEnabled'
+  | 'displayDensity'
+  | 'dashboardAutoRefreshEnabled'
+  | 'dashboardAutoRefreshMinutes'
+>): UserPreferencesPayload => ({
+  isDarkMode: state.isDarkMode,
+  sidebarOpen: state.sidebarOpen,
+  notificationsEnabled: state.notificationsEnabled,
+  displayDensity: state.displayDensity,
+  dashboardAutoRefreshEnabled: state.dashboardAutoRefreshEnabled,
+  dashboardAutoRefreshMinutes: state.dashboardAutoRefreshMinutes,
+});
+
+const applyPreferenceSnapshot = (prefs: UserPreferencesPayload) => {
+  savePreference(DARK_MODE_KEY, String(prefs.isDarkMode));
+  savePreference(SIDEBAR_OPEN_KEY, String(prefs.sidebarOpen));
+  savePreference(NOTIFICATIONS_ENABLED_KEY, String(prefs.notificationsEnabled));
+  savePreference(DISPLAY_DENSITY_KEY, prefs.displayDensity);
+  savePreference(DASHBOARD_AUTO_REFRESH_ENABLED_KEY, String(prefs.dashboardAutoRefreshEnabled));
+  savePreference(DASHBOARD_AUTO_REFRESH_MINUTES_KEY, String(prefs.dashboardAutoRefreshMinutes));
+  applyTheme(prefs.isDarkMode);
+  applyDensity(prefs.displayDensity);
+};
+
+const syncUserPreferencesToServer = async (prefs: UserPreferencesPayload): Promise<void> => {
+  const { user } = useAuthStore.getState();
+  if (!user) return;
+
+  try {
+    await updateUserPreferences(user.id, user.role, prefs);
+  } catch {
+    // Silent fallback: local preference remains available on this device.
+  }
+};
+
 const applyTheme = (isDark: boolean) => {
   if (typeof document === 'undefined') return;
   document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
@@ -95,7 +140,7 @@ const applyDensity = (density: DisplayDensity) => {
   document.documentElement.dataset.density = density;
 };
 
-export const useUIStore = create<UIStore>((set) => ({
+export const useUIStore = create<UIStore>((set, get) => ({
   isDarkMode: loadDarkMode(),
   sidebarOpen: loadSidebarOpen(),
   notificationsEnabled: loadNotificationsEnabled(),
@@ -109,6 +154,12 @@ export const useUIStore = create<UIStore>((set) => ({
       const next = !state.isDarkMode;
       savePreference(DARK_MODE_KEY, String(next));
       applyTheme(next);
+      void syncUserPreferencesToServer(
+        getCurrentPreferences({
+          ...state,
+          isDarkMode: next,
+        }),
+      );
       return { isDarkMode: next };
     }),
 
@@ -116,22 +167,46 @@ export const useUIStore = create<UIStore>((set) => ({
     set((state) => {
       const next = !state.sidebarOpen;
       savePreference(SIDEBAR_OPEN_KEY, String(next));
+      void syncUserPreferencesToServer(
+        getCurrentPreferences({
+          ...state,
+          sidebarOpen: next,
+        }),
+      );
       return { sidebarOpen: next };
     }),
 
   setSidebarOpen: (open: boolean) => {
     savePreference(SIDEBAR_OPEN_KEY, String(open));
+    void syncUserPreferencesToServer(
+      getCurrentPreferences({
+        ...get(),
+        sidebarOpen: open,
+      }),
+    );
     set({ sidebarOpen: open });
   },
 
   setNotificationsEnabled: (enabled: boolean) => {
     savePreference(NOTIFICATIONS_ENABLED_KEY, String(enabled));
+    void syncUserPreferencesToServer(
+      getCurrentPreferences({
+        ...get(),
+        notificationsEnabled: enabled,
+      }),
+    );
     set({ notificationsEnabled: enabled });
   },
 
   setDisplayDensity: (density: DisplayDensity) => {
     savePreference(DISPLAY_DENSITY_KEY, density);
     applyDensity(density);
+    void syncUserPreferencesToServer(
+      getCurrentPreferences({
+        ...get(),
+        displayDensity: density,
+      }),
+    );
     set({ displayDensity: density });
   },
 
@@ -140,18 +215,58 @@ export const useUIStore = create<UIStore>((set) => ({
       const next = state.displayDensity === 'compact' ? 'comfortable' : 'compact';
       savePreference(DISPLAY_DENSITY_KEY, next);
       applyDensity(next);
+      void syncUserPreferencesToServer(
+        getCurrentPreferences({
+          ...state,
+          displayDensity: next,
+        }),
+      );
       return { displayDensity: next };
     }),
 
   setDashboardAutoRefreshEnabled: (enabled: boolean) => {
     savePreference(DASHBOARD_AUTO_REFRESH_ENABLED_KEY, String(enabled));
+    void syncUserPreferencesToServer(
+      getCurrentPreferences({
+        ...get(),
+        dashboardAutoRefreshEnabled: enabled,
+      }),
+    );
     set({ dashboardAutoRefreshEnabled: enabled });
   },
 
   setDashboardAutoRefreshMinutes: (minutes: number) => {
     const next = Math.max(1, Math.min(60, Math.round(minutes)));
     savePreference(DASHBOARD_AUTO_REFRESH_MINUTES_KEY, String(next));
+    void syncUserPreferencesToServer(
+      getCurrentPreferences({
+        ...get(),
+        dashboardAutoRefreshMinutes: next,
+      }),
+    );
     set({ dashboardAutoRefreshMinutes: next });
+  },
+
+  loadUserPreferences: async () => {
+    const { user } = useAuthStore.getState();
+    if (!user) return;
+
+    try {
+      const prefs = await getUserPreferences(user.id, user.role);
+      if (!prefs) return;
+
+      applyPreferenceSnapshot(prefs);
+      set({
+        isDarkMode: prefs.isDarkMode,
+        sidebarOpen: prefs.sidebarOpen,
+        notificationsEnabled: prefs.notificationsEnabled,
+        displayDensity: prefs.displayDensity,
+        dashboardAutoRefreshEnabled: prefs.dashboardAutoRefreshEnabled,
+        dashboardAutoRefreshMinutes: prefs.dashboardAutoRefreshMinutes,
+      });
+    } catch {
+      // Keep local fallback preferences when remote fetch fails.
+    }
   },
 
   showNotification: (message: string, type: NotificationType) => {

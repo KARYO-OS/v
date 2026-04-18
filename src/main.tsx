@@ -10,6 +10,7 @@ import './index.css';
 import { router } from './router';
 import { useAuthStore } from './store/authStore';
 import { usePlatformStore } from './store/platformStore';
+import { useUIStore } from './store/uiStore';
 import { useGlobalRealtimeSync } from './hooks/useGlobalRealtimeSync';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -19,8 +20,9 @@ import { measurePageLoad } from './lib/metrics';
 measurePageLoad();
 
 export function App() {
-  const { restoreSession, isLoading } = useAuthStore();
+  const { restoreSession, isLoading, user } = useAuthStore();
   const { loadPlatformBranding } = usePlatformStore();
+  const { loadUserPreferences } = useUIStore();
   useGlobalRealtimeSync();
 
   useEffect(() => {
@@ -30,6 +32,11 @@ export function App() {
   useEffect(() => {
     void loadPlatformBranding();
   }, [loadPlatformBranding]);
+
+  useEffect(() => {
+    if (!user) return;
+    void loadUserPreferences();
+  }, [user, loadUserPreferences]);
 
   if (isLoading) return <LoadingSpinner fullScreen />;
 
