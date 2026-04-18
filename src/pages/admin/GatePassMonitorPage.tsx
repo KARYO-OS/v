@@ -149,17 +149,23 @@ export default function GatePassMonitorPage() {
       setError(null);
       try {
         await fetchGatePasses();
-        // Fetch total personil aktif
-        const { count } = await supabase
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Gagal memuat data gate pass');
+      }
+      
+      // Fetch total personil separately - non-blocking
+      try {
+        const userCountResult = await supabase
           .from('users')
           .select('id', { count: 'exact', head: true })
           .eq('is_active', true);
-        setTotalPersonil(count ?? 0);
+        setTotalPersonil(userCountResult.count ?? 0);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Gagal memuat data gate pass');
-      } finally {
-        setIsInitialLoading(false);
+        console.error('Error fetching total personil:', err);
+        setTotalPersonil(0);
       }
+      
+      setIsInitialLoading(false);
     })();
   }, [fetchGatePasses]);
 
