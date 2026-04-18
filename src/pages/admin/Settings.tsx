@@ -6,6 +6,8 @@ import Modal from '../../components/common/Modal';
 import PageHeader from '../../components/ui/PageHeader';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
+import { FEATURE_DEFINITIONS, type FeatureKey } from '../../lib/featureFlags';
+import { useFeatureStore } from '../../store/featureStore';
 import { usePlatformStore } from '../../store/platformStore';
 import { useUIStore } from '../../store/uiStore';
 
@@ -67,6 +69,12 @@ export default function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const { settings, updatePlatformBranding, isSaving: isSavingBranding } = usePlatformStore();
+  const {
+    flags,
+    isLoading: isFeatureFlagsLoading,
+    isSaving: isFeatureFlagsSaving,
+    setFeatureEnabled,
+  } = useFeatureStore();
   const [platformNameInput, setPlatformNameInput] = useState(settings.platformName);
   const [platformTaglineInput, setPlatformTaglineInput] = useState(settings.platformTagline);
   const [platformLogoInput, setPlatformLogoInput] = useState(settings.platformLogoUrl ?? '');
@@ -203,6 +211,18 @@ export default function Settings() {
     reader.readAsDataURL(file);
 
     if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+  };
+
+  const handleFeatureToggle = async (featureKey: FeatureKey, nextValue: boolean) => {
+    try {
+      await setFeatureEnabled(featureKey, nextValue);
+      showNotification(
+        `Fitur ${FEATURE_DEFINITIONS.find((item) => item.key === featureKey)?.label ?? featureKey} ${nextValue ? 'diaktifkan' : 'dinonaktifkan'}`,
+        'success',
+      );
+    } catch (error) {
+      showNotification(error instanceof Error ? error.message : 'Gagal memperbarui pengaturan fitur', 'error');
+    }
   };
 
   return (
@@ -486,6 +506,50 @@ export default function Settings() {
                   Interval ini memengaruhi dashboard admin yang menggunakan data realtime.
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="app-card p-6 lg:col-span-2">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold tracking-tight text-text-primary">Kontrol Fitur</h2>
+                <p className="text-sm text-text-muted mt-0.5">Aktifkan atau nonaktifkan modul tertentu secara global untuk seluruh aplikasi.</p>
+              </div>
+              <span className="rounded-lg border border-surface/70 bg-surface/20 px-3 py-1 text-xs text-text-muted">
+                {isFeatureFlagsLoading ? 'Memuat...' : `${FEATURE_DEFINITIONS.filter((item) => flags[item.key]).length}/${FEATURE_DEFINITIONS.length} fitur aktif`}
+              </span>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              {FEATURE_DEFINITIONS.map((feature) => {
+                const enabled = flags[feature.key] !== false;
+                return (
+                  <div key={feature.key} className="rounded-xl border border-surface/70 bg-surface/20 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-text-primary">{feature.label}</p>
+                        <p className="text-xs text-text-muted mt-1">{feature.description}</p>
+                      </div>
+                      <button
+                        onClick={() => { void handleFeatureToggle(feature.key, !enabled); }}
+                        disabled={isFeatureFlagsLoading || isFeatureFlagsSaving}
+                        className={`relative h-6 w-12 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60 ${
+                          enabled ? 'bg-primary' : 'bg-surface'
+                        }`}
+                        aria-label={`Toggle ${feature.label}`}
+                        role="switch"
+                        aria-checked={enabled}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                            enabled ? 'translate-x-6' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

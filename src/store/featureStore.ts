@@ -1,0 +1,105 @@
+import { create } from 'zustand';
+import { useAuthStore } from './authStore';
+import { notifyDataChanged } from '../lib/dataSync';
+import {
+  DEFAULT_FEATURE_FLAGS,
+  type FeatureFlagsState,
+  type FeatureKey,
+} from '../lib/featureFlags';
+import {
+  getFeatureFlags as apiGetFeatureFlags,
+  updateFeatureFlag as apiUpdateFeatureFlag,
+} from '../lib/api/featureFlags';
+
+const FEATURE_FLAGS_CACHE_KEY = 'karyo_feature_flags';
+
+interface FeatureStore {
+  flags: FeatureFlagsState;
+  isLoaded: boolean;
+  isLoading: boolean;
+  isSaving: boolean;
+  loadedForUserId: string | null;
+  loadFeatureFlags: (force?: boolean) => Promise<void>;
+  setFeatureEnabled: (featureKey: FeatureKey, isEnabled: boolean) => Promise<void>;
+}
+
+const safeGet = (key: string): string | null => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const safeSet = (key: string, value: string): void => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // ignore local storage failures
+  }
+};
+
+const loadCachedFlags = (): FeatureFlagsState => {
+  const raw = safeGet(FEATURE_FLAGS_CACHE_KEY);
+  if (!raw) return { ...DEFAULT_FEATURE_FLAGS };
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<FeatureFlagsState>;
+    return { ...DEFAULT_FEATURE_FLAGS, ...parsed };
+  } catch {
+    return { ...DEFAULT_FEATURE_FLAGS };
+  }
+};
+
+const persistFlags = (flags: FeatureFlagsState) => {
+  safeSet(FEATURE_FLAGS_CACHE_KEY, JSON.stringify(flags));
+};
+
+export const useFeatureStore = create<FeatureStore>((set, get) => ({
+  flags: loadCachedFlags(),
+  isLoaded: false,
+  isLoading: false,
+  isSaving: false,
+  loadedForUserId: null,
+
+  loadFeatureFlags: async (force = false) => {
+    const { user } = useAuthStore.getState();
+    if (!user) {
+      set({ flags: { ...DEFAULT_FEATURE_FLAGS }, isLoaded: false, isLoading: false, loadedForUserId: null });
+      return;
+    }
+
+    if (get().isLoaded && !force && get().loadedForUserId === user.id) return;
+
+    set({ isLoading: true });
+
+    try {
+      const flags = await apiGetFeatureFlags(user.id, user.role);
+      persistFlags(flags);
+      set({ flags, isLoaded: true, isLoading: false, loadedForUserId: user.id });
+    } catch {
+      set({ isLoaded: true, isLoading: false, loadedForUserId: user.id });
+    }
+  },
+
+  setFeatureEnabled: async (featureKey, isEnabled) => {
+    const { user } = useAuthStore.getState();
+    if (!user) throw new Error('Sesi pengguna tidak tersedia');
+
+    const previous = get().flags;
+    const next = { ...previous, [featureKey]: isEnabled };
+
+    set({ flags: next, isSaving: true });
+    persistFlags(next);
+
+    try {
+      await apiUpdateFeatureFlag(user.id, user.role, featureKey, isEnabled);
+      set({ isSaving: false, isLoaded: true });
+      notifyDataChanged('feature_flags');
+    } catch (error) {
+      set({ flags: previous, isSaving: false });
+      persistFlags(previous);
+      throw error;
+    }
+  },
+}));

@@ -15,6 +15,7 @@ const realtimeTableMap: Array<{ table: string; resource: DataResource }> = [
   { table: 'logistics_items', resource: 'logistics_items' },
   { table: 'audit_logs', resource: 'audit_logs' },
   { table: 'gate_pass', resource: 'gate_pass' },
+  { table: 'system_feature_flags', resource: 'feature_flags' },
 ];
 
 export function useGlobalRealtimeSync() {

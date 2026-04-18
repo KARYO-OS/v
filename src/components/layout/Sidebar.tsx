@@ -3,6 +3,8 @@ import { ICONS, IconType } from '../../icons';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { usePlatformStore } from '../../store/platformStore';
+import { useFeatureStore } from '../../store/featureStore';
+import { isPathEnabled } from '../../lib/featureFlags';
 import type { Role } from '../../types';
 
 interface NavItem {
@@ -55,11 +57,12 @@ export default function Sidebar() {
   const { user, logout } = useAuthStore();
   const { sidebarOpen, setSidebarOpen } = useUIStore();
   const { settings } = usePlatformStore();
+  const { flags } = useFeatureStore();
   const navigate = useNavigate();
 
   if (!user) return null;
 
-  const navItems = NAV_ITEMS[user.role];
+  const navItems = NAV_ITEMS[user.role].filter((item) => isPathEnabled(item.path, flags));
 
   const handleLogout = async () => {
     await logout();

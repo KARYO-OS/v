@@ -13,6 +13,8 @@ import { ICONS } from '../../icons';
 import { useAdminDashboardStore } from '../../store/adminDashboardStore';
 import { subscribeDataChanges } from '../../lib/dataSync';
 import { useUsers } from '../../hooks/useUsers';
+import { useFeatureStore } from '../../store/featureStore';
+import { isPathEnabled } from '../../lib/featureFlags';
 
 const actionLabels: Record<string, string> = {
   LOGIN: 'Login',
@@ -45,6 +47,7 @@ const quickLinks: QuickLink[] = [
 export default function AdminDashboard() {
   const { user } = useAuthStore();
   const { dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, showNotification } = useUIStore();
+  const { flags } = useFeatureStore();
   const { users: latestUsers, isLoading: isMembersLoading, deleteUser } = useUsers({ orderBy: 'created_at', ascending: false });
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const {
@@ -131,6 +134,8 @@ export default function AdminDashboard() {
       ]
     : [];
 
+  const enabledQuickLinks = quickLinks.filter((item) => isPathEnabled(item.href, flags));
+
   return (
     <DashboardLayout title="Pusat Kendali">
       <div className="space-y-6">
@@ -174,7 +179,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-                {quickLinks.map((item) => {
+                {enabledQuickLinks.map((item) => {
                   const Icon = ICONS[item.icon];
                   return (
                   <Link
@@ -194,6 +199,11 @@ export default function AdminDashboard() {
                   </Link>
                   );
                 })}
+                {enabledQuickLinks.length === 0 && (
+                  <div className="col-span-full rounded-xl border border-surface/80 bg-surface/20 p-4 text-sm text-text-muted">
+                    Semua modul tindakan cepat sedang dinonaktifkan oleh admin.
+                  </div>
+                )}
               </div>
             </div>
 

@@ -4,6 +4,8 @@ import {
   UserCheck, Users, Package, Settings, BarChart2, ScanLine,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useFeatureStore } from '../../store/featureStore';
+import { isPathEnabled } from '../../lib/featureFlags';
 import type { Role } from '../../types';
 
 interface BottomTabItem {
@@ -48,9 +50,10 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
  */
 export default function BottomTabBar() {
   const { user } = useAuthStore();
+  const { flags } = useFeatureStore();
   if (!user) return null;
 
-  const tabs = BOTTOM_TABS[user.role];
+  const tabs = BOTTOM_TABS[user.role].filter((tab) => isPathEnabled(tab.path, flags));
 
   if (!tabs) return null;
 

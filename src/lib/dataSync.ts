@@ -8,7 +8,8 @@ export type DataResource =
   | 'logistics_requests'
   | 'logistics_items'
   | 'audit_logs'
-  | 'gate_pass';
+  | 'gate_pass'
+  | 'feature_flags';
 
 const EVENT_NAME = 'karyo:data-sync';
 
