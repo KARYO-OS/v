@@ -75,7 +75,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     return subscribeDataChanges(
-      ['users', 'tasks', 'leave_requests', 'attendance', 'announcements', 'logistics_requests', 'audit_logs', 'gate_pass'],
+      ['users', 'tasks', 'leave_requests', 'attendance', 'announcements', 'logistics_items', 'audit_logs', 'gate_pass'],
       () => {
         void refreshDashboard();
       },

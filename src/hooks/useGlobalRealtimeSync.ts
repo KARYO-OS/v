@@ -12,7 +12,7 @@ const realtimeTableMap: Array<{ table: string; resource: DataResource }> = [
   { table: 'attendance', resource: 'attendance' },
   { table: 'leave_requests', resource: 'leave_requests' },
   { table: 'logistics_requests', resource: 'logistics_requests' },
-  { table: 'logistics_items', resource: 'logistics_requests' },
+  { table: 'logistics_items', resource: 'logistics_items' },
   { table: 'audit_logs', resource: 'audit_logs' },
   { table: 'gate_pass', resource: 'gate_pass' },
 ];
@@ -22,14 +22,20 @@ export function useGlobalRealtimeSync() {
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      if (channelRef.current) {
+        void supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      return;
+    }
 
     if (channelRef.current) {
       void supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
 
-    const channel = supabase.channel(`global-sync-${user.id}`);
+    const channel = supabase.channel('global-sync');
 
     for (const { table, resource } of realtimeTableMap) {
       channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {

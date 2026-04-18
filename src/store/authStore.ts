@@ -6,17 +6,24 @@ import type { User, KaryoSession } from '../types';
 const SESSION_KEY = 'karyo_session';
 const CRYPTO_KEY_SESSION = 'karyo_session_key';
 const SESSION_DURATION_HOURS = 8;
-const AUTH_SYNC_CHANNEL = 'karyo_auth_sync';
+const AUTH_BROADCAST_CHANNEL = 'karyo_auth_sync';
 
 type AuthSyncMessage =
   | { type: 'LOGIN'; session: KaryoSession }
   | { type: 'LOGOUT' };
 
-const authBroadcastChannel =
-  typeof window !== 'undefined' && 'BroadcastChannel' in window
-    ? new BroadcastChannel(AUTH_SYNC_CHANNEL)
-    : null;
-let authSyncListenersBound = false;
+const AUTH_LISTENERS_INITIALIZED_KEY = '__karyo_auth_sync_bound__';
+let authBroadcastChannel: BroadcastChannel | null = null;
+
+function getAuthBroadcastChannel(): BroadcastChannel | null {
+  if (typeof window === 'undefined' || !('BroadcastChannel' in window)) {
+    return null;
+  }
+  if (!authBroadcastChannel) {
+    authBroadcastChannel = new BroadcastChannel(AUTH_BROADCAST_CHANNEL);
+  }
+  return authBroadcastChannel;
+}
 
 interface AuthStore {
   user: User | null;
@@ -141,8 +148,9 @@ const cleanupLocalAuthState = (): void => {
 };
 
 function broadcastAuthSync(message: AuthSyncMessage): void {
-  if (!authBroadcastChannel) return;
-  authBroadcastChannel.postMessage(message);
+  const channel = getAuthBroadcastChannel();
+  if (!channel) return;
+  channel.postMessage(message);
 }
 
 // ── RPC response types ───────────────────────────────────────────
@@ -314,34 +322,41 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 }));
 
-if (typeof window !== 'undefined' && !authSyncListenersBound) {
-  authSyncListenersBound = true;
-  window.addEventListener('storage', (event) => {
-    if (event.key === SESSION_KEY && event.newValue === null) {
-      cleanupLocalAuthState();
-    }
-  });
+if (typeof window !== 'undefined') {
+  const globalWindow = window as Window & {
+    [AUTH_LISTENERS_INITIALIZED_KEY]?: boolean;
+  };
+  if (!globalWindow[AUTH_LISTENERS_INITIALIZED_KEY]) {
+    globalWindow[AUTH_LISTENERS_INITIALIZED_KEY] = true;
 
-  if (authBroadcastChannel) {
-    authBroadcastChannel.onmessage = (event: MessageEvent<AuthSyncMessage>) => {
-      const message = event.data;
-      if (!message) return;
-
-      if (message.type === 'LOGOUT') {
+    window.addEventListener('storage', (event) => {
+      if (event.key === SESSION_KEY && event.newValue === null) {
         cleanupLocalAuthState();
-        return;
       }
+    });
 
-      if (message.type === 'LOGIN') {
-        void (async () => {
-          try {
-            await saveSession(message.session);
-            await useAuthStore.getState().restoreSession();
-          } catch {
-            cleanupLocalAuthState();
-          }
-        })();
-      }
-    };
+    const authChannel = getAuthBroadcastChannel();
+    if (authChannel) {
+      authChannel.onmessage = (event: MessageEvent<AuthSyncMessage>) => {
+        const message = event.data;
+        if (!message) return;
+
+        if (message.type === 'LOGOUT') {
+          cleanupLocalAuthState();
+          return;
+        }
+
+        if (message.type === 'LOGIN') {
+          void (async () => {
+            try {
+              await saveSession(message.session);
+              await useAuthStore.getState().restoreSession();
+            } catch {
+              cleanupLocalAuthState();
+            }
+          })();
+        }
+      };
+    }
   }
 }
