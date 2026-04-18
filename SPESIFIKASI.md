@@ -693,6 +693,8 @@ interface UIStore {
 | Announcements | `/admin/announcements` | Buat & kelola broadcast |
 | Shift Schedule | `/admin/schedule` | Pengaturan jadwal shift satuan |
 | Attendance Report | `/admin/attendance` | Rekap kehadiran global, export CSV |
+| Gate Pass Monitor | `/admin/gatepass-monitor` | Monitoring checked_in, completed, overdue |
+| Pos Jaga | `/admin/pos-jaga` | Kelola pos jaga & QR statis |
 | Settings | `/admin/settings` | Logo, tema sistem, konfigurasi |
 
 ### 7.2 Fitur Kritis
@@ -728,6 +730,7 @@ interface UIStore {
 | Reports | `/komandan/reports` | Laporan masuk, approval |
 | Evaluation | `/komandan/evaluation` | Catatan kinerja & disiplin |
 | Attendance | `/komandan/attendance` | Tracking kehadiran unit |
+| Gate Pass Status | `/komandan/gatepass-approval` | Status operasional gate pass unit |
 
 ### 8.2 Alur Task Management
 
@@ -769,6 +772,8 @@ APPROVED  REJECTED
 | My Dashboard | `/prajurit/dashboard` | Tugas hari ini, status kehadiran, notifikasi |
 | My Tasks | `/prajurit/tasks` | List tugas, kerjakan, submit laporan |
 | Attendance | `/prajurit/attendance` | Check-in/out, riwayat |
+| Gate Pass | `/prajurit/gatepass` | Pengajuan detail gate pass |
+| Scan Pos Jaga | `/prajurit/scan-pos` | Scan QR statis Pos Jaga untuk keluar/kembali |
 | Messages | `/prajurit/messages` | Inbox & kirim pesan |
 | Leave Request | `/prajurit/leave` | Pengajuan & status izin |
 | Profile | `/prajurit/profile` | Data diri, statistik pribadi |
@@ -782,6 +787,25 @@ APPROVED  REJECTED
 // - Tidak bisa check-in/out untuk hari yang sudah lewat
 // - Waktu diambil dari server (Supabase), bukan client
 ```
+
+### 9.3 Alur Gate Pass Baru
+
+```text
+1. Prajurit login dan membuka menu Gate Pass
+2. Isi detail keperluan, tujuan, jam keluar, dan jam kembali
+3. Submit pengajuan → status langsung disetujui otomatis
+4. Prajurit datang ke Pos Jaga dan scan QR statis
+5. Scan pertama mengubah status menjadi checked_in
+6. Saat kembali, scan QR Pos Jaga lagi
+7. Scan kedua mengubah status menjadi completed
+8. Jika melewati batas kembali saat checked_in, status menjadi overdue
+```
+
+Aturan bisnis:
+- Tidak ada lagi approval manual untuk pengajuan gate pass
+- QR yang dipindai adalah QR statis milik Pos Jaga, bukan QR gate pass per pengajuan
+- Sistem mencocokkan ID user, ID pos jaga, dan timestamp scan di backend
+- Monitoring admin menampilkan `approved`, `checked_in`, `completed`, dan `overdue`
 
 ### 9.3 Submit Laporan Tugas
 

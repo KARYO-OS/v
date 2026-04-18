@@ -15,7 +15,7 @@ Sistem menggunakan autentikasi berbasis **NRP (Nomor Registrasi Pokok)** dan **P
 
 ### Gate Pass & QR Scanner
 
-KARYO OS menggunakan fitur QR untuk gate pass dan pemeriksaan keluar/masuk. Pastikan dependensi berikut terpasang:
+KARYO OS menggunakan alur Gate Pass dengan pengajuan otomatis disetujui, lalu verifikasi keluar dan kembali lewat scan QR statis di Pos Jaga. Pastikan dependensi berikut terpasang:
 
 ```
 npm install qrcode.react html5-qrcode
@@ -103,6 +103,7 @@ Hasil cakupan dibuat di folder `coverage/`, dan konfigurasi pengujian sudah meng
 - Broadcast pengumuman ke semua user
 - Pengaturan shift & jadwal global
 - Rekap kehadiran global
+- Monitoring Gate Pass keluar, kembali, dan overdue
 - Backup & restore database
 - Kalender global satuan
 
@@ -115,12 +116,14 @@ Hasil cakupan dibuat di folder `coverage/`, dan konfigurasi pengujian sudah meng
 - Catatan evaluasi & disiplin personel
 - Permintaan logistik ke admin
 - Broadcast instruksi ke unit
+- Ringkasan status Gate Pass operasional unit
 
 ### 🪖 Dashboard Prajurit
 - Lihat & kerjakan tugas harian
 - Absensi check-in / check-out
 - Kirim laporan tugas ke komandan
 - Permintaan izin (cuti/sakit)
+- Pengajuan Gate Pass dengan auto-approve lalu scan Pos Jaga
 - Inbox pesan & notifikasi perintah
 - Download dokumen
 - Statistik & riwayat pribadi
