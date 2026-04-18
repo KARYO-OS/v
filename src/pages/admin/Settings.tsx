@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Upload, AlertTriangle } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
@@ -6,7 +6,7 @@ import Modal from '../../components/common/Modal';
 import PageHeader from '../../components/ui/PageHeader';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
-import { FEATURE_DEFINITIONS, type FeatureKey } from '../../lib/featureFlags';
+import { DEFAULT_FEATURE_FLAGS, FEATURE_DEFINITIONS, type FeatureKey } from '../../lib/featureFlags';
 import { useFeatureStore } from '../../store/featureStore';
 import { usePlatformStore } from '../../store/platformStore';
 import { useUIStore } from '../../store/uiStore';
@@ -74,7 +74,10 @@ export default function Settings() {
     isLoading: isFeatureFlagsLoading,
     isSaving: isFeatureFlagsSaving,
     setFeatureEnabled,
+    setFeatureFlags,
+    setAllFeaturesEnabled,
   } = useFeatureStore();
+  const [featureFilter, setFeatureFilter] = useState('');
   const [platformNameInput, setPlatformNameInput] = useState(settings.platformName);
   const [platformTaglineInput, setPlatformTaglineInput] = useState(settings.platformTagline);
   const [platformLogoInput, setPlatformLogoInput] = useState(settings.platformLogoUrl ?? '');
@@ -84,6 +87,22 @@ export default function Settings() {
     setPlatformTaglineInput(settings.platformTagline);
     setPlatformLogoInput(settings.platformLogoUrl ?? '');
   }, [settings]);
+
+  const featureStats = useMemo(() => {
+    const activeCount = FEATURE_DEFINITIONS.filter((item) => flags[item.key]).length;
+    const inactiveCount = FEATURE_DEFINITIONS.length - activeCount;
+    return { activeCount, inactiveCount };
+  }, [flags]);
+
+  const filteredFeatures = useMemo(() => {
+    const query = featureFilter.trim().toLowerCase();
+    if (!query) return FEATURE_DEFINITIONS;
+
+    return FEATURE_DEFINITIONS.filter((feature) => {
+      const haystack = `${feature.label} ${feature.description} ${feature.key}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [featureFilter]);
 
   /** Export all tables as a single JSON backup file */
   const handleExport = async () => {
@@ -222,6 +241,29 @@ export default function Settings() {
       );
     } catch (error) {
       showNotification(error instanceof Error ? error.message : 'Gagal memperbarui pengaturan fitur', 'error');
+    }
+  };
+
+  const handleBulkFeatureAction = async (action: 'enable-all' | 'disable-all' | 'restore-default') => {
+    try {
+      if (action === 'enable-all') {
+        await setAllFeaturesEnabled(true);
+      } else if (action === 'disable-all') {
+        await setAllFeaturesEnabled(false);
+      } else {
+        await setFeatureFlags(DEFAULT_FEATURE_FLAGS);
+      }
+
+      const message =
+        action === 'enable-all'
+          ? 'Semua modul fitur berhasil diaktifkan'
+          : action === 'disable-all'
+            ? 'Semua modul fitur berhasil dinonaktifkan'
+            : 'Konfigurasi fitur dikembalikan ke default';
+
+      showNotification(message, 'success');
+    } catch (error) {
+      showNotification(error instanceof Error ? error.message : 'Gagal memperbarui kontrol fitur global', 'error');
     }
   };
 
@@ -510,18 +552,61 @@ export default function Settings() {
           </div>
 
           <div className="app-card p-6 lg:col-span-2">
-            <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold tracking-tight text-text-primary">Kontrol Fitur</h2>
                 <p className="text-sm text-text-muted mt-0.5">Aktifkan atau nonaktifkan modul tertentu secara global untuk seluruh aplikasi.</p>
               </div>
-              <span className="rounded-lg border border-surface/70 bg-surface/20 px-3 py-1 text-xs text-text-muted">
-                {isFeatureFlagsLoading ? 'Memuat...' : `${FEATURE_DEFINITIONS.filter((item) => flags[item.key]).length}/${FEATURE_DEFINITIONS.length} fitur aktif`}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { void handleBulkFeatureAction('enable-all'); }}
+                  disabled={isFeatureFlagsLoading || isFeatureFlagsSaving}
+                >
+                  Aktifkan Semua
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { void handleBulkFeatureAction('disable-all'); }}
+                  disabled={isFeatureFlagsLoading || isFeatureFlagsSaving}
+                >
+                  Nonaktifkan Semua
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { void handleBulkFeatureAction('restore-default'); }}
+                  disabled={isFeatureFlagsLoading || isFeatureFlagsSaving}
+                >
+                  Pulihkan Default
+                </Button>
+              </div>
+            </div>
+
+            <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end">
+              <div>
+                <label htmlFor="feature-filter" className="text-sm font-semibold text-text-primary">Cari Modul</label>
+                <input
+                  id="feature-filter"
+                  type="search"
+                  className="form-control mt-1"
+                  value={featureFilter}
+                  onChange={(e) => setFeatureFilter(e.target.value)}
+                  placeholder="Cari nama fitur, deskripsi, atau key"
+                />
+              </div>
+              <div className="rounded-xl border border-surface/70 bg-surface/20 px-4 py-3 text-sm text-text-muted">
+                <span className="font-semibold text-text-primary">{featureStats.activeCount}</span> aktif
+              </div>
+              <div className="rounded-xl border border-surface/70 bg-surface/20 px-4 py-3 text-sm text-text-muted">
+                <span className="font-semibold text-text-primary">{featureStats.inactiveCount}</span> nonaktif
+              </div>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              {FEATURE_DEFINITIONS.map((feature) => {
+              {filteredFeatures.map((feature) => {
                 const enabled = flags[feature.key] !== false;
                 return (
                   <div key={feature.key} className="rounded-xl border border-surface/70 bg-surface/20 p-4">
@@ -551,6 +636,12 @@ export default function Settings() {
                 );
               })}
             </div>
+
+            {!filteredFeatures.length && (
+              <div className="mt-4 rounded-xl border border-dashed border-surface/70 bg-bg-card px-4 py-5 text-sm text-text-muted">
+                Tidak ada modul yang cocok dengan filter pencarian.
+              </div>
+            )}
           </div>
 
           <div className="app-card p-6">

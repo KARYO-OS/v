@@ -2,12 +2,14 @@ import { create } from 'zustand';
 import { useAuthStore } from './authStore';
 import { notifyDataChanged } from '../lib/dataSync';
 import {
+  FEATURE_DEFINITIONS,
   DEFAULT_FEATURE_FLAGS,
   type FeatureFlagsState,
   type FeatureKey,
 } from '../lib/featureFlags';
 import {
   getFeatureFlags as apiGetFeatureFlags,
+  updateFeatureFlags as apiUpdateFeatureFlags,
   updateFeatureFlag as apiUpdateFeatureFlag,
 } from '../lib/api/featureFlags';
 
@@ -21,6 +23,8 @@ interface FeatureStore {
   loadedForUserId: string | null;
   loadFeatureFlags: (force?: boolean) => Promise<void>;
   setFeatureEnabled: (featureKey: FeatureKey, isEnabled: boolean) => Promise<void>;
+  setFeatureFlags: (nextFlags: FeatureFlagsState) => Promise<void>;
+  setAllFeaturesEnabled: (isEnabled: boolean) => Promise<void>;
 }
 
 const safeGet = (key: string): string | null => {
@@ -101,5 +105,33 @@ export const useFeatureStore = create<FeatureStore>((set, get) => ({
       persistFlags(previous);
       throw error;
     }
+  },
+
+  setFeatureFlags: async (nextFlags) => {
+    const { user } = useAuthStore.getState();
+    if (!user) throw new Error('Sesi pengguna tidak tersedia');
+
+    const previous = get().flags;
+    set({ flags: nextFlags, isSaving: true });
+    persistFlags(nextFlags);
+
+    try {
+      await apiUpdateFeatureFlags(user.id, user.role, nextFlags);
+      set({ isSaving: false, isLoaded: true });
+      notifyDataChanged('feature_flags');
+    } catch (error) {
+      set({ flags: previous, isSaving: false });
+      persistFlags(previous);
+      throw error;
+    }
+  },
+
+  setAllFeaturesEnabled: async (isEnabled) => {
+    const nextFlags = FEATURE_DEFINITIONS.reduce((accumulator, feature) => {
+      accumulator[feature.key] = isEnabled;
+      return accumulator;
+    }, { ...DEFAULT_FEATURE_FLAGS } as FeatureFlagsState);
+
+    await get().setFeatureFlags(nextFlags);
   },
 }));

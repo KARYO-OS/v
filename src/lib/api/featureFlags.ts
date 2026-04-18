@@ -40,3 +40,17 @@ export async function updateFeatureFlag(
 
   if (error) throw error;
 }
+
+export async function updateFeatureFlags(
+  callerId: string,
+  callerRole: string,
+  featureFlags: FeatureFlagsState,
+): Promise<void> {
+  const { error } = await supabase.rpc('update_feature_flags', {
+    p_user_id: callerId,
+    p_role: callerRole,
+    p_feature_flags: featureFlags,
+  });
+
+  if (error) throw error;
+}
