@@ -30,7 +30,7 @@ export async function fetchUsers(params: FetchUsersParams): Promise<User[]> {
     p_ascending: params.ascending ?? true,
   });
   if (error) throw error;
-  return (data as User[]) ?? [];
+  return (data as unknown as User[]) ?? [];
 }
 
 // Explicit safe column list — deliberately excludes pin_hash
@@ -63,7 +63,7 @@ export async function fetchUsersDirect(params: FetchUsersParams): Promise<User[]
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data as User[]) ?? [];
+  return (data as unknown as User[]) ?? [];
 }
 
 export async function createUserWithPin(userData: {
