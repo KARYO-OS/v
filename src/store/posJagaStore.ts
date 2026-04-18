@@ -3,7 +3,7 @@ import {
   fetchAllPosJaga,
   insertPosJaga,
   patchPosJagaActive,
-  rpcScanPosJaga,
+  rpcScanPosJagaWithCredentials,
 } from '../lib/api/posJaga';
 import type { PosJaga, ScanPosJagaResult } from '../types';
 import { useAuthStore } from './authStore';
@@ -14,7 +14,7 @@ interface PosJagaState {
   fetchPosJaga: () => Promise<void>;
   createPosJaga: (nama: string) => Promise<PosJaga>;
   setActive: (id: string, is_active: boolean) => Promise<void>;
-  scanPosJaga: (posToken: string) => Promise<ScanPosJagaResult>;
+  scanPosJaga: (posToken: string, nrp: string, pin: string) => Promise<ScanPosJagaResult>;
 }
 
 export const usePosJagaStore = create<PosJagaState>()((set, get) => ({
@@ -44,9 +44,7 @@ export const usePosJagaStore = create<PosJagaState>()((set, get) => ({
     await get().fetchPosJaga();
   },
 
-  async scanPosJaga(posToken) {
-    const user = useAuthStore.getState().user;
-    if (!user) throw new Error('User tidak ditemukan');
-    return rpcScanPosJaga(normalizeScannedQrToken(posToken), user.id);
+  async scanPosJaga(posToken, nrp, pin) {
+    return rpcScanPosJagaWithCredentials(normalizeScannedQrToken(posToken), nrp, pin);
   },
 }));

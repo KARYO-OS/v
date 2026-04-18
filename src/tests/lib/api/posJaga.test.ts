@@ -5,6 +5,7 @@ import {
   insertPosJaga,
   patchPosJagaActive,
   rpcScanPosJaga,
+  rpcScanPosJagaWithCredentials,
 } from '../../../lib/api/posJaga';
 
 const mockSupabase = supabase as unknown as {
@@ -141,6 +142,38 @@ describe('posJaga API', () => {
     it('throws with fallback message when data is null and no error', async () => {
       mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
       await expect(rpcScanPosJaga('tok', 'u1')).rejects.toThrow('QR pos jaga tidak valid');
+    });
+  });
+
+  // ── rpcScanPosJagaWithCredentials ─────────────────────────
+  describe('rpcScanPosJagaWithCredentials', () => {
+    it('verifies NRP/PIN then scans using resolved user_id', async () => {
+      const scanResult = { gate_pass_id: 'gp1', pos_nama: 'Pos Jaga Utara', status: 'out', message: 'Keluar berhasil dicatat' };
+      mockSupabase.rpc
+        .mockResolvedValueOnce({ data: { user_id: 'u1', user_role: 'prajurit' }, error: null })
+        .mockResolvedValueOnce({ data: scanResult, error: null });
+
+      const result = await rpcScanPosJagaWithCredentials('tok1', '1000001', '123456');
+
+      expect(mockSupabase.rpc).toHaveBeenNthCalledWith(1, 'verify_user_pin', {
+        p_nrp: '1000001',
+        p_pin: '123456',
+      });
+      expect(mockSupabase.rpc).toHaveBeenNthCalledWith(2, 'scan_pos_jaga', {
+        p_pos_token: 'tok1',
+        p_user_id: 'u1',
+      });
+      expect(result.status).toBe('out');
+    });
+
+    it('throws when NRP/PIN invalid', async () => {
+      mockSupabase.rpc.mockResolvedValueOnce({ data: null, error: null });
+      await expect(rpcScanPosJagaWithCredentials('tok1', '1000001', '999999')).rejects.toThrow('NRP atau PIN salah');
+    });
+
+    it('throws when user role is not prajurit', async () => {
+      mockSupabase.rpc.mockResolvedValueOnce({ data: { user_id: 'a1', user_role: 'admin' }, error: null });
+      await expect(rpcScanPosJagaWithCredentials('tok1', '1000001', '123456')).rejects.toThrow('Hanya prajurit yang dapat melakukan scan pos jaga');
     });
   });
 });

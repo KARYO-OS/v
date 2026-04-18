@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { usePosJagaStore } from '../../store/posJagaStore';
 import { useGatePassStore } from '../../store/gatePassStore';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
 import type { ScanPosJagaResult } from '../../types';
 
-type ScanState = 'idle' | 'scanning' | 'success' | 'error';
+type ScanState = 'idle' | 'auth' | 'processing' | 'success' | 'error';
 
 function PosJagaScanner({ onScan }: { onScan: (token: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,40 +43,68 @@ export default function ScanPosJagaPage() {
   const [result, setResult] = useState<ScanPosJagaResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [scannedToken, setScannedToken] = useState<string | null>(null);
+  const [nrp, setNrp] = useState('');
+  const [pin, setPin] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
   const isProcessingScanRef = useRef<boolean>(false);
 
   const handleScan = useCallback(
-    async (token: string) => {
+    (token: string) => {
       if (state === 'success' || state === 'error' || isProcessingScanRef.current) return;
-      isProcessingScanRef.current = true;
-      setState('scanning');
-      try {
-        const res = await scanPosJaga(token);
-        setResult(res);
-        setState('success');
-        // Refresh gate passes in background to reflect new status
-        void fetchGatePasses();
-      } catch (e: unknown) {
-        const err = e instanceof Error ? e : new Error('QR tidak valid');
-        setErrorMsg(err.message);
-        setState('error');
-      } finally {
-        isProcessingScanRef.current = false;
-      }
+      setScannedToken(token);
+      setAuthError(null);
+      setScanning(false);
+      setState('auth');
     },
     [
       state,
-      scanPosJaga,
-      fetchGatePasses,
-      // isProcessingScanRef is intentionally excluded because useRef identity is stable.
     ],
   );
+
+  const handleAuthorizeAndScan = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!scannedToken) {
+      setAuthError('QR belum dipindai. Silakan scan QR pos jaga terlebih dahulu.');
+      return;
+    }
+    if (isProcessingScanRef.current) return;
+
+    isProcessingScanRef.current = true;
+    setAuthError(null);
+    setErrorMsg(null);
+    setState('processing');
+
+    try {
+      const res = await scanPosJaga(scannedToken, nrp, pin);
+      setResult(res);
+      setState('success');
+      // Refresh gate passes in background to reflect new status
+      void fetchGatePasses();
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error('Validasi NRP/PIN atau QR gagal');
+      setErrorMsg(err.message);
+      setState('error');
+    } finally {
+      isProcessingScanRef.current = false;
+    }
+  };
 
   const handleReset = () => {
     setState('idle');
     setResult(null);
     setErrorMsg(null);
+    setAuthError(null);
+    setScannedToken(null);
+    setNrp('');
+    setPin('');
     setScanning(false);
+  };
+
+  const handleRescanQr = () => {
+    setAuthError(null);
+    setState('idle');
+    setScanning(true);
   };
 
   const statusLabel: Record<string, string> = {
@@ -88,7 +118,7 @@ export default function ScanPosJagaPage() {
         <div>
           <h1 className="text-2xl font-bold">Scan Pos Jaga</h1>
           <p className="text-sm text-text-muted mt-1">
-            Pindai QR statis yang tertempel di pos jaga untuk mencatat waktu keluar atau kembali.
+            Pindai QR statis di pos jaga, lalu masukkan NRP dan PIN untuk mencatat izin keluar/kembali.
           </p>
         </div>
 
@@ -115,11 +145,54 @@ export default function ScanPosJagaPage() {
           </div>
         )}
 
+        {/* QR sudah dipindai, tunggu otorisasi NRP + PIN */}
+        {state === 'auth' && (
+          <div className="rounded-2xl border border-surface bg-bg-card p-6 space-y-4">
+            <div className="text-sm text-text-muted">
+              QR pos jaga terdeteksi. Masukkan NRP dan PIN untuk otorisasi izin keluar/kembali.
+            </div>
+
+            {authError && (
+              <div className="rounded-xl border border-accent-red/30 bg-accent-red/5 px-4 py-3 text-sm text-accent-red">
+                {authError}
+              </div>
+            )}
+
+            <form className="space-y-3" onSubmit={handleAuthorizeAndScan}>
+              <Input
+                label="NRP"
+                placeholder="Masukkan NRP"
+                value={nrp}
+                onChange={(event) => setNrp(event.target.value)}
+                autoComplete="username"
+                required
+              />
+              <Input
+                label="PIN"
+                type="password"
+                placeholder="Masukkan PIN"
+                value={pin}
+                onChange={(event) => setPin(event.target.value)}
+                autoComplete="current-password"
+                required
+              />
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <Button type="button" variant="secondary" size="sm" onClick={handleRescanQr}>
+                  Scan Ulang QR
+                </Button>
+                <Button type="submit" variant="primary" size="sm">
+                  Validasi & Proses
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {/* Loading setelah scan */}
-        {state === 'scanning' && (
+        {state === 'processing' && (
           <div className="rounded-2xl border border-surface bg-bg-card p-6 flex flex-col items-center gap-3">
             <span className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <p className="text-sm text-text-muted">Memproses...</p>
+            <p className="text-sm text-text-muted">Memproses izin keluar/kembali...</p>
           </div>
         )}
 

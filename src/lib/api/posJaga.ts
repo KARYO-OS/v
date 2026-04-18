@@ -1,6 +1,11 @@
 import { supabase } from '../supabase';
 import type { PosJaga, ScanPosJagaResult } from '../../types';
 
+interface VerifyUserPinRow {
+  user_id: string;
+  user_role: string;
+}
+
 async function ensureSessionContext(callerId: string, callerRole: string): Promise<void> {
   const res = await supabase.rpc('set_session_context', {
     p_user_id: callerId,
@@ -47,4 +52,34 @@ export async function rpcScanPosJaga(posToken: string, userId: string): Promise<
   });
   if (error || !data) throw new Error(error?.message ?? 'QR pos jaga tidak valid');
   return data as ScanPosJagaResult;
+}
+
+export async function rpcScanPosJagaWithCredentials(
+  posToken: string,
+  nrp: string,
+  pin: string,
+): Promise<ScanPosJagaResult> {
+  const normalizedNrp = nrp.trim();
+  const normalizedPin = pin.trim();
+  if (!normalizedNrp || !normalizedPin) {
+    throw new Error('NRP dan PIN wajib diisi');
+  }
+
+  const { data: authData, error: authError } = await supabase
+    .rpc('verify_user_pin', {
+      p_nrp: normalizedNrp,
+      p_pin: normalizedPin,
+    });
+
+  if (authError) throw authError;
+  const row = Array.isArray(authData)
+    ? (authData[0] as VerifyUserPinRow | undefined) ?? null
+    : (authData as VerifyUserPinRow | null);
+  if (!row) throw new Error('NRP atau PIN salah');
+
+  if (row.user_role !== 'prajurit') {
+    throw new Error('Hanya prajurit yang dapat melakukan scan pos jaga');
+  }
+
+  return rpcScanPosJaga(posToken, row.user_id);
 }
