@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { fetchGatePassesByUser, fetchAllGatePasses, fetchGatePassByQrToken, insertGatePass, patchGatePassStatus, rpcScanGatePass } from '../lib/api/gatepass';
 import { GatePass, GatePassStatus } from '../types';
-import { generateQrToken } from '../utils/gatepass';
+import { generateQrToken, normalizeScannedQrToken } from '../utils/gatepass';
 import { useAuthStore } from './authStore';
 
 interface GatePassState {
@@ -67,9 +67,10 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     if (!user || (user.role !== 'guard' && user.role !== 'admin')) {
       throw new Error('Akses hanya untuk petugas jaga');
     }
-    await rpcScanGatePass(qrToken);
+    const normalizedToken = normalizeScannedQrToken(qrToken);
+    await rpcScanGatePass(normalizedToken);
     // Fetch the updated gate pass with user data so callers can render scan result
-    const updated = await fetchGatePassByQrToken(user.id, user.role, qrToken);
+    const updated = await fetchGatePassByQrToken(user.id, user.role, normalizedToken);
     if (!updated) throw new Error('Gate pass tidak ditemukan setelah scan');
     await get().fetchGatePasses();
     return updated;

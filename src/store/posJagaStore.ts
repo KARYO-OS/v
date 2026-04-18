@@ -7,6 +7,7 @@ import {
 } from '../lib/api/posJaga';
 import type { PosJaga, ScanPosJagaResult } from '../types';
 import { useAuthStore } from './authStore';
+import { normalizeScannedQrToken } from '../utils/gatepass';
 
 interface PosJagaState {
   posJagaList: PosJaga[];
@@ -46,6 +47,6 @@ export const usePosJagaStore = create<PosJagaState>()((set, get) => ({
   async scanPosJaga(posToken) {
     const user = useAuthStore.getState().user;
     if (!user) throw new Error('User tidak ditemukan');
-    return rpcScanPosJaga(posToken, user.id);
+    return rpcScanPosJaga(normalizeScannedQrToken(posToken), user.id);
   },
 }));
