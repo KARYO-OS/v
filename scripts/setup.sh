@@ -19,6 +19,12 @@ warn()    { echo -e "${YELLOW}⚠  $*${NC}"; }
 error()   { echo -e "${RED}✖  $*${NC}"; exit 1; }
 section() { echo -e "\n${BOLD}══════════════════════════════════════${NC}"; echo -e "${BOLD}  $*${NC}"; echo -e "${BOLD}══════════════════════════════════════${NC}"; }
 
+SUPABASE_BIN=()
+
+run_supabase() {
+  "${SUPABASE_BIN[@]}" "$@"
+}
+
 # ── 0. Cek Node.js ──────────────────────────────────────────
 section "0. Cek Node.js & npm"
 if ! command -v node &>/dev/null; then
@@ -30,14 +36,15 @@ if [[ "$NODE_VER" == "fail" ]]; then
 fi
 success "Node.js $(node -v)  |  npm $(npm -v)"
 
-# ── 1. Install Supabase CLI ──────────────────────────────────
-section "1. Install Supabase CLI"
+# ── 1. Siapkan Supabase CLI ───────────────────────────────────
+section "1. Siapkan Supabase CLI"
 if command -v supabase &>/dev/null; then
-  success "Supabase CLI sudah terpasang: $(supabase --version)"
+  SUPABASE_BIN=(supabase)
+  success "Supabase CLI global terdeteksi: $(supabase --version)"
 else
-  info "Menginstall Supabase CLI via npm..."
-  npm install -g supabase
-  success "Supabase CLI terpasang: $(supabase --version)"
+  SUPABASE_BIN=(npm exec --yes supabase@latest --)
+  info "Supabase CLI global tidak ditemukan, menggunakan npm exec wrapper."
+  success "Supabase CLI wrapper siap: $(run_supabase --version)"
 fi
 
 # ── 2. Install dependencies proyek ──────────────────────────
@@ -82,7 +89,7 @@ fi
 # ── 4. Login & link Supabase ─────────────────────────────────
 section "4. Login & Link Supabase"
 info "Membuka login Supabase di browser (atau gunakan access token)..."
-supabase login
+run_supabase login
 
 echo ""
 info "Masukkan Supabase Project ID kamu"
@@ -90,19 +97,19 @@ info "(Temukan di: Supabase Dashboard → Settings → General → Reference ID)
 read -r -p "  Project ID: " SB_PROJECT_ID
 [[ -z "$SB_PROJECT_ID" ]] && error "Project ID tidak boleh kosong."
 
-supabase link --project-ref "$SB_PROJECT_ID"
+run_supabase link --project-ref "$SB_PROJECT_ID"
 success "Supabase project berhasil di-link: $SB_PROJECT_ID"
 
 # ── 5. Jalankan migrasi database ────────────────────────────
 section "5. Jalankan Migrasi Database"
 info "Menjalankan semua migration ke Supabase cloud..."
-supabase db push
+run_supabase db push
 success "Semua migration berhasil dijalankan."
 
 # ── 6. Verifikasi tabel database ────────────────────────────
 section "6. Verifikasi Database"
 info "Cek tabel yang terbuat (via Supabase CLI):"
-supabase db dump --schema public --linked 2>/dev/null | grep "^CREATE TABLE" | awk '{print "   ✔", $3}' || \
+run_supabase db dump --schema public --linked 2>/dev/null | grep "^CREATE TABLE" | awk '{print "   ✔", $3}' || \
   warn "Tidak bisa dump schema otomatis. Verifikasi manual via Supabase Dashboard → Table Editor."
 
 # ── 7. Build proyek ─────────────────────────────────────────

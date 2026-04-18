@@ -20,12 +20,26 @@ warn()    { echo -e "${YELLOW}⚠  $*${NC}"; }
 error()   { echo -e "${RED}✖  $*${NC}"; exit 1; }
 section() { echo -e "\n${BOLD}══════════════════════════════════════${NC}"; echo -e "${BOLD}  $*${NC}"; echo -e "${BOLD}══════════════════════════════════════${NC}"; }
 
+SUPABASE_BIN=()
+
+run_supabase() {
+  "${SUPABASE_BIN[@]}" "$@"
+}
+
 # ── Cek prasyarat ────────────────────────────────────────────
 section "Cek Prasyarat"
 
 command -v node &>/dev/null     || error "Node.js tidak ditemukan. Jalankan bash scripts/setup.sh terlebih dahulu."
-command -v supabase &>/dev/null || error "Supabase CLI tidak ditemukan. Jalankan bash scripts/setup.sh terlebih dahulu."
 [[ -f ".env.local" ]]           || error ".env.local tidak ditemukan. Jalankan bash scripts/setup.sh terlebih dahulu."
+
+if command -v supabase &>/dev/null; then
+  SUPABASE_BIN=(supabase)
+  info "Menggunakan Supabase CLI global: $(supabase --version)"
+else
+  SUPABASE_BIN=(npm exec --yes supabase@latest --)
+  info "Supabase CLI global tidak ditemukan, menggunakan npm exec wrapper."
+  info "Versi wrapper: $(run_supabase --version)"
+fi
 
 success "Semua prasyarat terpenuhi."
 
@@ -33,16 +47,16 @@ success "Semua prasyarat terpenuhi."
 section "1. Deploy Migrasi Supabase"
 
 # Cek apakah project sudah di-link
-if ! supabase status &>/dev/null 2>&1; then
+if ! run_supabase status &>/dev/null 2>&1; then
   warn "Supabase project belum di-link."
   info "Masukkan Supabase Project ID:"
   read -r -p "  Project ID: " SB_PROJECT_ID
   [[ -z "$SB_PROJECT_ID" ]] && error "Project ID tidak boleh kosong."
-  supabase link --project-ref "$SB_PROJECT_ID"
+  run_supabase link --project-ref "$SB_PROJECT_ID"
 fi
 
 info "Menerapkan migration ke Supabase cloud..."
-supabase db push
+run_supabase db push
 success "Migrasi Supabase berhasil."
 
 # ── 2. Build production ──────────────────────────────────────

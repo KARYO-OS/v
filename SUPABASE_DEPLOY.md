@@ -53,11 +53,11 @@ Script ini secara otomatis akan:
 | Langkah | Deskripsi |
 |---|---|
 | ✅ Cek Node.js | Memastikan versi >= 20 |
-| ✅ Install Supabase CLI | Via npm global |
+| ✅ Siapkan Supabase CLI | Gunakan global jika ada, fallback `npm exec --yes supabase@latest -- ...` |
 | ✅ Install dependensi | `npm ci` |
 | ✅ Buat `.env.local` | Interaktif — masukkan URL + anon key Supabase |
 | ✅ Login Supabase | `supabase login` |
-| ✅ Link project | `supabase link --project-ref <ID>` |
+| ✅ Link project | `supabase link --project-ref <ID>` atau `npm exec --yes supabase@latest -- link --project-ref <ID>` |
 | ✅ Jalankan migrasi | `supabase db push` — semua file di `supabase/migrations/` |
 | ✅ Build production | `npm run build` |
 
