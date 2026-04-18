@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { act } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
 import { supabase } from '../../lib/supabase';
 import AdminDashboard from '../../pages/admin/AdminDashboard';
 import KomandanDashboard from '../../pages/komandan/KomandanDashboard';
 import PrajuritDashboard from '../../pages/prajurit/PrajuritDashboard';
 import GuardDashboard from '../../pages/guard/GuardDashboard';
+import { DEFAULT_FEATURE_FLAGS } from '../../lib/featureFlags';
 
 vi.mock('html5-qrcode', () => ({
   Html5QrcodeScanner: vi.fn(() => ({
@@ -154,6 +157,17 @@ beforeEach(() => {
     showNotification: vi.fn(),
     clearNotification: () => {},
   });
+  useFeatureStore.setState({
+    flags: { ...DEFAULT_FEATURE_FLAGS },
+    isLoaded: true,
+    isLoading: false,
+    isSaving: false,
+    loadedForUserId: 'test-user',
+    loadFeatureFlags: vi.fn(),
+    setFeatureEnabled: vi.fn(),
+    setFeatureFlags: vi.fn(),
+    setAllFeaturesEnabled: vi.fn(),
+  });
   mockSupabase.from = vi.fn((table: string) => buildQuery(table));
   mockSupabase.rpc = vi.fn(() => Promise.resolve({ data: null, error: null }));
   mockSupabase.channel = vi.fn(() => ({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() }));
@@ -226,6 +240,102 @@ describe('End-to-end dashboard rendering', () => {
         .some((link) => link.getAttribute('href') === '/prajurit/scan-pos')
     ).toBe(true);
   });
+
+    it('hides and restores prajurit shortcuts when feature flags change', async () => {
+      useAuthStore.setState({
+        user: { id: 'u3', nrp: '67890', nama: 'Prajurit C', role: 'prajurit', pangkat: 'Sersan', satuan: 'Satuan C', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-14T00:00:00Z', updated_at: '2026-04-14T00:00:00Z' },
+        isAuthenticated: true,
+      });
+      await act(async () => {
+        useFeatureStore.setState((state) => ({
+          ...state,
+          flags: {
+            ...state.flags,
+            tasks: false,
+            messages: false,
+            gate_pass: false,
+          },
+        }));
+      });
+
+      const { rerender } = render(
+        <MemoryRouter>
+          <PrajuritDashboard />
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => expect(screen.getByRole('heading', { name: /Sersan Prajurit C/i })).toBeInTheDocument());
+      expect(screen.queryByRole('link', { name: /Tugas Saya/i })).toBeNull();
+      expect(screen.queryByRole('link', { name: /^Gate Pass$/i })).toBeNull();
+
+      await act(async () => {
+        useFeatureStore.setState((state) => ({
+          ...state,
+          flags: {
+            ...state.flags,
+            tasks: true,
+            messages: true,
+            gate_pass: true,
+          },
+        }));
+      });
+
+      rerender(
+        <MemoryRouter>
+          <PrajuritDashboard />
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => expect(screen.getAllByRole('link', { name: /^Gate Pass$/i }).some((link) => link.getAttribute('href') === '/prajurit/gatepass')).toBe(true));
+      expect(screen.getAllByRole('link', { name: /Tugas Saya/i }).some((link) => link.getAttribute('href') === '/prajurit/tasks')).toBe(true);
+    });
+
+    it('hides and restores komandan quick links when feature flags change', async () => {
+      useAuthStore.setState({
+        user: { id: 'u2', nrp: '54321', nama: 'Komandan Beta', role: 'komandan', pangkat: 'Mayor', satuan: 'Satuan B', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-14T00:00:00Z', updated_at: '2026-04-14T00:00:00Z' },
+        isAuthenticated: true,
+      });
+      await act(async () => {
+        useFeatureStore.setState((state) => ({
+          ...state,
+          flags: {
+            ...state.flags,
+            reports: false,
+            tasks: false,
+          },
+        }));
+      });
+
+      const { rerender } = render(
+        <MemoryRouter>
+          <KomandanDashboard />
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => expect(screen.getByRole('heading', { name: /Mayor Komandan Beta/i })).toBeInTheDocument());
+      expect(screen.queryByRole('link', { name: /Lihat laporan →/i })).toBeNull();
+      expect(screen.queryByRole('link', { name: /Kelola Tugas/i })).toBeNull();
+
+      await act(async () => {
+        useFeatureStore.setState((state) => ({
+          ...state,
+          flags: {
+            ...state.flags,
+            reports: true,
+            tasks: true,
+          },
+        }));
+      });
+
+      rerender(
+        <MemoryRouter>
+          <KomandanDashboard />
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => expect(screen.getByRole('link', { name: /Kelola Tugas/i })).toBeInTheDocument());
+      expect(screen.getByRole('link', { name: /Lihat laporan →/i })).toBeInTheDocument();
+    });
 
   it('renders the guard dashboard for guard role', async () => {
     useAuthStore.setState({
