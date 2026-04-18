@@ -79,6 +79,33 @@ describe('featureFlags API fallback', () => {
     });
   });
 
+  it('falls back to single update RPC loop when batch RPC returns ambiguous feature_key error', async () => {
+    mockSupabase.rpc
+      .mockResolvedValueOnce({
+        data: null,
+        error: { message: 'column reference "feature_key" is ambiguous' },
+      })
+      .mockResolvedValue({ data: null, error: null });
+
+    await updateFeatureFlags(adminId, adminRole, {
+      ...DEFAULT_FEATURE_FLAGS,
+      tasks: false,
+      reports: false,
+    });
+
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('update_feature_flags', {
+      p_user_id: adminId,
+      p_role: adminRole,
+      p_feature_flags: expect.objectContaining({ tasks: false, reports: false }),
+    });
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('update_feature_flag', {
+      p_user_id: adminId,
+      p_role: adminRole,
+      p_feature_key: 'tasks',
+      p_is_enabled: false,
+    });
+  });
+
   it('throws user-friendly error from supabase payload', async () => {
     mockSupabase.rpc.mockResolvedValue({
       data: null,

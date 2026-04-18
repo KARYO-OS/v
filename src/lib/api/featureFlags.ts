@@ -42,6 +42,18 @@ function isFunctionMissingError(err: unknown, functionName: string): boolean {
     && (joined.includes('could not find the function') || joined.includes('does not exist'));
 }
 
+function isAmbiguousFeatureKeyError(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+
+  const shape = err as RpcErrorShape;
+  const joined = [shape.message, shape.details, shape.hint]
+    .filter((part) => typeof part === 'string')
+    .join(' ')
+    .toLowerCase();
+
+  return joined.includes('feature_key') && joined.includes('ambiguous');
+}
+
 export async function getFeatureFlags(callerId: string, callerRole: string): Promise<FeatureFlagsState> {
   const { data, error } = await supabase.rpc('get_feature_flags', {
     p_user_id: callerId,
@@ -105,7 +117,7 @@ export async function updateFeatureFlags(
   if (!error) return;
 
   // Compatibility fallback for environments that only have the single-item RPC.
-  if (isFunctionMissingError(error, 'update_feature_flags')) {
+  if (isFunctionMissingError(error, 'update_feature_flags') || isAmbiguousFeatureKeyError(error)) {
     for (const [featureKey, isEnabled] of Object.entries(featureFlags) as Array<[FeatureKey, boolean]>) {
       const { error: singleError } = await supabase.rpc('update_feature_flag', {
         p_user_id: callerId,
