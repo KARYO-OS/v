@@ -6,6 +6,7 @@ export type DataResource =
   | 'attendance'
   | 'leave_requests'
   | 'logistics_requests'
+  | 'logistics_items'
   | 'audit_logs'
   | 'gate_pass';
 

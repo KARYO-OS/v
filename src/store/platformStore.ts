@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { getPlatformSettings, updatePlatformSettings } from '../lib/api/platform';
 
 const PLATFORM_SETTINGS_CACHE_KEY = 'karyo_platform_settings';
 
@@ -87,15 +87,18 @@ export const usePlatformStore = create<PlatformStore>((set, get) => ({
   loadPlatformBranding: async (force = false) => {
     if (get().isLoaded && !force) return;
 
-    const { data, error } = await supabase.rpc('get_platform_settings');
-    if (error) {
+    try {
+      const data = await getPlatformSettings();
+      if (!data) {
+        set({ isLoaded: true });
+        return;
+      }
+      const normalized = normalizeBranding(data);
+      persistBranding(normalized);
+      set({ settings: normalized, isLoaded: true });
+    } catch {
       set({ isLoaded: true });
-      return;
     }
-
-    const normalized = normalizeBranding(data);
-    persistBranding(normalized);
-    set({ settings: normalized, isLoaded: true });
   },
 
   updatePlatformBranding: async (settings: PlatformBranding) => {
@@ -103,13 +106,11 @@ export const usePlatformStore = create<PlatformStore>((set, get) => ({
     set({ isSaving: true });
 
     try {
-      const { data, error } = await supabase.rpc('update_platform_settings', {
-        p_platform_name: normalizedInput.platformName,
-        p_platform_logo_url: normalizedInput.platformLogoUrl,
-        p_platform_tagline: normalizedInput.platformTagline,
+      const data = await updatePlatformSettings({
+        platformName: normalizedInput.platformName,
+        platformTagline: normalizedInput.platformTagline,
+        platformLogoUrl: normalizedInput.platformLogoUrl,
       });
-
-      if (error) throw error;
 
       const normalized = normalizeBranding(data ?? normalizedInput);
       persistBranding(normalized);
