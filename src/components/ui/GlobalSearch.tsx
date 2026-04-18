@@ -3,15 +3,25 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import { searchAll, type SearchResult as ApiSearchResult } from '../../lib/api/search';
+import { isPathEnabled } from '../../lib/featureFlags';
 import { readSessionContext } from '../../lib/sessionContext';
 import { useAuthStore } from '../../store/authStore';
+import { useFeatureStore } from '../../store/featureStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { handleError } from '../../lib/handleError';
+import type { Role } from '../../types';
 
 interface SearchResult extends ApiSearchResult {
   href: string;
   icon: keyof typeof ICONS;
 }
+
+const ROLE_DEFAULT_PATH: Record<Role, string> = {
+  admin: '/admin/dashboard',
+  komandan: '/komandan/dashboard',
+  prajurit: '/prajurit/dashboard',
+  guard: '/guard/gatepass-scan',
+};
 
 function buildHref(result: ApiSearchResult): string {
   const role = result.role;
@@ -22,7 +32,10 @@ function buildHref(result: ApiSearchResult): string {
     return role === 'admin' ? '/admin/users' : '/komandan/personnel';
   }
   // announcement
-  return role === 'admin' ? '/admin/announcements' : `/${role}/dashboard`;
+  if (role === 'admin') return '/admin/announcements';
+  if (role === 'komandan') return '/komandan/dashboard';
+  if (role === 'prajurit') return '/prajurit/dashboard';
+  return '/guard/gatepass-scan';
 }
 
 const TYPE_ICON: Record<ApiSearchResult['type'], keyof typeof ICONS> = {
@@ -33,6 +46,7 @@ const TYPE_ICON: Record<ApiSearchResult['type'], keyof typeof ICONS> = {
 
 export default function GlobalSearch() {
   const { user } = useAuthStore();
+  const { flags } = useFeatureStore();
   const sessionContext = readSessionContext();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -58,7 +72,7 @@ export default function GlobalSearch() {
           ...r,
           href: buildHref(r),
           icon: TYPE_ICON[r.type],
-        })),
+        })).filter((r) => isPathEnabled(r.href, flags)),
       );
     } catch (err) {
       if (import.meta.env.DEV) console.error(handleError(err, 'Gagal mencari data'));
@@ -66,7 +80,7 @@ export default function GlobalSearch() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeRole]);
+  }, [activeRole, flags]);
 
   useEffect(() => {
     void search(query);
@@ -101,7 +115,13 @@ export default function GlobalSearch() {
     setIsOpen(false);
     setRawQuery('');
     setResults([]);
-    navigate(result.href);
+    if (isPathEnabled(result.href, flags)) {
+      navigate(result.href);
+      return;
+    }
+
+    const safeRole = (activeRole ?? 'prajurit') as Role;
+    navigate(ROLE_DEFAULT_PATH[safeRole]);
   };
 
   return (
