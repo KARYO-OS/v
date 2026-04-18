@@ -22,7 +22,10 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
 
   async fetchGatePasses() {
     const user = useAuthStore.getState().user;
-    if (!user) throw new Error('User tidak ditemukan');
+    if (!user) {
+      set({ gatePasses: [] });
+      return;
+    }
 
     // Admin, komandan, dan guard perlu melihat semua gate pass (untuk monitoring &
     // approval). Prajurit hanya perlu melihat gate pass milik sendiri.

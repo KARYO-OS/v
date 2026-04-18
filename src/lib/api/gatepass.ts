@@ -1,7 +1,16 @@
 import { supabase } from '../supabase';
 import type { GatePass } from '../../types';
 
+async function ensureSessionContext(callerId: string, callerRole: string): Promise<void> {
+  const { error } = await supabase.rpc('set_session_context', {
+    p_user_id: callerId,
+    p_role: callerRole,
+  });
+  if (error) throw error;
+}
+
 export async function fetchGatePassesByUser(callerId: string, callerRole: string, userId: string): Promise<GatePass[]> {
+  await ensureSessionContext(callerId, callerRole);
   const { data, error } = await supabase.rpc('api_get_gate_passes', {
     p_user_id: callerId,
     p_role: callerRole,
@@ -13,6 +22,7 @@ export async function fetchGatePassesByUser(callerId: string, callerRole: string
 }
 
 export async function fetchGatePassesByUserAndStatus(callerId: string, callerRole: string, userId: string, status: GatePass['status']): Promise<GatePass[]> {
+  await ensureSessionContext(callerId, callerRole);
   const { data, error } = await supabase.rpc('api_get_gate_passes', {
     p_user_id: callerId,
     p_role: callerRole,
@@ -24,6 +34,7 @@ export async function fetchGatePassesByUserAndStatus(callerId: string, callerRol
 }
 
 export async function fetchAllGatePasses(callerId: string, callerRole: string): Promise<GatePass[]> {
+  await ensureSessionContext(callerId, callerRole);
   const { data, error } = await supabase.rpc('api_get_gate_passes', {
     p_user_id: callerId,
     p_role: callerRole,
@@ -35,10 +46,7 @@ export async function fetchAllGatePasses(callerId: string, callerRole: string): 
 }
 
 export async function fetchGatePassByQrToken(callerId: string, callerRole: string, qrToken: string): Promise<GatePass | null> {
-  await supabase.rpc('set_session_context', {
-    p_user_id: callerId,
-    p_role: callerRole,
-  });
+  await ensureSessionContext(callerId, callerRole);
   const { data, error } = await supabase
     .from('gate_pass')
     .select('*, user:user_id(id,nama,nrp,pangkat,satuan)')
