@@ -9,13 +9,16 @@ import { CardListSkeleton } from '../../components/common/Skeleton';
 import { useTasks } from '../../hooks/useTasks';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useAuthStore } from '../../store/authStore';
+import { useFeatureStore } from '../../store/featureStore';
 import { ICONS } from '../../icons';
 import { useKomandanDashboardStore } from '../../store/komandanDashboardStore';
 import { subscribeDataChanges } from '../../lib/dataSync';
+import { isPathEnabled } from '../../lib/featureFlags';
 
 export default function KomandanDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { flags } = useFeatureStore();
   const { tasks, isLoading: tasksLoading, refetch: refetchTasks } = useTasks({ assignedBy: user?.id });
   const { announcements } = useAnnouncements();
   const { onlineCount, totalPersonel, error, fetchStats } = useKomandanDashboardStore();
@@ -50,6 +53,11 @@ export default function KomandanDashboard() {
   const approvedTasks = tasks.filter((t) => t.status === 'approved');
   const pinnedAnnouncements = announcements.filter((a) => a.is_pinned);
 
+  const canOpenTasks = isPathEnabled('/komandan/tasks', flags);
+  const canOpenReports = isPathEnabled('/komandan/reports', flags);
+  const canOpenAttendance = isPathEnabled('/komandan/attendance', flags);
+  const canOpenPersonnel = isPathEnabled('/komandan/personnel', flags);
+
   return (
     <DashboardLayout title="Pusat Operasi">
       <div className="space-y-6">
@@ -65,9 +73,11 @@ export default function KomandanDashboard() {
           actions={
             <>
               <Button variant="outline" onClick={() => void refresh()} isLoading={isRefreshing}>Muat Ulang</Button>
-              <Link to="/komandan/tasks" className="inline-flex items-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25">
-                Kelola Tugas
-              </Link>
+              {canOpenTasks && (
+                <Link to="/komandan/tasks" className="inline-flex items-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25">
+                  Kelola Tugas
+                </Link>
+              )}
             </>
           }
         />
@@ -92,7 +102,7 @@ export default function KomandanDashboard() {
                 <h3 className="text-lg font-bold text-text-primary">Ringkasan Operasi</h3>
                 <p className="text-sm text-text-muted">Situasi cepat untuk pengambilan keputusan harian.</p>
               </div>
-              <Link to="/komandan/reports" className="text-sm text-primary hover:underline">Lihat laporan →</Link>
+              {canOpenReports && <Link to="/komandan/reports" className="text-sm text-primary hover:underline">Lihat laporan →</Link>}
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               {[
@@ -107,9 +117,9 @@ export default function KomandanDashboard() {
               ))}
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link to="/komandan/tasks" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Buka tugas</Link>
-              <Link to="/komandan/attendance" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Absensi</Link>
-              <Link to="/komandan/personnel" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Personel</Link>
+              {canOpenTasks && <Link to="/komandan/tasks" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Buka tugas</Link>}
+              {canOpenAttendance && <Link to="/komandan/attendance" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Absensi</Link>}
+              {canOpenPersonnel && <Link to="/komandan/personnel" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Personel</Link>}
             </div>
           </div>
 
@@ -119,7 +129,7 @@ export default function KomandanDashboard() {
                 <h3 className="text-lg font-bold text-text-primary">Pengumuman Terbaru</h3>
                 <p className="text-sm text-text-muted">Pin resmi yang relevan untuk satuan.</p>
               </div>
-              <Link to="/komandan/reports" className="text-sm text-primary hover:underline">Ke laporan →</Link>
+              {canOpenReports && <Link to="/komandan/reports" className="text-sm text-primary hover:underline">Ke laporan →</Link>}
             </div>
             {pinnedAnnouncements.length === 0 ? (
               <p className="text-sm text-text-muted">Belum ada pengumuman yang disematkan.</p>
@@ -140,7 +150,7 @@ export default function KomandanDashboard() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-text-primary">Tugas Terkini</h3>
-            <Link to="/komandan/tasks" className="text-sm text-primary hover:underline">Lihat semua →</Link>
+            {canOpenTasks && <Link to="/komandan/tasks" className="text-sm text-primary hover:underline">Lihat semua →</Link>}
           </div>
 
           {tasksLoading ? (
@@ -157,7 +167,7 @@ export default function KomandanDashboard() {
                   task={task}
                   showAssignee
                   onAction={() => {
-                    navigate('/komandan/tasks');
+                    if (canOpenTasks) navigate('/komandan/tasks');
                   }}
                 />
               ))}

@@ -6,6 +6,7 @@ import { useAttendance } from '../../hooks/useAttendance';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useMessages } from '../../hooks/useMessages';
 import { useAuthStore } from '../../store/authStore';
+import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
 import Button from '../../components/common/Button';
 import { AttendanceBadge } from '../../components/common/Badge';
@@ -14,10 +15,12 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
 import { ICONS } from '../../icons';
+import { isPathEnabled } from '../../lib/featureFlags';
 
 export default function PrajuritDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { flags } = useFeatureStore();
   const { showNotification } = useUIStore();
   const { tasks, isLoading: tasksLoading } = useTasks({ assignedTo: user?.id });
   const { todayAttendance, isLoading: attnLoading, checkIn, checkOut } = useAttendance();
@@ -34,6 +37,13 @@ export default function PrajuritDashboard() {
   const recentAnnouncements = [...announcements]
     .sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0))
     .slice(0, 3);
+
+  const canOpenTasks = isPathEnabled('/prajurit/tasks', flags);
+  const canOpenMessages = isPathEnabled('/prajurit/messages', flags);
+  const canOpenAttendance = isPathEnabled('/prajurit/attendance', flags);
+  const canOpenGatePass = isPathEnabled('/prajurit/gatepass', flags);
+  const canOpenScanPos = isPathEnabled('/prajurit/scan-pos', flags);
+  const canOpenLeave = isPathEnabled('/prajurit/leave', flags);
 
   const handleCheckIn = async () => {
     setCheckingIn(true);
@@ -94,26 +104,32 @@ export default function PrajuritDashboard() {
         />
 
         <div className="grid gap-3 sm:grid-cols-3">
-          <Link to="/prajurit/tasks" className="app-card p-4 transition-colors hover:border-primary/60">
-            <p className="text-xs text-text-muted">Tugas aktif</p>
-            <p className="mt-1 text-2xl font-bold text-text-primary">{activeTasks.length}</p>
-          </Link>
-          <Link to="/prajurit/messages" className="app-card p-4 transition-colors hover:border-primary/60">
-            <p className="text-xs text-text-muted">Pesan belum dibaca</p>
-            <p className="mt-1 text-2xl font-bold text-text-primary">{unreadCount}</p>
-          </Link>
-          <Link to="/prajurit/attendance" className="app-card p-4 transition-colors hover:border-primary/60">
-            <p className="text-xs text-text-muted">Status absensi</p>
-            <p className="mt-1 text-2xl font-bold text-text-primary">{todayAttendance ? 'Aktif' : 'Belum'}</p>
-          </Link>
+          {canOpenTasks && (
+            <Link to="/prajurit/tasks" className="app-card p-4 transition-colors hover:border-primary/60">
+              <p className="text-xs text-text-muted">Tugas aktif</p>
+              <p className="mt-1 text-2xl font-bold text-text-primary">{activeTasks.length}</p>
+            </Link>
+          )}
+          {canOpenMessages && (
+            <Link to="/prajurit/messages" className="app-card p-4 transition-colors hover:border-primary/60">
+              <p className="text-xs text-text-muted">Pesan belum dibaca</p>
+              <p className="mt-1 text-2xl font-bold text-text-primary">{unreadCount}</p>
+            </Link>
+          )}
+          {canOpenAttendance && (
+            <Link to="/prajurit/attendance" className="app-card p-4 transition-colors hover:border-primary/60">
+              <p className="text-xs text-text-muted">Status absensi</p>
+              <p className="mt-1 text-2xl font-bold text-text-primary">{todayAttendance ? 'Aktif' : 'Belum'}</p>
+            </Link>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Link to="/prajurit/gatepass" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Gate Pass</Link>
-          <Link to="/prajurit/scan-pos" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Scan Pos Jaga</Link>
-          <Link to="/prajurit/tasks" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Tugas Saya</Link>
-          <Link to="/prajurit/messages" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Pesan</Link>
-          <Link to="/prajurit/leave" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Ajukan Izin</Link>
+          {canOpenGatePass && <Link to="/prajurit/gatepass" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Gate Pass</Link>}
+          {canOpenScanPos && <Link to="/prajurit/scan-pos" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Scan Pos Jaga</Link>}
+          {canOpenTasks && <Link to="/prajurit/tasks" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Tugas Saya</Link>}
+          {canOpenMessages && <Link to="/prajurit/messages" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Pesan</Link>}
+          {canOpenLeave && <Link to="/prajurit/leave" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Ajukan Izin</Link>}
         </div>
 
         {/* Alert: rejected tasks */}
@@ -127,9 +143,11 @@ export default function PrajuritDashboard() {
               <p className="text-xs text-text-muted mt-0.5">
                 Komandan telah memberikan catatan. Buka halaman Tugas Saya untuk melihat detail.
               </p>
-              <Link to="/prajurit/tasks" className="text-xs text-accent-red underline mt-1 inline-block">
-                Lihat tugas yang ditolak →
-              </Link>
+              {canOpenTasks && (
+                <Link to="/prajurit/tasks" className="text-xs text-accent-red underline mt-1 inline-block">
+                  Lihat tugas yang ditolak →
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -189,7 +207,7 @@ export default function PrajuritDashboard() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-text-primary">Tugas Aktif Saya</h3>
-            <Link to="/prajurit/tasks" className="text-sm text-primary hover:underline">Lihat semua →</Link>
+            {canOpenTasks && <Link to="/prajurit/tasks" className="text-sm text-primary hover:underline">Lihat semua →</Link>}
           </div>
 
           {tasksLoading ? (
@@ -205,7 +223,7 @@ export default function PrajuritDashboard() {
                   key={task.id}
                   task={task}
                   onAction={() => {
-                    navigate('/prajurit/tasks');
+                    if (canOpenTasks) navigate('/prajurit/tasks');
                   }}
                   actionLabel="Kerjakan"
                 />
