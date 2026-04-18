@@ -8,3 +8,5 @@ export * from './logistics';
 export * from './announcements';
 export * from './auditLogs';
 export * from './documents';
+export * from './search';
+export * from './platform';
