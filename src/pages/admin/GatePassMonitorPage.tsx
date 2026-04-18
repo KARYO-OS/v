@@ -7,6 +7,7 @@ import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import type { GatePass, GatePassStatus } from '../../types';
+import { supabase } from '../../lib/supabase';
 
 interface MonitorGatePass extends GatePass {
   effectiveStatus: GatePassStatus;
@@ -135,6 +136,7 @@ export default function GatePassMonitorPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalPersonil, setTotalPersonil] = useState(0);
   useGatePassRealtime();
 
   useEffect(() => {
@@ -147,6 +149,12 @@ export default function GatePassMonitorPage() {
       setError(null);
       try {
         await fetchGatePasses();
+        // Fetch total personil aktif
+        const { count } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true);
+        setTotalPersonil(count ?? 0);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Gagal memuat data gate pass');
       } finally {
@@ -175,11 +183,15 @@ export default function GatePassMonitorPage() {
       .sort((a, b) => compareMonitorPriority(a, b, now));
   }, [monitorRows, query, statusFilter, startDate, endDate, now]);
 
-  const totalActive = monitorRows.filter(gp => ['approved', 'checked_in', 'overdue'].includes(gp.effectiveStatus)).length;
   const approved = monitorRows.filter(gp => gp.effectiveStatus === 'approved').length;
   const keluar = monitorRows.filter(gp => gp.effectiveStatus === 'checked_in').length;
   const completed = monitorRows.filter(gp => gp.effectiveStatus === 'completed').length;
   const overdue = monitorRows.filter(gp => gp.effectiveStatus === 'overdue').length;
+  
+  // Personil di luar = approved + checked_in + overdue
+  const personilDiLuar = approved + keluar + overdue;
+  // Personil tersedia = total personil - personil di luar (minimum 0)
+  const personilTersedia = Math.max(0, totalPersonil - personilDiLuar);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -355,8 +367,12 @@ export default function GatePassMonitorPage() {
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="app-card p-4">
-            <div className="text-xs text-text-muted">Total aktif</div>
-            <div className="mt-1 text-2xl font-bold text-text-primary">{totalActive}</div>
+            <div className="text-xs text-text-muted">Personil Tersedia</div>
+            <div className="mt-1 text-2xl font-bold text-green-600">{personilTersedia}</div>
+          </div>
+          <div className="app-card p-4">
+            <div className="text-xs text-text-muted">Personil di Luar</div>
+            <div className="mt-1 text-2xl font-bold text-purple-500">{personilDiLuar}</div>
           </div>
           <div className="app-card p-4">
             <div className="text-xs text-text-muted">Siap scan keluar</div>

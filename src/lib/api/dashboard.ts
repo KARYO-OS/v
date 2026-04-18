@@ -16,6 +16,8 @@ export interface GatePassStats {
   checkedIn: number;
   completed: number;
   overdue: number;
+  personilTersedia: number;
+  personilDiLuar: number;
 }
 
 export interface AdminDashboardSnapshot {
@@ -101,10 +103,22 @@ export async function fetchAdminDashboardSnapshot(): Promise<AdminDashboardSnaps
   const now = new Date();
   const checkedInRows = gatePassRows.filter((g) => g.status === 'checked_in' || g.status === 'out');
   const completedRows = gatePassRows.filter((g) => g.status === 'completed' || g.status === 'returned');
+  
+  // Personil di luar = yang sedang keluar (approved + checked_in)
+  const personilDiLuar = gatePassRows.filter((g) => 
+    g.status === 'approved' || g.status === 'checked_in' || g.status === 'out'
+  ).length;
+  
+  // Personil tersedia = total personel - personil di luar (dengan minimum 0)
+  const totalPersonel = usersResult.count ?? 0;
+  const personilTersedia = Math.max(0, totalPersonel - personilDiLuar);
+  
   const gatePassStats: GatePassStats = {
     checkedIn: checkedInRows.filter((g) => !g.waktu_kembali || new Date(g.waktu_kembali) >= now).length,
     completed: completedRows.length,
     overdue: checkedInRows.filter((g) => g.waktu_kembali && new Date(g.waktu_kembali) < now).length,
+    personilTersedia,
+    personilDiLuar,
   };
 
   return {

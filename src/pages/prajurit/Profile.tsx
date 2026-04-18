@@ -267,8 +267,9 @@ export default function Profile() {
                   placeholder="Contoh: Bandung"
                 />
                 <div>
-                  <label className="text-sm font-semibold text-text-primary">Tanggal Lahir</label>
+                  <label htmlFor="profile-tanggal-lahir" className="text-sm font-semibold text-text-primary">Tanggal Lahir</label>
                   <input
+                    id="profile-tanggal-lahir"
                     type="date"
                     className="form-control mt-1"
                     value={profileForm.tanggal_lahir}
@@ -276,8 +277,9 @@ export default function Profile() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-text-primary">Agama</label>
+                  <label htmlFor="profile-agama" className="text-sm font-semibold text-text-primary">Agama</label>
                   <select
+                    id="profile-agama"
                     className="form-control mt-1"
                     value={profileForm.agama}
                     onChange={(e) => setProfileForm({ ...profileForm, agama: e.target.value })}
@@ -289,8 +291,9 @@ export default function Profile() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-text-primary">Pendidikan Terakhir</label>
+                  <label htmlFor="profile-pendidikan-terakhir" className="text-sm font-semibold text-text-primary">Pendidikan Terakhir</label>
                   <select
+                    id="profile-pendidikan-terakhir"
                     className="form-control mt-1"
                     value={profileForm.pendidikan_terakhir}
                     onChange={(e) => setProfileForm({ ...profileForm, pendidikan_terakhir: e.target.value })}
@@ -302,8 +305,9 @@ export default function Profile() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-text-primary">Status Pernikahan</label>
+                  <label htmlFor="profile-status-pernikahan" className="text-sm font-semibold text-text-primary">Status Pernikahan</label>
                   <select
+                    id="profile-status-pernikahan"
                     className="form-control mt-1"
                     value={profileForm.status_pernikahan}
                     onChange={(e) => setProfileForm({ ...profileForm, status_pernikahan: e.target.value })}
@@ -317,8 +321,9 @@ export default function Profile() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-text-primary">Golongan Darah</label>
+                  <label htmlFor="profile-golongan-darah" className="text-sm font-semibold text-text-primary">Golongan Darah</label>
                   <select
+                    id="profile-golongan-darah"
                     className="form-control mt-1"
                     value={profileForm.golongan_darah}
                     onChange={(e) => setProfileForm({ ...profileForm, golongan_darah: e.target.value })}
@@ -338,8 +343,9 @@ export default function Profile() {
                   placeholder="Contoh: 08123456789"
                 />
                 <div className="sm:col-span-2">
-                  <label className="text-sm font-semibold text-text-primary">Alamat</label>
+                  <label htmlFor="profile-alamat" className="text-sm font-semibold text-text-primary">Alamat</label>
                   <textarea
+                    id="profile-alamat"
                     className="form-control mt-1 min-h-[96px] resize-y"
                     value={profileForm.alamat}
                     onChange={(e) => setProfileForm({ ...profileForm, alamat: e.target.value })}
