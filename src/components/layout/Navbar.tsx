@@ -23,8 +23,7 @@ const PROFILE_PATH: Record<Role, string> = {
 /** Rute inbox pesan per role. Guard tidak memiliki halaman pesan. */
 const MESSAGES_PATH: Partial<Record<Role, string>> = {
   prajurit: '/prajurit/messages',
-  komandan: '/prajurit/messages',
-  admin: '/prajurit/messages',
+  komandan: '/komandan/messages',
 };
 
 export default function Navbar({ title }: NavbarProps) {

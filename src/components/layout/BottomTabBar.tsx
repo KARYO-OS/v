@@ -55,14 +55,23 @@ export default function BottomTabBar() {
 
   const tabs = BOTTOM_TABS[user.role].filter((tab) => isPathEnabled(tab.path, flags));
 
-  if (!tabs) return null;
+  if (!tabs || tabs.length === 0) return null;
+
+  const gridColsClass: Record<number, string> = {
+    1: 'grid-cols-1',
+    2: 'grid-cols-2',
+    3: 'grid-cols-3',
+    4: 'grid-cols-4',
+    5: 'grid-cols-5',
+  };
+  const colsClass = gridColsClass[Math.min(tabs.length, 5)] ?? 'grid-cols-5';
 
   return (
     <nav
       className="safe-area-inset-bottom fixed bottom-0 left-0 right-0 z-30 border-t border-surface/80 bg-bg-card/90 backdrop-blur-xl lg:hidden"
       aria-label="Bottom navigation"
     >
-      <div className="mx-auto grid max-w-xl grid-cols-5 gap-1 px-2 py-1.5">
+      <div className={`mx-auto grid max-w-xl ${colsClass} gap-1 px-2 py-1.5`}>
         {tabs.map((tab) => (
           <NavLink
             key={tab.path}

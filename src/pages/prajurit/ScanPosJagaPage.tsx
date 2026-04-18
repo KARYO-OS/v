@@ -15,9 +15,11 @@ function PosJagaScanner({ onScan }: { onScan: (token: string) => void }) {
 
   useEffect(() => {
     if (!containerRef.current) return;
+    const containerWidth = containerRef.current.offsetWidth || window.innerWidth;
+    const qrBoxSize = Math.min(Math.floor(containerWidth * 0.7), 250);
     const scanner = new Html5QrcodeScanner(
       containerRef.current.id,
-      { fps: 10, qrbox: 250 },
+      { fps: 10, qrbox: qrBoxSize },
       false,
     );
     scanner.render(
@@ -108,10 +110,10 @@ export default function ScanPosJagaPage() {
   };
 
   const statusLabel: Record<string, string> = {
-    checked_in: 'Checked-In',
-    completed: 'Completed',
-    out: 'Checked-In',
-    returned: 'Completed',
+    checked_in: 'Sudah Keluar',
+    completed: 'Sudah Kembali',
+    out: 'Sudah Keluar',
+    returned: 'Sudah Kembali',
   };
 
   return (
