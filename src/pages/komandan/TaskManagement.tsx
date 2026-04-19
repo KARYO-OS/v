@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
+import { ClipboardList } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import TaskCard from '../../components/ui/TaskCard';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
+import EmptyState from '../../components/common/EmptyState';
 import { TaskStatusBadge } from '../../components/common/Badge';
 import { useTasks } from '../../hooks/useTasks';
 import { useUsers } from '../../hooks/useUsers';
@@ -214,9 +216,11 @@ export default function TaskManagement() {
         {isLoading ? (
           <CardListSkeleton count={4} />
         ) : filtered.length === 0 ? (
-          <div className="bg-bg-card border border-surface rounded-xl p-8 text-center text-text-muted">
-            Tidak ada tugas
-          </div>
+          <EmptyState
+            icon={<ClipboardList className="h-6 w-6" aria-hidden="true" />}
+            title="Tidak ada tugas"
+            description={filterStatus ? 'Tidak ada tugas dengan status yang dipilih. Coba filter lain.' : 'Buat tugas baru untuk personel menggunakan tombol di atas.'}
+          />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {filtered.map((task) => (
@@ -224,7 +228,7 @@ export default function TaskManagement() {
                 key={task.id}
                 task={task}
                 showAssignee
-                actionLabel={task.status === 'done' ? '📋 Tinjau Laporan' : 'Detail'}
+                actionLabel={task.status === 'done' ? 'Tinjau Laporan' : 'Detail'}
                 onAction={() => openDetail(task)}
               />
             ))}
