@@ -88,8 +88,9 @@ export async function updateFeatureFlag(
 
   if (!error) return;
 
-  // Compatibility fallback for environments that only have the batch RPC.
-  if (isFunctionMissingError(error, 'update_feature_flag')) {
+  // Compatibility fallback for environments that only have the batch RPC,
+  // or have an older single-RPC definition with ambiguous output-column names.
+  if (isFunctionMissingError(error, 'update_feature_flag') || isAmbiguousFeatureKeyError(error)) {
     const { error: batchError } = await supabase.rpc('update_feature_flags', {
       p_user_id: callerId,
       p_role: callerRole,

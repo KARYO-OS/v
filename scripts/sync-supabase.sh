@@ -20,6 +20,12 @@ if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" && -n "${SUPABASE_TOKEN:-}" ]]; then
   SUPABASE_ACCESS_TOKEN="$SUPABASE_TOKEN"
 fi
 
+LINKED_REF_FILE="supabase/.temp/project-ref"
+
+if [[ -z "${SUPABASE_PROJECT_REF:-}" && -f "$LINKED_REF_FILE" ]]; then
+  SUPABASE_PROJECT_REF="$(tr -d '\n\r' < "$LINKED_REF_FILE")"
+fi
+
 if [[ -z "${SUPABASE_PROJECT_REF:-}" && -n "${SUPABASE_PROJECT_ID:-}" ]]; then
   SUPABASE_PROJECT_REF="$SUPABASE_PROJECT_ID"
 fi
@@ -52,9 +58,9 @@ fi
 
 run_supabase() {
   if command -v supabase >/dev/null 2>&1; then
-    supabase "$@"
+    env -u SUPABASE_PROJECT_ID -u VITE_SUPABASE_URL -u SUPABASE_PROJECT_REF supabase "$@"
   else
-    npm exec --yes supabase@latest -- "$@"
+    env -u SUPABASE_PROJECT_ID -u VITE_SUPABASE_URL -u SUPABASE_PROJECT_REF npm exec --yes supabase@latest -- "$@"
   fi
 }
 
