@@ -3,9 +3,11 @@ import { useGatePassStore } from '../../store/gatePassStore';
 import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
 import GatePassStatusBadge from '../../components/gatepass/GatePassStatusBadge';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import PageHeader from '../../components/ui/PageHeader';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { CardListSkeleton, StatCardsSkeleton } from '../../components/common/Skeleton';
+import { useDebounce } from '../../hooks/useDebounce';
 import type { GatePass, GatePassStatus } from '../../types';
 import { supabase } from '../../lib/supabase';
 
@@ -138,6 +140,7 @@ export default function GatePassMonitorPage() {
   const [error, setError] = useState<string | null>(null);
   const [totalPersonil, setTotalPersonil] = useState(0);
   useGatePassRealtime();
+  const debouncedQuery = useDebounce(query, 250);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
@@ -175,7 +178,7 @@ export default function GatePassMonitorPage() {
   );
 
   const filteredRows = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = debouncedQuery.trim().toLowerCase();
     return monitorRows
       .filter(gp => {
         const statusMatch = statusFilter === 'all' || gp.effectiveStatus === statusFilter;
@@ -187,7 +190,7 @@ export default function GatePassMonitorPage() {
         return haystack.includes(q);
       })
       .sort((a, b) => compareMonitorPriority(a, b, now));
-  }, [monitorRows, query, statusFilter, startDate, endDate, now]);
+  }, [monitorRows, debouncedQuery, statusFilter, startDate, endDate, now]);
 
   // Memoize statistics computation to avoid recalculation on every render
   const { approved, keluar, completed, overdue, personilDiLuar, personilTersedia } = useMemo(() => {
@@ -356,7 +359,28 @@ export default function GatePassMonitorPage() {
   if (isInitialLoading) {
     return (
       <DashboardLayout title="Monitoring Gate Pass">
-        <LoadingSpinner />
+        <div className="mx-auto max-w-5xl py-6 space-y-6">
+          <div className="space-y-3">
+            <div className="h-8 w-72 animate-pulse rounded-lg bg-surface/70" />
+            <div className="h-4 w-full max-w-xl animate-pulse rounded bg-surface/70" />
+          </div>
+
+          <StatCardsSkeleton />
+
+          <div className="app-card p-4 space-y-4">
+            <div className="h-4 w-40 animate-pulse rounded bg-surface/70" />
+            <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+              <div className="h-11 animate-pulse rounded-xl bg-surface/70" />
+              <div className="h-11 animate-pulse rounded-xl bg-surface/70" />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="h-11 animate-pulse rounded-xl bg-surface/70" />
+              <div className="h-11 animate-pulse rounded-xl bg-surface/70" />
+            </div>
+          </div>
+
+          <CardListSkeleton count={4} />
+        </div>
       </DashboardLayout>
     );
   }
@@ -364,18 +388,25 @@ export default function GatePassMonitorPage() {
   return (
     <DashboardLayout title="Monitoring Gate Pass">
       <div className="mx-auto max-w-5xl py-6 space-y-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Monitoring Gate Pass</h1>
-            <p className="text-sm text-text-muted">Pantau alur terbaru: submit auto-approved, scan keluar (checked-in), dan scan kembali (completed).</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={resetFilters}>Reset Filter</Button>
-            <Button variant="outline" onClick={handlePrintReport} disabled={filteredRows.length === 0}>Print Laporan</Button>
-            <Button variant="outline" onClick={handleExportCsv} disabled={filteredRows.length === 0}>Export CSV</Button>
-            <Button variant="outline" onClick={() => void handleRefresh()} isLoading={isRefreshing}>Muat Ulang</Button>
-          </div>
-        </div>
+        <PageHeader
+          title="Monitoring Gate Pass"
+          subtitle="Pantau alur terbaru: submit auto-approved, scan keluar, dan scan kembali. Statistik diprioritaskan agar personil yang keluar lebih mudah dipantau."
+          meta={
+            <>
+              <span>{filteredRows.length} data tampil</span>
+              <span>{personilTersedia} personil tersedia</span>
+              <span>{personilDiLuar} personil di luar</span>
+            </>
+          }
+          actions={
+            <>
+              <Button variant="outline" onClick={resetFilters}>Reset Filter</Button>
+              <Button variant="outline" onClick={handlePrintReport} disabled={filteredRows.length === 0}>Print Laporan</Button>
+              <Button variant="outline" onClick={handleExportCsv} disabled={filteredRows.length === 0}>Export CSV</Button>
+              <Button variant="outline" onClick={() => void handleRefresh()} isLoading={isRefreshing}>Muat Ulang</Button>
+            </>
+          }
+        />
 
         {error && (
           <div className="rounded-xl border border-accent-red/40 bg-accent-red/10 px-4 py-3 text-sm text-accent-red">
@@ -383,7 +414,7 @@ export default function GatePassMonitorPage() {
           </div>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div className="app-card p-4">
             <div className="text-xs text-text-muted">Personil Tersedia</div>
             <div className="mt-1 text-2xl font-bold text-green-600">{personilTersedia}</div>
@@ -411,6 +442,13 @@ export default function GatePassMonitorPage() {
         </div>
 
         <div className="app-card p-4">
+          <div className="flex items-center justify-between gap-3 pb-3">
+            <div>
+              <h2 className="text-sm font-semibold text-text-primary">Filter dan pencarian</h2>
+              <p className="text-xs text-text-muted">Gunakan filter untuk mempersempit daftar dan menemukan personil lebih cepat.</p>
+            </div>
+            <div className="text-xs font-medium text-text-muted">{filteredRows.length} hasil</div>
+          </div>
           <div className="grid gap-3 md:grid-cols-[1fr_220px]">
             <Input
               placeholder="Cari nama, NRP, tujuan, atau keperluan"
@@ -455,8 +493,18 @@ export default function GatePassMonitorPage() {
 
         <div className="space-y-2" data-testid="monitor-list">
           {filteredRows.length === 0 && (
-            <div className="rounded-xl border border-surface/80 bg-bg-card p-5 text-sm text-text-muted">
-              Tidak ada data yang cocok dengan filter saat ini.
+            <div className="rounded-2xl border border-dashed border-surface/80 bg-bg-card p-6 text-center shadow-sm">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                •
+              </div>
+              <h3 className="mt-3 text-base font-semibold text-text-primary">Tidak ada data yang cocok</h3>
+              <p className="mt-1 text-sm text-text-muted">
+                Coba ubah kata kunci, status, atau rentang tanggal. Jika perlu, reset filter untuk melihat semua data.
+              </p>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <Button variant="outline" size="sm" onClick={resetFilters}>Reset Filter</Button>
+                <Button variant="ghost" size="sm" onClick={() => void handleRefresh()}>Muat Ulang</Button>
+              </div>
             </div>
           )}
 

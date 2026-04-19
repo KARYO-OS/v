@@ -5,6 +5,7 @@ import StatCard, { StatsGrid } from '../../components/ui/StatCard';
 import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/common/Button';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import EmptyState from '../../components/common/EmptyState';
 import { StatCardsSkeleton } from '../../components/common/Skeleton';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
@@ -198,10 +199,10 @@ export default function AdminDashboard() {
                   <Link
                     key={item.href}
                     to={item.href}
-                    className="rounded-xl border border-surface/80 bg-bg-card/90 p-4 transition-colors hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-surface/35"
+                    className="group rounded-xl border border-surface/80 bg-bg-card/90 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-slate-50 hover:shadow-md dark:hover:bg-surface/35"
                   >
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="grid h-8 w-8 place-items-center rounded-lg border border-surface/80 bg-slate-50 text-primary dark:bg-surface/35">
+                      <span className="grid h-8 w-8 place-items-center rounded-lg border border-surface/80 bg-slate-50 text-primary transition-transform group-hover:scale-105 dark:bg-surface/35">
                         <Icon className="h-4 w-4" aria-hidden="true" />
                       </span>
                       <h3 className="font-semibold text-text-primary text-sm transition-colors">
@@ -229,7 +230,8 @@ export default function AdminDashboard() {
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {operationalHighlights.map((item) => (
-                  <div key={item.label} className="rounded-xl border border-surface/80 bg-surface/20 p-4">
+                  <div key={item.label} className="group rounded-xl border border-surface/80 bg-surface/20 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-surface/25 hover:shadow-sm">
+                    <div className="mb-3 h-1.5 w-12 rounded-full bg-gradient-to-r from-primary/60 via-primary to-accent-gold/70" />
                     <p className="text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">{item.label}</p>
                     <p className="mt-1 text-2xl font-extrabold tracking-tight text-text-primary">{item.value}</p>
                     <p className="mt-1 text-xs text-text-muted">{item.hint}</p>
@@ -243,7 +245,11 @@ export default function AdminDashboard() {
                   <span className="text-xs text-text-muted">{lowStockItems.length} item</span>
                 </div>
                 {lowStockItems.length === 0 ? (
-                  <p className="mt-3 text-sm text-text-muted">Tidak ada item logistik yang berada pada level kritis.</p>
+                  <EmptyState
+                    title="Tidak ada item kritis"
+                    description="Semua stok berada pada level aman. Pantau kembali setelah ada pembaruan logistik."
+                    className="mt-3 border-0 bg-transparent px-0 py-4"
+                  />
                 ) : (
                   <div className="mt-3 space-y-2">
                     {lowStockItems.slice(0, 4).map((item) => (
@@ -276,7 +282,11 @@ export default function AdminDashboard() {
                   {isMembersLoading ? (
                     <p className="text-sm text-text-muted">Memuat data anggota...</p>
                   ) : latestUsers.length === 0 ? (
-                    <p className="text-sm text-text-muted">Belum ada data anggota.</p>
+                    <EmptyState
+                      title="Belum ada data anggota"
+                      description="Daftar personel terbaru akan tampil di sini setelah data pengguna tersedia."
+                      className="border-0 bg-transparent px-0 py-4"
+                    />
                   ) : (
                     latestUsers.slice(0, 6).map((member) => (
                       <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl border border-surface/70 bg-surface/20 px-3 py-2.5">
@@ -321,7 +331,11 @@ export default function AdminDashboard() {
                   </div>
                 ))
               ) : recentLogs.length === 0 ? (
-                <p className="text-center text-text-muted py-6 text-sm">Belum ada aktivitas tercatat</p>
+                <EmptyState
+                  title="Belum ada aktivitas tercatat"
+                  description="Audit log akan muncul otomatis saat ada interaksi di sistem."
+                  className="border-0 bg-transparent px-0 py-8"
+                />
               ) : (
                 recentLogs.map((log) => (
                   <div key={log.id} className="flex items-center gap-3 px-5 py-3">

@@ -35,7 +35,7 @@ export default function Button({
   return (
     <button
       className={`
-        inline-flex items-center justify-center gap-2 rounded-xl font-semibold
+        inline-flex items-center justify-center gap-2 rounded-xl font-semibold whitespace-nowrap
         transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/35 focus:ring-offset-2 focus:ring-offset-transparent
         active:scale-[0.97]
         disabled:cursor-not-allowed disabled:opacity-50

@@ -1,5 +1,10 @@
 import { supabase } from '../supabase';
 import type { AuditLog, Attendance, LogisticsItem } from '../../types';
+import { CacheWithTTL } from '../cacheWithTTL';
+import { requestCoalescer } from '../requestCoalescer';
+
+// Cache dashboard snapshot for 2 minutes (can be manually refreshed)
+const dashboardCache = new CacheWithTTL<string, AdminDashboardSnapshot>(120000);
 
 export interface DashboardStats {
   totalPersonel: number;
@@ -35,7 +40,7 @@ function ensureNoError(context: string, error: { message: string } | null): void
   }
 }
 
-export async function fetchAdminDashboardSnapshot(): Promise<AdminDashboardSnapshot> {
+async function fetchAdminDashboardSnapshotImpl(): Promise<AdminDashboardSnapshot> {
   const today = new Date().toISOString().split('T')[0];
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -147,6 +152,36 @@ export async function fetchAdminDashboardSnapshot(): Promise<AdminDashboardSnaps
     gatePassStats,
     fetchedAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Public wrapper with caching and request coalescing
+ * - Uses cache to avoid duplicate requests within 2 minutes
+ * - Coalesces multiple simultaneous requests to same endpoint
+ * - Manual refresh clears cache for fresh data
+ */
+export async function fetchAdminDashboardSnapshot(): Promise<AdminDashboardSnapshot> {
+  // Try to use request coalescing to prevent multiple simultaneous requests
+  return requestCoalescer.coalesce('admin_dashboard', async () => {
+    // Try cache first
+    const cached = dashboardCache.get('dashboard_snapshot');
+    if (cached) {
+      return cached;
+    }
+
+    // Fetch from database and cache result
+    const snapshot = await fetchAdminDashboardSnapshotImpl();
+    dashboardCache.set('dashboard_snapshot', snapshot);
+    return snapshot;
+  });
+}
+
+/**
+ * Force refresh dashboard data, bypassing cache
+ */
+export async function refreshAdminDashboardSnapshot(): Promise<AdminDashboardSnapshot> {
+  dashboardCache.delete('dashboard_snapshot');
+  return fetchAdminDashboardSnapshot();
 }
 
 export async function fetchKomandanDashboardStats(

@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import BottomTabBar from './BottomTabBar';
 import Notification from '../common/Notification';
+import { ToastContainer } from '../common/Toast';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useUIStore } from '../../store/uiStore';
 
@@ -50,6 +51,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
       </div>
       <BottomTabBar />
       <Notification />
+      <ToastContainer />
     </div>
   );
 }

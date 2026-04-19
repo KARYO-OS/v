@@ -9,10 +9,11 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, subtitle, actions, meta }: PageHeaderProps) {
   return (
-    <div className="app-card px-4 py-4 sm:px-6 sm:py-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="app-card border-l-4 border-primary/20 px-4 py-4 shadow-sm sm:px-6 sm:py-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-xl font-bold tracking-tight text-text-primary sm:text-2xl">{title}</h2>
+          <div className="inline-flex h-1.5 w-16 rounded-full bg-gradient-to-r from-primary/70 via-primary to-accent-gold/80" />
+          <h2 className="mt-3 text-xl font-bold tracking-tight text-text-primary sm:text-2xl">{title}</h2>
           {subtitle && <p className="mt-1 text-sm text-text-muted">{subtitle}</p>}
           {meta && <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted">{meta}</div>}
         </div>
