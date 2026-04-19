@@ -5,12 +5,14 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import PageHeader from '../../components/ui/PageHeader';
 import { supabase } from '../../lib/supabase';
+import { clearAuditLogs } from '../../lib/api/auditLogs';
 import { handleError } from '../../lib/handleError';
 import { useAuthStore } from '../../store/authStore';
 import { DEFAULT_FEATURE_FLAGS, FEATURE_DEFINITIONS, type FeatureKey } from '../../lib/featureFlags';
 import { useFeatureStore } from '../../store/featureStore';
 import { usePlatformStore } from '../../store/platformStore';
 import { useUIStore } from '../../store/uiStore';
+import { clearAuditLogsCache } from '../../hooks/useAuditLogs';
 
 /** Tables included in backup/restore. Ordered to satisfy FK constraints on restore. */
 const BACKUP_TABLES = [
@@ -32,6 +34,8 @@ interface BackupData {
   satuan: string;
   tables: Partial<Record<BackupTable, unknown[]>>;
 }
+
+type AuditClearRange = '7d' | '30d' | '90d' | 'all';
 
 /** Download a JS object as a .json file */
 function downloadJson(data: unknown, filename: string) {
@@ -65,7 +69,10 @@ export default function Settings() {
 
   const [isExporting, setIsExporting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [showClearHistoryModal, setShowClearHistoryModal] = useState(false);
+  const [auditClearRange, setAuditClearRange] = useState<AuditClearRange>('all');
   const [restorePreview, setRestorePreview] = useState<BackupData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
@@ -242,6 +249,27 @@ export default function Settings() {
       );
     } catch (error) {
       showNotification(handleError(error, 'Gagal memperbarui pengaturan fitur'), 'error');
+    }
+  };
+
+  const handleClearActivityHistory = async () => {
+    if (!user) {
+      showNotification('Sesi tidak valid. Silakan login ulang.', 'error');
+      return;
+    }
+
+    setIsClearingHistory(true);
+    try {
+      const olderThanDays = auditClearRange === 'all' ? null : Number(auditClearRange.replace('d', ''));
+      const deletedCount = await clearAuditLogs(user.id, user.role, olderThanDays);
+      clearAuditLogsCache();
+      setShowClearHistoryModal(false);
+      const scopeLabel = auditClearRange === 'all' ? 'semua riwayat' : `riwayat lebih dari ${olderThanDays} hari`;
+      showNotification(`Berhasil menghapus ${scopeLabel} (${deletedCount} catatan)`, 'success');
+    } catch (error) {
+      showNotification(handleError(error, 'Gagal menghapus riwayat aktivitas'), 'error');
+    } finally {
+      setIsClearingHistory(false);
     }
   };
 
@@ -731,6 +759,47 @@ export default function Settings() {
           </p>
         </div>
 
+        <div className="app-card p-6">
+          <h2 className="mb-1 text-lg font-bold tracking-tight text-text-primary">Riwayat Aktivitas</h2>
+          <p className="text-sm text-text-muted">
+            Hapus histori aktivitas sistem (audit log) berdasarkan rentang waktu atau hapus semua.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <div>
+              <label htmlFor="audit-clear-range" className="text-sm font-semibold text-text-primary">Rentang Hapus</label>
+              <select
+                id="audit-clear-range"
+                className="form-control mt-1"
+                value={auditClearRange}
+                onChange={(e) => setAuditClearRange(e.target.value as AuditClearRange)}
+              >
+                <option value="7d">Hapus log lebih dari 7 hari</option>
+                <option value="30d">Hapus log lebih dari 30 hari</option>
+                <option value="90d">Hapus log lebih dari 90 hari</option>
+                <option value="all">Hapus semua riwayat</option>
+              </select>
+            </div>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setShowClearHistoryModal(true)}
+            >
+              Proses Hapus
+            </Button>
+          </div>
+          <div className="mt-4 rounded-xl border border-accent-red/30 bg-accent-red/10 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={16} className="mt-0.5 text-accent-red" aria-hidden="true" />
+              <div>
+                <p className="text-sm font-semibold text-accent-red">Tindakan permanen</p>
+                <p className="mt-1 text-xs text-accent-red/90">
+                  Data audit log yang dihapus tidak dapat dipulihkan kecuali dari file backup.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="rounded-xl border border-accent-gold/35 bg-accent-gold/10 p-4">
           <p className="text-sm text-accent-gold">
             ⚠ Pengaturan lanjutan (konfigurasi Supabase, RLS policy, dll.) dikelola langsung melalui Supabase Dashboard.
@@ -786,6 +855,45 @@ export default function Settings() {
                 </div>
               ))}
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {showClearHistoryModal && (
+        <Modal
+          isOpen={showClearHistoryModal}
+          onClose={() => {
+            if (!isClearingHistory) setShowClearHistoryModal(false);
+          }}
+          title="Konfirmasi Hapus Riwayat Aktivitas"
+          footer={
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowClearHistoryModal(false)}
+                disabled={isClearingHistory}
+              >
+                Batal
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => { void handleClearActivityHistory(); }}
+                disabled={isClearingHistory}
+              >
+                {isClearingHistory ? 'Menghapus…' : 'Ya, Hapus Semua'}
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-3">
+            <p className="text-sm text-text-primary">
+              {auditClearRange === 'all'
+                ? 'Semua catatan di audit log akan dihapus permanen dari sistem.'
+                : `Catatan audit log yang lebih lama dari ${auditClearRange.replace('d', '')} hari akan dihapus permanen.`}
+            </p>
+            <p className="text-xs text-text-muted">
+              Lanjutkan hanya jika Anda yakin. Disarankan melakukan backup sebelum penghapusan.
+            </p>
           </div>
         </Modal>
       )}

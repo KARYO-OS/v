@@ -20,3 +20,17 @@ export async function fetchAuditLogs(params: FetchAuditLogsParams): Promise<Audi
   if (error) throw error;
   return (data as AuditLog[]) ?? [];
 }
+
+export async function clearAuditLogs(
+  callerId: string,
+  callerRole: string,
+  olderThanDays: number | null = null,
+): Promise<number> {
+  const { data, error } = await supabase.rpc('api_clear_audit_logs', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_older_than_days: olderThanDays,
+  });
+  if (error) throw error;
+  return Number(data ?? 0);
+}
