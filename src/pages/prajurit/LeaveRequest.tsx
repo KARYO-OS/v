@@ -243,9 +243,9 @@ export default function LeaveRequest() {
               value={form.jenis_izin}
               onChange={(e) => setForm({ ...form, jenis_izin: e.target.value as typeof form.jenis_izin })}
             >
-              <option value="cuti">🏖 Cuti</option>
-              <option value="sakit">🤒 Sakit</option>
-              <option value="dinas_luar">📋 Dinas Luar</option>
+              <option value="cuti">Cuti</option>
+              <option value="sakit">Sakit</option>
+              <option value="dinas_luar">Dinas Luar</option>
             </select>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
