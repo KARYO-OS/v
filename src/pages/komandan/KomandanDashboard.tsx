@@ -68,7 +68,7 @@ export default function KomandanDashboard() {
           meta={
             <>
               <span>Aktif: {onlineCount}/{totalPersonel}</span>
-              <span>{pendingTasks.length} tugas aktif</span>
+              {canOpenTasks && <span>{pendingTasks.length} tugas aktif</span>}
             </>
           }
           actions={
@@ -90,10 +90,10 @@ export default function KomandanDashboard() {
         )}
 
         <StatsGrid>
-          <StatCard icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Personel" value={totalPersonel} />
-          <StatCard icon={<ICONS.UserCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Sedang Online" value={onlineCount} trend="aktif sekarang" trendUp />
-          <StatCard icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={pendingTasks.length} />
-          <StatCard icon={<ICONS.BadgeCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Tugas Disetujui" value={approvedTasks.length} trend={doneTasks.length > 0 ? `${doneTasks.length} menunggu review` : 'belum ada'} />
+          {canOpenPersonnel && <StatCard icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Personel" value={totalPersonel} />}
+          {canOpenPersonnel && <StatCard icon={<ICONS.UserCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Sedang Online" value={onlineCount} trend="aktif sekarang" trendUp />}
+          {canOpenTasks && <StatCard icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={pendingTasks.length} />}
+          {canOpenTasks && <StatCard icon={<ICONS.BadgeCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Tugas Disetujui" value={approvedTasks.length} trend={doneTasks.length > 0 ? `${doneTasks.length} menunggu review` : 'belum ada'} />}
         </StatsGrid>
 
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
@@ -107,8 +107,7 @@ export default function KomandanDashboard() {
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               {[
-                { label: 'Pending', value: pendingTasks.length },
-                { label: 'Selesai', value: doneTasks.length },
+                ...(canOpenTasks ? [{ label: 'Pending', value: pendingTasks.length }, { label: 'Selesai', value: doneTasks.length }] : []),
                 { label: 'Pin pengumuman', value: pinnedAnnouncements.length },
               ].map((item) => (
                 <div key={item.label} className="rounded-xl border border-surface/70 bg-surface/20 p-4">
@@ -152,30 +151,31 @@ export default function KomandanDashboard() {
         </div>
 
         {/* Recent tasks */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-text-primary">Tugas Terkini</h3>
-            {canOpenTasks && <Link to="/komandan/tasks" className="text-sm text-primary hover:underline">Lihat semua →</Link>}
-          </div>
+        {canOpenTasks && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-text-primary">Tugas Terkini</h3>
+              <Link to="/komandan/tasks" className="text-sm text-primary hover:underline">Lihat semua →</Link>
+            </div>
 
-          {tasksLoading ? (
-            <CardListSkeleton count={4} />
-          ) : tasks.length === 0 ? (
-            <EmptyState
-              title="Belum ada tugas dibuat"
-              description="Mulai distribusikan pekerjaan ke personel agar progres harian bisa dipantau dari dashboard ini."
-              action={canOpenTasks ? (
-                <Link
-                  to="/komandan/tasks"
-                  className="inline-flex min-h-[40px] items-center rounded-xl border border-surface bg-slate-50 px-4 py-2 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:text-primary dark:bg-surface/45"
-                >
-                  Buat atau kelola tugas
-                </Link>
-              ) : undefined}
-              className="py-10"
-            />
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {tasksLoading ? (
+              <CardListSkeleton count={4} />
+            ) : tasks.length === 0 ? (
+              <EmptyState
+                title="Belum ada tugas dibuat"
+                description="Mulai distribusikan pekerjaan ke personel agar progres harian bisa dipantau dari dashboard ini."
+                action={(
+                  <Link
+                    to="/komandan/tasks"
+                    className="inline-flex min-h-[40px] items-center rounded-xl border border-surface bg-slate-50 px-4 py-2 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:text-primary dark:bg-surface/45"
+                  >
+                    Buat atau kelola tugas
+                  </Link>
+                )}
+                className="py-10"
+              />
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {tasks.slice(0, 6).map((task) => (
                 <TaskCard
                   key={task.id}
@@ -186,9 +186,10 @@ export default function KomandanDashboard() {
                   }}
                 />
               ))}
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

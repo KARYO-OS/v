@@ -45,6 +45,8 @@ export default function PrajuritDashboard() {
   const canOpenGatePass = isPathEnabled('/prajurit/gatepass', flags);
   const canOpenScanPos = isPathEnabled('/prajurit/scan-pos', flags);
   const canOpenLeave = isPathEnabled('/prajurit/leave', flags);
+  const canViewTaskModules = canOpenTasks;
+  const canViewAttendanceModules = canOpenAttendance;
 
   const handleCheckIn = async () => {
     setCheckingIn(true);
@@ -78,27 +80,31 @@ export default function PrajuritDashboard() {
           subtitle={`${user?.satuan ?? '—'} · ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
           meta={
             <>
-              <span>{todayAttendance ? 'Absensi hari ini tercatat' : 'Belum absen masuk'}</span>
-              <span>{unreadCount} pesan belum dibaca</span>
+              {canViewAttendanceModules && (
+                <span>{todayAttendance ? 'Absensi hari ini tercatat' : 'Belum absen masuk'}</span>
+              )}
+              {canOpenMessages && <span>{unreadCount} pesan belum dibaca</span>}
             </>
           }
           actions={
             <>
-              {attnLoading ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-surface border-t-primary" />
-              ) : todayAttendance ? (
-                <div className="flex items-center gap-3">
-                  <AttendanceBadge status={todayAttendance.status} />
-                  {todayAttendance.check_in && !todayAttendance.check_out && (
-                    <Button size="sm" variant="secondary" onClick={handleCheckOut} isLoading={checkingOut}>
-                      Absen Pulang
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <Button size="sm" onClick={handleCheckIn} isLoading={checkingIn}>
-                  Absen Masuk
-                </Button>
+              {canViewAttendanceModules && (
+                attnLoading ? (
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-surface border-t-primary" />
+                ) : todayAttendance ? (
+                  <div className="flex items-center gap-3">
+                    <AttendanceBadge status={todayAttendance.status} />
+                    {todayAttendance.check_in && !todayAttendance.check_out && (
+                      <Button size="sm" variant="secondary" onClick={handleCheckOut} isLoading={checkingOut}>
+                        Absen Pulang
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <Button size="sm" onClick={handleCheckIn} isLoading={checkingIn}>
+                    Absen Masuk
+                  </Button>
+                )
               )}
             </>
           }
@@ -159,7 +165,7 @@ export default function PrajuritDashboard() {
         </div>
 
         {/* Alert: rejected tasks */}
-        {rejectedTasks.length > 0 && (
+        {canViewTaskModules && rejectedTasks.length > 0 && (
           <div className="flex items-start gap-3 bg-accent-red/10 border border-accent-red/30 rounded-xl p-4">
             <ICONS.AlertTriangle className="mt-0.5 h-5 w-5 text-accent-red" aria-hidden="true" />
             <div>
@@ -179,16 +185,24 @@ export default function PrajuritDashboard() {
         )}
 
         {/* Stats */}
-        <StatsGrid>
-          <StatCard icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={activeTasks.length} />
-          <StatCard icon={<ICONS.BadgeCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Tugas Selesai" value={doneTasks.length} />
-          <StatCard icon={<ICONS.ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Tugas" value={tasks.length} />
-          <StatCard
-            icon={<ICONS.CalendarDays className="h-5 w-5 text-primary" aria-hidden="true" />}
-            label="Status Hari Ini"
-            value={todayAttendance ? '✓' : '—'}
-          />
-        </StatsGrid>
+        {(canViewTaskModules || canViewAttendanceModules) && (
+          <StatsGrid>
+            {canViewTaskModules && (
+              <>
+                <StatCard icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={activeTasks.length} />
+                <StatCard icon={<ICONS.BadgeCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Tugas Selesai" value={doneTasks.length} />
+                <StatCard icon={<ICONS.ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Tugas" value={tasks.length} />
+              </>
+            )}
+            {canViewAttendanceModules && (
+              <StatCard
+                icon={<ICONS.CalendarDays className="h-5 w-5 text-primary" aria-hidden="true" />}
+                label="Status Hari Ini"
+                value={todayAttendance ? '✓' : '—'}
+              />
+            )}
+          </StatsGrid>
+        )}
 
         {/* Announcements */}
         <div>
@@ -234,30 +248,31 @@ export default function PrajuritDashboard() {
         </div>
 
         {/* My active tasks */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-text-primary">Tugas Aktif Saya</h3>
-            {canOpenTasks && <Link to="/prajurit/tasks" className="text-sm text-primary hover:underline">Lihat semua →</Link>}
-          </div>
+        {canViewTaskModules && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-text-primary">Tugas Aktif Saya</h3>
+              <Link to="/prajurit/tasks" className="text-sm text-primary hover:underline">Lihat semua →</Link>
+            </div>
 
-          {tasksLoading ? (
-            <CardListSkeleton count={2} />
-          ) : activeTasks.length === 0 ? (
-            <EmptyState
-              title="Tidak ada tugas aktif"
-              description="Tugas baru akan muncul di sini begitu komandan menugaskan Anda."
-              action={canOpenTasks ? (
-                <Link
-                  to="/prajurit/tasks"
-                  className="inline-flex min-h-[40px] items-center rounded-xl border border-surface bg-slate-50 px-4 py-2 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:text-primary dark:bg-surface/45"
-                >
-                  Buka daftar tugas
-                </Link>
-              ) : undefined}
-              className="py-10"
-            />
-          ) : (
-            <div className="grid grid-cols-1 gap-3">
+            {tasksLoading ? (
+              <CardListSkeleton count={2} />
+            ) : activeTasks.length === 0 ? (
+              <EmptyState
+                title="Tidak ada tugas aktif"
+                description="Tugas baru akan muncul di sini begitu komandan menugaskan Anda."
+                action={(
+                  <Link
+                    to="/prajurit/tasks"
+                    className="inline-flex min-h-[40px] items-center rounded-xl border border-surface bg-slate-50 px-4 py-2 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:text-primary dark:bg-surface/45"
+                  >
+                    Buka daftar tugas
+                  </Link>
+                )}
+                className="py-10"
+              />
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
               {activeTasks.slice(0, 4).map((task) => (
                 <TaskCard
                   key={task.id}
@@ -268,9 +283,10 @@ export default function PrajuritDashboard() {
                   actionLabel="Kerjakan"
                 />
               ))}
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

@@ -4,6 +4,8 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import ProtectedRoute from '../../router/ProtectedRoute';
 import { useAuthStore } from '../../store/authStore';
+import { useFeatureStore } from '../../store/featureStore';
+import { DEFAULT_FEATURE_FLAGS } from '../../lib/featureFlags';
 
 describe('ProtectedRoute', () => {
   beforeEach(() => {
@@ -14,6 +16,17 @@ describe('ProtectedRoute', () => {
       isInitialized: false,
       isLoading: false,
       error: null,
+    });
+    useFeatureStore.setState({
+      flags: { ...DEFAULT_FEATURE_FLAGS },
+      isLoaded: true,
+      isLoading: false,
+      isSaving: false,
+      loadedForUserId: null,
+      loadFeatureFlags: vi.fn(),
+      setFeatureEnabled: vi.fn(),
+      setFeatureFlags: vi.fn(),
+      setAllFeaturesEnabled: vi.fn(),
     });
   });
 
@@ -77,5 +90,44 @@ describe('ProtectedRoute', () => {
     );
 
     expect(screen.getByText(/Allowed/i)).toBeInTheDocument();
+  });
+
+  it('redirects guard to error page when all guard modules are disabled', () => {
+    useAuthStore.setState({
+      isInitialized: true,
+      isAuthenticated: true,
+      user: {
+        id: 'u1',
+        nrp: '11111',
+        nama: 'Guard A',
+        role: 'guard',
+        satuan: 'Pusat',
+        is_active: true,
+        is_online: true,
+        login_attempts: 0,
+        created_at: '2026-04-14T00:00:00Z',
+        updated_at: '2026-04-14T00:00:00Z',
+      },
+    });
+    useFeatureStore.setState((state) => ({
+      ...state,
+      flags: {
+        ...state.flags,
+        gate_pass: false,
+      },
+    }));
+
+    render(
+      <MemoryRouter initialEntries={['/guard/gatepass-scan']}>
+        <Routes>
+          <Route path="/error" element={<div>ErrorPage</div>} />
+          <Route path="/guard/gatepass-scan" element={<ProtectedRoute allowedRoles={['guard']} />}>
+            <Route index element={<div>GuardAllowed</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(/ErrorPage/i)).toBeInTheDocument();
   });
 });

@@ -17,6 +17,18 @@ const ROLE_DEFAULT_PATH: Record<Role, string> = {
   guard: '/guard/gatepass-scan',
 };
 
+const ROLE_FALLBACK_PATHS: Record<Role, string[]> = {
+  admin: ['/admin/dashboard', '/admin/settings'],
+  komandan: ['/komandan/dashboard', '/komandan/tasks', '/komandan/attendance'],
+  prajurit: ['/prajurit/dashboard', '/prajurit/profile'],
+  guard: ['/guard/gatepass-scan'],
+};
+
+function getRoleFallbackPath(role: Role, flags: ReturnType<typeof useFeatureStore.getState>['flags']): string | null {
+  const candidates = ROLE_FALLBACK_PATHS[role] ?? [];
+  return candidates.find((path) => isPathEnabled(path, flags)) ?? null;
+}
+
 export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   const { isAuthenticated, isInitialized, user } = useAuthStore();
   const { pathname } = useLocation();
@@ -45,7 +57,21 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   if (!isPathEnabled(pathname, flags)) {
-    return <Navigate to={ROLE_DEFAULT_PATH[user.role]} replace />;
+    const fallbackPath = getRoleFallbackPath(user.role, flags);
+    if (!fallbackPath || fallbackPath === pathname) {
+      return (
+        <Navigate
+          to="/error"
+          replace
+          state={{
+            code: '403',
+            message: 'Modul untuk peran Anda sedang dinonaktifkan oleh admin.',
+          }}
+        />
+      );
+    }
+
+    return <Navigate to={fallbackPath} replace />;
   }
 
   return <Outlet />;

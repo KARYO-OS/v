@@ -213,7 +213,7 @@ describe('End-to-end dashboard rendering', () => {
 
     await waitFor(() => expect(screen.getByRole('heading', { name: /Mayor Komandan Beta/i })).toBeInTheDocument());
     expect(screen.getByText(/Satuan: Satuan B/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Kelola Tugas/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Kelola Tugas$/i })).toBeInTheDocument();
   });
 
   it('renders the prajurit dashboard for prajurit role', async () => {
@@ -335,7 +335,7 @@ describe('End-to-end dashboard rendering', () => {
         </MemoryRouter>,
       );
 
-      await waitFor(() => expect(screen.getByRole('link', { name: /Kelola Tugas/i })).toBeInTheDocument());
+      await waitFor(() => expect(screen.getByRole('link', { name: /^Kelola Tugas$/i })).toBeInTheDocument());
       expect(screen.getByRole('link', { name: /Lihat laporan →/i })).toBeInTheDocument();
     });
 
