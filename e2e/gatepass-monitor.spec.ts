@@ -25,6 +25,11 @@ test.describe('Gate Pass Monitor', () => {
     await expect(page.getByRole('button', { name: 'Hari ini' })).toBeVisible();
     await expect(page.getByRole('button', { name: '7 hari' })).toBeVisible();
     await expect(page.getByRole('button', { name: '30 hari' })).toBeVisible();
+    await expect(page.getByTestId('gatepass-monitor-critical-mode')).toBeVisible();
+    await expect(page.getByTestId('gatepass-monitor-sort-mode')).toBeVisible();
+    await expect(page.getByTestId('gatepass-monitor-unit-filter')).toBeVisible();
+    await expect(page.getByTestId('gatepass-monitor-overdue-filter')).toBeVisible();
+    await expect(page.getByText('Ringkasan per Satuan')).toBeVisible();
     await expect(page.getByPlaceholder('Cari nama, NRP, tujuan, atau keperluan')).toBeVisible();
     await expect(page.getByLabel('Tanggal keluar dari')).toBeVisible();
     await expect(page.getByLabel('Tanggal keluar sampai')).toBeVisible();
@@ -66,6 +71,45 @@ test.describe('Gate Pass Monitor', () => {
 
     await statusFilter.selectOption('completed');
     await expect(statusFilter).toHaveValue('completed');
+  });
+
+  test('mode kritis dan sort mode dapat diubah', async ({ page }) => {
+    await loginAsAdmin(page);
+
+    await page.goto('./#/admin/gatepass-monitor');
+
+    const criticalModeButton = page.getByTestId('gatepass-monitor-critical-mode');
+    const sortMode = page.getByTestId('gatepass-monitor-sort-mode');
+
+    await criticalModeButton.click();
+    await expect(criticalModeButton).toHaveText(/Mode Kritis Aktif/i);
+
+    await sortMode.selectOption('latest');
+    await expect(sortMode).toHaveValue('latest');
+  });
+
+  test('filter satuan dan durasi terlambat dapat diubah', async ({ page }) => {
+    await loginAsAdmin(page);
+
+    await page.goto('./#/admin/gatepass-monitor');
+
+    const unitFilter = page.getByTestId('gatepass-monitor-unit-filter');
+    const overdueFilter = page.getByTestId('gatepass-monitor-overdue-filter');
+
+    await overdueFilter.selectOption('over_1h');
+    await expect(overdueFilter).toHaveValue('over_1h');
+
+    // Pilih opsi kedua jika tersedia agar test tetap robust meski data satuan dinamis.
+    const unitOptions = await unitFilter.locator('option').count();
+    if (unitOptions > 1) {
+      const optionValue = await unitFilter.locator('option').nth(1).getAttribute('value');
+      if (optionValue) {
+        await unitFilter.selectOption(optionValue);
+        await expect(unitFilter).toHaveValue(optionValue);
+      }
+    } else {
+      await expect(unitFilter).toHaveValue('all');
+    }
   });
 
   test('preset tanggal mengisi rentang tanggal', async ({ page }) => {

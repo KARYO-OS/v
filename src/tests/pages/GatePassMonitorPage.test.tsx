@@ -1,8 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import GatePassMonitorPage from '../../pages/admin/GatePassMonitorPage';
 import type { GatePass } from '../../types';
+
+vi.mock('../../lib/supabase', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(async () => ({ count: 20, error: null })),
+      })),
+    })),
+  },
+}));
 
 const mockState: {
   gatePasses: GatePass[];
@@ -101,7 +111,7 @@ describe('GatePassMonitorPage', () => {
     fireEvent.change(screen.getByPlaceholderText('Cari nama, NRP, tujuan, atau keperluan'), {
       target: { value: 'andi' },
     });
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'overdue' } });
+    fireEvent.change(screen.getByTestId('gatepass-monitor-status-filter'), { target: { value: 'overdue' } });
 
     expect(screen.getByText('Rumah Sakit')).toBeInTheDocument();
     expect(screen.queryByText('Logistik')).not.toBeInTheDocument();
@@ -155,7 +165,7 @@ describe('GatePassMonitorPage', () => {
     fireEvent.change(screen.getByPlaceholderText('Cari nama, NRP, tujuan, atau keperluan'), {
       target: { value: 'andi' },
     });
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'overdue' } });
+    fireEvent.change(screen.getByTestId('gatepass-monitor-status-filter'), { target: { value: 'overdue' } });
     fireEvent.change(screen.getByLabelText('Tanggal keluar dari'), { target: { value: '2026-04-10' } });
     fireEvent.change(screen.getByLabelText('Tanggal keluar sampai'), { target: { value: '2026-04-20' } });
 
@@ -166,9 +176,128 @@ describe('GatePassMonitorPage', () => {
     expect(screen.getByPlaceholderText('Cari nama, NRP, tujuan, atau keperluan')).toHaveValue('');
     expect(screen.getByLabelText('Tanggal keluar dari')).toHaveValue('');
     expect(screen.getByLabelText('Tanggal keluar sampai')).toHaveValue('');
-    expect(screen.getByRole('combobox')).toHaveValue('all');
+    expect(screen.getByTestId('gatepass-monitor-status-filter')).toHaveValue('all');
     expect(screen.getByText('Kunjungan Baru')).toBeInTheDocument();
     expect(screen.getByText('Kunjungan Lama')).toBeInTheDocument();
+  });
+
+  it('toggles critical mode to only show overdue and checked_in rows', async () => {
+    mockState.gatePasses = [
+      makeGatePass({ id: 'critical-1', tujuan: 'Kasus Overdue', status: 'overdue' }),
+      makeGatePass({ id: 'critical-2', tujuan: 'Kasus Keluar', status: 'checked_in' }),
+      makeGatePass({ id: 'critical-3', tujuan: 'Kasus Approved', status: 'approved' }),
+    ];
+
+    render(<GatePassMonitorPage />);
+
+    await waitFor(() => expect(screen.getByText('Monitoring Gate Pass')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('gatepass-monitor-critical-mode'));
+
+    expect(screen.getByText('Kasus Overdue')).toBeInTheDocument();
+    expect(screen.getByText('Kasus Keluar')).toBeInTheDocument();
+    expect(screen.queryByText('Kasus Approved')).not.toBeInTheDocument();
+  });
+
+  it('sorts by latest waktu_keluar when latest sort mode selected', async () => {
+    mockState.gatePasses = [
+      makeGatePass({ id: 'sort-1', tujuan: 'Kunjungan Lama', status: 'approved', waktu_keluar: '2026-04-10T08:00:00Z' }),
+      makeGatePass({ id: 'sort-2', tujuan: 'Kunjungan Baru', status: 'approved', waktu_keluar: '2026-04-16T08:00:00Z' }),
+    ];
+
+    render(<GatePassMonitorPage />);
+
+    await waitFor(() => expect(screen.getByText('Monitoring Gate Pass')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByTestId('gatepass-monitor-sort-mode'), { target: { value: 'latest' } });
+
+    const cards = screen.getAllByTestId(/monitor-card-/i);
+    expect(cards[0]).toHaveTextContent('Kunjungan Baru');
+    expect(cards[1]).toHaveTextContent('Kunjungan Lama');
+  });
+
+  it('filters rows by satuan', async () => {
+    mockState.gatePasses = [
+      makeGatePass({
+        id: 'unit-1',
+        tujuan: 'Unit Alpha',
+        status: 'approved',
+        user: { id: 'u1', nama: 'Andi', nrp: '12345', role: 'prajurit', satuan: 'Yon A', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-16T00:00:00Z', updated_at: '2026-04-16T00:00:00Z' },
+      }),
+      makeGatePass({
+        id: 'unit-2',
+        tujuan: 'Unit Bravo',
+        status: 'approved',
+        user: { id: 'u2', nama: 'Budi', nrp: '67890', role: 'prajurit', satuan: 'Yon B', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-16T00:00:00Z', updated_at: '2026-04-16T00:00:00Z' },
+      }),
+    ];
+
+    render(<GatePassMonitorPage />);
+
+    await waitFor(() => expect(screen.getByText('Monitoring Gate Pass')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByTestId('gatepass-monitor-unit-filter'), { target: { value: 'Yon A' } });
+
+    expect(screen.getByText('Unit Alpha')).toBeInTheDocument();
+    expect(screen.queryByText('Unit Bravo')).not.toBeInTheDocument();
+  });
+
+  it('filters overdue rows by overdue duration bucket', async () => {
+    mockState.gatePasses = [
+      makeGatePass({
+        id: 'od-1',
+        tujuan: 'Overdue Ringan',
+        status: 'overdue',
+        waktu_kembali: '2030-04-16T09:30:00Z',
+      }),
+      makeGatePass({
+        id: 'od-2',
+        tujuan: 'Overdue Berat',
+        status: 'overdue',
+        waktu_kembali: '2026-04-16T03:00:00Z',
+      }),
+    ];
+
+    render(<GatePassMonitorPage />);
+
+    await waitFor(() => expect(screen.getByText('Monitoring Gate Pass')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByTestId('gatepass-monitor-overdue-filter'), { target: { value: 'over_6h' } });
+
+    expect(screen.getByText('Overdue Berat')).toBeInTheDocument();
+    expect(screen.queryByText('Overdue Ringan')).not.toBeInTheDocument();
+  });
+
+  it('shows unit summary cards for filtered rows', async () => {
+    mockState.gatePasses = [
+      makeGatePass({
+        id: 'sum-1',
+        tujuan: 'Unit A',
+        status: 'overdue',
+        user: { id: 'u1', nama: 'Andi', nrp: '12345', role: 'prajurit', satuan: 'Yon A', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-16T00:00:00Z', updated_at: '2026-04-16T00:00:00Z' },
+      }),
+      makeGatePass({
+        id: 'sum-2',
+        tujuan: 'Unit B',
+        status: 'checked_in',
+        user: { id: 'u2', nama: 'Budi', nrp: '67890', role: 'prajurit', satuan: 'Yon A', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-16T00:00:00Z', updated_at: '2026-04-16T00:00:00Z' },
+      }),
+      makeGatePass({
+        id: 'sum-3',
+        tujuan: 'Unit C',
+        status: 'approved',
+        user: { id: 'u3', nama: 'Candra', nrp: '54321', role: 'prajurit', satuan: 'Yon B', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-16T00:00:00Z', updated_at: '2026-04-16T00:00:00Z' },
+      }),
+    ];
+
+    render(<GatePassMonitorPage />);
+
+    await waitFor(() => expect(screen.getByText('Monitoring Gate Pass')).toBeInTheDocument());
+
+    expect(screen.getByText('Ringkasan per Satuan')).toBeInTheDocument();
+    const summaryPanel = screen.getByTestId('gatepass-monitor-unit-summary');
+    expect(within(summaryPanel).getByText('Yon A')).toBeInTheDocument();
+    expect(within(summaryPanel).getByText('Yon B')).toBeInTheDocument();
   });
 
   it('exports filtered rows to csv file', async () => {

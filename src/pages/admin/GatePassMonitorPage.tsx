@@ -15,6 +15,9 @@ interface MonitorGatePass extends GatePass {
   effectiveStatus: GatePassStatus;
 }
 
+type SortMode = 'priority' | 'latest';
+type OverdueBucket = 'all' | 'over_30m' | 'over_1h' | 'over_3h' | 'over_6h';
+
 function normalizeLegacyStatus(status: GatePassStatus): GatePassStatus {
   if (status === 'out') return 'checked_in';
   if (status === 'returned') return 'completed';
@@ -101,6 +104,32 @@ function compareMonitorPriority(a: MonitorGatePass, b: MonitorGatePass, now: Dat
   return parseTimeMs(b.waktu_keluar) - parseTimeMs(a.waktu_keluar);
 }
 
+function compareLatestFirst(a: MonitorGatePass, b: MonitorGatePass) {
+  return parseTimeMs(b.waktu_keluar || b.created_at) - parseTimeMs(a.waktu_keluar || a.created_at);
+}
+
+function getOverdueDurationMs(gatePass: MonitorGatePass, now: Date): number | null {
+  if (gatePass.effectiveStatus !== 'overdue') return null;
+  const dueMs = parseTimeMs(gatePass.waktu_kembali);
+  if (!Number.isFinite(dueMs)) return null;
+  return Math.max(0, now.getTime() - dueMs);
+}
+
+function matchesOverdueBucket(gatePass: MonitorGatePass, bucket: OverdueBucket, now: Date): boolean {
+  if (bucket === 'all') return true;
+  const overdueMs = getOverdueDurationMs(gatePass, now);
+  if (overdueMs === null) return false;
+
+  const thresholdMs: Record<Exclude<OverdueBucket, 'all'>, number> = {
+    over_30m: 30 * 60 * 1000,
+    over_1h: 60 * 60 * 1000,
+    over_3h: 3 * 60 * 60 * 1000,
+    over_6h: 6 * 60 * 60 * 1000,
+  };
+
+  return overdueMs >= thresholdMs[bucket];
+}
+
 function isWithinDateRange(value: string | undefined, startDate: string, endDate: string) {
   if (!startDate && !endDate) return true;
   if (!value) return false;
@@ -132,8 +161,12 @@ export default function GatePassMonitorPage() {
   const fetchGatePasses = useGatePassStore(s => s.fetchGatePasses);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<GatePassStatus | 'all'>('all');
+  const [unitFilter, setUnitFilter] = useState('all');
+  const [overdueBucket, setOverdueBucket] = useState<OverdueBucket>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [criticalMode, setCriticalMode] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>('priority');
   const [now, setNow] = useState(() => new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -179,18 +212,72 @@ export default function GatePassMonitorPage() {
 
   const filteredRows = useMemo(() => {
     const q = debouncedQuery.trim().toLowerCase();
-    return monitorRows
+    const rows = monitorRows
       .filter(gp => {
         const statusMatch = statusFilter === 'all' || gp.effectiveStatus === statusFilter;
         if (!statusMatch) return false;
+        const unitMatch = unitFilter === 'all' || gp.user?.satuan === unitFilter;
+        if (!unitMatch) return false;
         const dateMatch = isWithinDateRange(gp.waktu_keluar || gp.created_at, startDate, endDate);
         if (!dateMatch) return false;
+        if (criticalMode && gp.effectiveStatus !== 'overdue' && gp.effectiveStatus !== 'checked_in') return false;
+        if (!matchesOverdueBucket(gp, overdueBucket, now)) return false;
         if (!q) return true;
-        const haystack = [gp.user?.nama, gp.user?.nrp, gp.tujuan, gp.keperluan].join(' ').toLowerCase();
+        const haystack = [gp.user?.nama, gp.user?.nrp, gp.user?.satuan, gp.tujuan, gp.keperluan].join(' ').toLowerCase();
         return haystack.includes(q);
-      })
-      .sort((a, b) => compareMonitorPriority(a, b, now));
-  }, [monitorRows, debouncedQuery, statusFilter, startDate, endDate, now]);
+      });
+
+    if (sortMode === 'latest') {
+      return rows.sort(compareLatestFirst);
+    }
+
+    return rows.sort((a, b) => compareMonitorPriority(a, b, now));
+  }, [monitorRows, debouncedQuery, statusFilter, unitFilter, startDate, endDate, criticalMode, overdueBucket, sortMode, now]);
+
+  const unitOptions = useMemo(() => {
+    return Array.from(new Set(monitorRows.map((gp) => gp.user?.satuan).filter((value): value is string => Boolean(value && value.trim())))).sort((a, b) => a.localeCompare(b, 'id-ID'));
+  }, [monitorRows]);
+
+  const quickStatusStats = useMemo(() => ({
+    all: monitorRows.length,
+    overdue: monitorRows.filter((gp) => gp.effectiveStatus === 'overdue').length,
+    checked_in: monitorRows.filter((gp) => gp.effectiveStatus === 'checked_in').length,
+    approved: monitorRows.filter((gp) => gp.effectiveStatus === 'approved').length,
+    completed: monitorRows.filter((gp) => gp.effectiveStatus === 'completed').length,
+  }), [monitorRows]);
+
+  const monitorIntel = useMemo(() => {
+    const overdueRows = monitorRows
+      .filter((gp) => gp.effectiveStatus === 'overdue' && Number.isFinite(parseTimeMs(gp.waktu_kembali)))
+      .sort((a, b) => parseTimeMs(a.waktu_kembali) - parseTimeMs(b.waktu_kembali));
+
+    const activeRows = monitorRows
+      .filter((gp) => gp.effectiveStatus === 'checked_in' && Number.isFinite(parseTimeMs(gp.waktu_kembali)))
+      .sort((a, b) => parseTimeMs(a.waktu_kembali) - parseTimeMs(b.waktu_kembali));
+
+    const longestOverdue = overdueRows.length > 0 ? overdueRows[0] : null;
+    const nearestDeadline = activeRows.length > 0 ? activeRows[0] : null;
+
+    return { longestOverdue, nearestDeadline };
+  }, [monitorRows]);
+
+  const unitSummary = useMemo(() => {
+    const summaryMap = new Map<string, { unit: string; total: number; overdue: number; checkedIn: number; approved: number }>();
+
+    for (const row of filteredRows) {
+      const unit = row.user?.satuan?.trim() || 'Tidak diketahui';
+      const current = summaryMap.get(unit) ?? { unit, total: 0, overdue: 0, checkedIn: 0, approved: 0 };
+      current.total += 1;
+      if (row.effectiveStatus === 'overdue') current.overdue += 1;
+      if (row.effectiveStatus === 'checked_in') current.checkedIn += 1;
+      if (row.effectiveStatus === 'approved') current.approved += 1;
+      summaryMap.set(unit, current);
+    }
+
+    return Array.from(summaryMap.values())
+      .sort((a, b) => b.total - a.total || b.overdue - a.overdue || a.unit.localeCompare(b.unit, 'id-ID'))
+      .slice(0, 6);
+  }, [filteredRows]);
 
   // Memoize statistics computation to avoid recalculation on every render
   const { approved, keluar, completed, overdue, personilDiLuar, personilTersedia } = useMemo(() => {
@@ -230,8 +317,12 @@ export default function GatePassMonitorPage() {
   const resetFilters = () => {
     setQuery('');
     setStatusFilter('all');
+    setUnitFilter('all');
+    setOverdueBucket('all');
     setStartDate('');
     setEndDate('');
+    setCriticalMode(false);
+    setSortMode('priority');
   };
 
   const applyDatePreset = (days: number) => {
@@ -442,6 +533,85 @@ export default function GatePassMonitorPage() {
         </div>
 
         <div className="app-card p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-text-primary">Intel Operasional</h2>
+              <p className="text-xs text-text-muted">Fokus cepat untuk kasus paling kritis.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={criticalMode ? 'secondary' : 'outline'}
+                size="sm"
+                onClick={() => setCriticalMode((prev) => !prev)}
+                data-testid="gatepass-monitor-critical-mode"
+              >
+                {criticalMode ? 'Mode Kritis Aktif' : 'Mode Fokus Kritis'}
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-surface/75 bg-surface/20 px-4 py-3">
+              <p className="text-xs text-text-muted">Terlambat Terlama</p>
+              {monitorIntel.longestOverdue ? (
+                <>
+                  <p className="mt-1 text-sm font-semibold text-text-primary">{monitorIntel.longestOverdue.user?.nama ?? 'Personil tidak diketahui'}</p>
+                  <p className="text-xs text-accent-red">Terlambat {formatDuration(Math.max(0, now.getTime() - parseTimeMs(monitorIntel.longestOverdue.waktu_kembali)))}</p>
+                </>
+              ) : (
+                <p className="mt-1 text-xs text-text-muted">Tidak ada kasus overdue.</p>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-surface/75 bg-surface/20 px-4 py-3">
+              <p className="text-xs text-text-muted">Batas Kembali Terdekat</p>
+              {monitorIntel.nearestDeadline ? (
+                <>
+                  <p className="mt-1 text-sm font-semibold text-text-primary">{monitorIntel.nearestDeadline.user?.nama ?? 'Personil tidak diketahui'}</p>
+                  <p className="text-xs text-orange-500">Sisa {formatDuration(Math.max(0, parseTimeMs(monitorIntel.nearestDeadline.waktu_kembali) - now.getTime()))}</p>
+                </>
+              ) : (
+                <p className="mt-1 text-xs text-text-muted">Tidak ada personil aktif di luar.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="app-card p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-text-primary">Ringkasan per Satuan</h2>
+              <p className="text-xs text-text-muted">Distribusi gate pass pada hasil filter aktif.</p>
+            </div>
+            <div className="text-xs text-text-muted">{unitSummary.length} satuan tampil</div>
+          </div>
+
+          {unitSummary.length > 0 ? (
+            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-testid="gatepass-monitor-unit-summary">
+              {unitSummary.map((item) => (
+                <div key={item.unit} className="rounded-xl border border-surface/75 bg-surface/20 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-text-primary">{item.unit}</p>
+                      <p className="text-xs text-text-muted">Total {item.total} data</p>
+                    </div>
+                    <div className="text-right text-xs text-text-muted">
+                      <div><span className="font-semibold text-accent-red">{item.overdue}</span> overdue</div>
+                      <div><span className="font-semibold text-orange-500">{item.checkedIn}</span> checked-in</div>
+                      <div><span className="font-semibold text-blue-500">{item.approved}</span> approved</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-3 rounded-xl border border-dashed border-surface/75 bg-bg-card px-4 py-5 text-sm text-text-muted">
+              Tidak ada data untuk diringkas pada filter saat ini.
+            </div>
+          )}
+        </div>
+
+        <div className="app-card p-4">
           <div className="flex items-center justify-between gap-3 pb-3">
             <div>
               <h2 className="text-sm font-semibold text-text-primary">Filter dan pencarian</h2>
@@ -468,7 +638,59 @@ export default function GatePassMonitorPage() {
               <option value="completed">{getStatusLabel('completed')}</option>
             </select>
           </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2" data-testid="gatepass-monitor-quick-status">
+            {(
+              [
+                ['all', quickStatusStats.all],
+                ['overdue', quickStatusStats.overdue],
+                ['checked_in', quickStatusStats.checked_in],
+                ['approved', quickStatusStats.approved],
+                ['completed', quickStatusStats.completed],
+              ] as Array<[GatePassStatus | 'all', number]>
+            ).map(([status, total]) => {
+              const active = statusFilter === status;
+              return (
+                <Button
+                  key={status}
+                  variant={active ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setStatusFilter(status)}
+                >
+                  {getStatusLabel(status)} ({total})
+                </Button>
+              );
+            })}
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-text-muted">Satuan</label>
+              <select
+                className="w-full rounded-xl border border-surface bg-bg-card px-3 py-2.5 text-sm text-text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+                value={unitFilter}
+                onChange={(e) => setUnitFilter(e.target.value)}
+                data-testid="gatepass-monitor-unit-filter"
+              >
+                <option value="all">Semua satuan</option>
+                {unitOptions.map((unit) => (
+                  <option key={unit} value={unit}>{unit}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-text-muted">Durasi terlambat</label>
+              <select
+                className="w-full rounded-xl border border-surface bg-bg-card px-3 py-2.5 text-sm text-text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+                value={overdueBucket}
+                onChange={(e) => setOverdueBucket(e.target.value as OverdueBucket)}
+                data-testid="gatepass-monitor-overdue-filter"
+              >
+                <option value="all">Semua durasi</option>
+                <option value="over_30m">Terlambat &ge; 30 menit</option>
+                <option value="over_1h">Terlambat &ge; 1 jam</option>
+                <option value="over_3h">Terlambat &ge; 3 jam</option>
+                <option value="over_6h">Terlambat &ge; 6 jam</option>
+              </select>
+            </div>
             <Input
               label="Tanggal keluar dari"
               type="date"
@@ -486,9 +708,20 @@ export default function GatePassMonitorPage() {
             <Button variant="ghost" size="sm" onClick={() => applyDatePreset(1)}>Hari ini</Button>
             <Button variant="ghost" size="sm" onClick={() => applyDatePreset(7)}>7 hari</Button>
             <Button variant="ghost" size="sm" onClick={() => applyDatePreset(30)}>30 hari</Button>
+            <select
+              className="min-w-[210px] rounded-xl border border-surface bg-bg-card px-3 py-2 text-sm text-text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value as SortMode)}
+              data-testid="gatepass-monitor-sort-mode"
+            >
+              <option value="priority">Urutan prioritas operasi</option>
+              <option value="latest">Urutan terbaru keluar</option>
+            </select>
           </div>
           <p className="mt-2 text-xs text-text-muted">
-            Urutan prioritas: overdue terlama, lalu checked-in terdekat batas kembali, lalu status lainnya.
+            {sortMode === 'priority'
+              ? 'Urutan prioritas: overdue terlama, lalu checked-in terdekat batas kembali, lalu status lainnya.'
+              : 'Urutan terbaru: data dengan waktu keluar paling baru ditampilkan lebih dulu.'}
           </p>
         </div>
 
