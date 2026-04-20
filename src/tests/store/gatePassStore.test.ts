@@ -81,8 +81,8 @@ describe('gatePassStore', () => {
     const store = useGatePassStore.getState();
     await store.approveGatePass('gp2', true);
 
-    expect(mockSupabase.rpc).toHaveBeenCalledWith('api_update_gate_pass_status',
-      expect.objectContaining({ p_id: 'gp2', p_status: 'approved', p_approved_by: 'u1' })
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('api_approve_gate_pass',
+      expect.objectContaining({ p_id: 'gp2', p_approved: true, p_caller_id: 'u1' })
     );
   });
 

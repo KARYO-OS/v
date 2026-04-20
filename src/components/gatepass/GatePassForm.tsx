@@ -54,7 +54,7 @@ export default function GatePassForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-text-primary">
-        Setelah diajukan, pengajuan otomatis disetujui. Verifikasi keluar dan kembali dilakukan dengan scan QR statis di Pos Jaga.
+        Pengajuan Gate Pass akan menunggu persetujuan Komandan. Setelah disetujui, verifikasi keluar dan kembali dilakukan dengan scan QR statis di Pos Jaga.
       </div>
       {error && (
         <div role="alert" className="rounded-2xl border border-accent-red/20 bg-accent-red/10 px-4 py-3 text-sm text-accent-red">

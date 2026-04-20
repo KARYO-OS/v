@@ -86,6 +86,21 @@ export async function patchGatePassStatus(
   if (error) throw error;
 }
 
+export async function approveGatePass(
+  callerId: string,
+  callerRole: string,
+  id: string,
+  approved: boolean,
+): Promise<void> {
+  const { error } = await supabase.rpc('api_approve_gate_pass', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_id: id,
+    p_approved: approved,
+  });
+  if (error) throw error;
+}
+
 /** Response shape returned by the `server_scan_gate_pass` Supabase RPC. */
 interface ScanGatePassResponse {
   message?: string;

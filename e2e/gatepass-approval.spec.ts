@@ -8,16 +8,14 @@ async function loginAsKomandan(page: import('@playwright/test').Page) {
 	await expect(page).toHaveURL(/\/komandan\/dashboard/);
 }
 
-test.describe('Gate Pass Operasional Komandan', () => {
-	test('halaman approval berubah menjadi status operasional tanpa tombol approve/reject', async ({ page }) => {
+test.describe('Gate Pass Approval Komandan', () => {
+	test('halaman approval menampilkan judul dan seksi operasional', async ({ page }) => {
 		await loginAsKomandan(page);
 
 		await page.goto('./#/komandan/gatepass-approval');
 
 		await expect(page).toHaveURL(/\/komandan\/gatepass-approval/);
-		await expect(page.getByRole('heading', { name: 'Status Operasional Gate Pass' })).toBeVisible();
-		await expect(page.getByText(/disetujui otomatis/i)).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Approve' })).toHaveCount(0);
-		await expect(page.getByRole('button', { name: 'Reject' })).toHaveCount(0);
+		await expect(page.getByRole('heading', { name: 'Approval Gate Pass' })).toBeVisible();
+		await expect(page.getByText(/Status Operasional/i)).toBeVisible();
 	});
 });

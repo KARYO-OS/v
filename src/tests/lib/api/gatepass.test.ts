@@ -5,6 +5,7 @@ import {
   fetchAllGatePasses,
   fetchGatePassByQrToken,
   insertGatePass,
+  approveGatePass,
   patchGatePassStatus,
   rpcScanGatePass,
 } from '../../../lib/api/gatepass';
@@ -113,6 +114,33 @@ describe('gatepass API', () => {
     it('throws when rpc fails', async () => {
       mockSupabase.rpc.mockResolvedValue({ data: null, error: new Error('insert failed') });
       await expect(insertGatePass(CALLER_ID, CALLER_ROLE, { user_id: 'u1', qr_token: 'x' })).rejects.toThrow('insert failed');
+    });
+  });
+
+  // ── approveGatePass ───────────────────────────────────────
+  describe('approveGatePass', () => {
+    it('calls api_approve_gate_pass with correct params when approving', async () => {
+      mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
+      await approveGatePass(CALLER_ID, 'komandan', 'gp1', true);
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_approve_gate_pass', expect.objectContaining({
+        p_caller_id: CALLER_ID,
+        p_caller_role: 'komandan',
+        p_id: 'gp1',
+        p_approved: true,
+      }));
+    });
+
+    it('calls api_approve_gate_pass with approved=false when rejecting', async () => {
+      mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
+      await approveGatePass(CALLER_ID, 'komandan', 'gp1', false);
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_approve_gate_pass', expect.objectContaining({
+        p_approved: false,
+      }));
+    });
+
+    it('throws when rpc fails', async () => {
+      mockSupabase.rpc.mockResolvedValue({ data: null, error: new Error('unauthorized') });
+      await expect(approveGatePass(CALLER_ID, 'prajurit', 'gp1', true)).rejects.toThrow('unauthorized');
     });
   });
 

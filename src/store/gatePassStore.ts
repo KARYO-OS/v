@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { fetchGatePassesByUser, fetchAllGatePasses, fetchGatePassByQrToken, insertGatePass, patchGatePassStatus, rpcScanGatePass } from '../lib/api/gatepass';
+import { fetchGatePassesByUser, fetchAllGatePasses, fetchGatePassByQrToken, insertGatePass, approveGatePass as apiApproveGatePass, rpcScanGatePass } from '../lib/api/gatepass';
 import { GatePass, GatePassStatus } from '../types';
 import { isRoleAdmin, isRoleGuard, isRolePrajurit } from '../lib/rolePermissions';
 import { generateQrToken, normalizeScannedQrToken } from '../utils/gatepass';
@@ -58,8 +58,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
   async approveGatePass(id, approved) {
     const user = useAuthStore.getState().user;
     if (!user) throw new Error('User tidak ditemukan');
-    const status: GatePassStatus = approved ? 'approved' : 'rejected';
-    await patchGatePassStatus(user.id, user.role, id, status, user.id);
+    await apiApproveGatePass(user.id, user.role, id, approved);
     await get().fetchGatePasses();
   },
 
