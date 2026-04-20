@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { ICONS, IconType } from '../../icons';
 import { useAuthStore } from '../../store/authStore';
@@ -6,7 +7,6 @@ import { usePlatformStore } from '../../store/platformStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { isPathEnabled } from '../../lib/featureFlags';
 import type { Role } from '../../types';
-import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface NavItem {
   path: string;
