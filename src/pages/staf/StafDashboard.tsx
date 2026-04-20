@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
-import { CardListSkeleton } from '../../components/common/Skeleton';
+import { StatCardsSkeleton, CardListSkeleton } from '../../components/common/Skeleton';
 import Button from '../../components/common/Button';
 import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { isPathEnabled } from '../../lib/featureFlags';
+import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
 import { subscribeDataChanges } from '../../lib/dataSync';
 
@@ -106,19 +107,23 @@ export default function StafDashboard() {
 
   const [stats, setStats] = useState<StafStats>(EMPTY_STATS);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const bidang = detectBidang(user?.jabatan);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     if (!user?.satuan) return;
+    setStatsError(null);
     try {
       const data = await fetchStafStats(user.satuan);
       setStats(data);
+    } catch {
+      setStatsError('Gagal memuat statistik. Coba muat ulang.');
     } finally {
       setStatsLoading(false);
     }
-  };
+  }, [user?.satuan]);
 
   const refresh = async () => {
     setIsRefreshing(true);
@@ -131,15 +136,13 @@ export default function StafDashboard() {
 
   useEffect(() => {
     void loadStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.satuan]);
+  }, [loadStats]);
 
   useEffect(() => {
-    return subscribeDataChanges(['users', 'attendance', 'tasks'], () => {
+    return subscribeDataChanges(['users', 'attendance', 'tasks', 'logistics_items'], () => {
       void loadStats();
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.satuan]);
+  }, [loadStats]);
 
   const modules = BIDANG_MODULES[bidang].filter((m) => isPathEnabled(m.path, flags));
   const pinnedAnnouncements = announcements.filter((a) => a.is_pinned).slice(0, 3);
@@ -169,17 +172,21 @@ export default function StafDashboard() {
 
         {/* Stats */}
         {statsLoading ? (
-          <CardListSkeleton count={4} />
+          <StatCardsSkeleton />
+        ) : statsError ? (
+          <div className="rounded-xl border border-accent-red/40 bg-accent-red/10 p-4 text-sm text-accent-red">
+            {statsError}
+          </div>
         ) : (
           <StatsGrid>
             <StatCard
-              icon="👥"
+              icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />}
               label="Total Personel"
               value={stats.totalPersonel}
               accent="blue"
             />
             <StatCard
-              icon="✅"
+              icon={<ICONS.UserCheck className="h-5 w-5 text-success" aria-hidden="true" />}
               label="Hadir Hari Ini"
               value={stats.hadirHariIni}
               trend={`${hadirPct}% dari total`}
@@ -187,13 +194,13 @@ export default function StafDashboard() {
               accent="green"
             />
             <StatCard
-              icon="📋"
+              icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />}
               label="Tugas Aktif"
               value={stats.tugasAktif}
               accent="gold"
             />
             <StatCard
-              icon="📦"
+              icon={<ICONS.Package className="h-5 w-5 text-accent-red" aria-hidden="true" />}
               label="Logistik Pending"
               value={stats.logistikPending}
               accent={stats.logistikPending > 0 ? 'red' : 'green'}

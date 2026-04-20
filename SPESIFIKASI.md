@@ -14,11 +14,12 @@
 7. [Spesifikasi Dashboard Admin](#7-spesifikasi-dashboard-admin)
 8. [Spesifikasi Dashboard Komandan](#8-spesifikasi-dashboard-komandan)
 9. [Spesifikasi Dashboard Prajurit](#9-spesifikasi-dashboard-prajurit)
-10. [Spesifikasi UI/UX](#10-spesifikasi-uiux)
-11. [Spesifikasi Deployment](#11-spesifikasi-deployment)
-12. [Spesifikasi Keamanan](#12-spesifikasi-keamanan)
-13. [Spesifikasi Performa](#13-spesifikasi-performa)
-14. [Roadmap Pengembangan](#14-roadmap-pengembangan)
+10. [Spesifikasi Dashboard Staf Operasional](#10-spesifikasi-dashboard-staf-operasional)
+11. [Spesifikasi UI/UX](#11-spesifikasi-uiux)
+12. [Spesifikasi Deployment](#12-spesifikasi-deployment)
+13. [Spesifikasi Keamanan](#13-spesifikasi-keamanan)
+14. [Spesifikasi Performa](#14-spesifikasi-performa)
+15. [Roadmap Pengembangan](#15-roadmap-pengembangan)
 
 ---
 
@@ -30,7 +31,7 @@
 |---|---|
 | **Nama Sistem** | Karyo OS |
 | **Kepanjangan** | Operational System — Command & Battalion Tracking |
-| **Versi** | 1.2.1 |
+| **Versi** | 1.5.0 |
 | **Target Pengguna** | Unit militer TNI Indonesia |
 | **Jenis Aplikasi** | Web Application (SPA) |
 | **Bahasa Antarmuka** | Bahasa Indonesia |
@@ -150,6 +151,7 @@ Sistem menggunakan **custom authentication** berbasis NRP + PIN — **tidak** me
 5. Baca field `role` → redirect ke dashboard yang sesuai:
    - role = 'admin'     → /admin/dashboard
    - role = 'komandan'  → /komandan/dashboard
+   - role = 'staf'      → /staf/dashboard
    - role = 'guard'      → /guard/gatepass-scan
    - role = 'prajurit'  → /prajurit/dashboard
 6. Update field `last_login` dan `is_online` pada tabel users
@@ -163,9 +165,10 @@ interface AuthState {
     id: string;
     nrp: string;
     nama: string;
-    role: 'admin' | 'komandan' | 'guard' | 'prajurit';
+    role: 'admin' | 'komandan' | 'staf' | 'guard' | 'prajurit';
     pangkat: string;
     satuan: string;
+    jabatan?: string;
   } | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -178,15 +181,27 @@ interface AuthState {
 
 #### Tabel Akses Halaman
 
-| Halaman | Admin | Komandan | Guard | Prajurit |
-|---|:---:|:---:|:---:|:---:|
-| `/login` | ✅ | ✅ | ✅ | ✅ |
-| `/admin/*` | ✅ | ❌ | ❌ | ❌ |
-| `/komandan/*` | ✅* | ✅ | ❌ | ❌ |
-| `/guard/*` | ✅* | ❌ | ✅ | ❌ |
-| `/prajurit/*` | ✅* | ✅* | ❌ | ✅ |
+| Halaman | Admin | Komandan | Staf | Guard | Prajurit |
+|---|:---:|:---:|:---:|:---:|:---:|
+| `/login` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `/admin/dashboard` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `/admin/settings` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `/admin/audit` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `/admin/users` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| `/admin/logistics` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| `/admin/attendance` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| `/admin/schedule` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| `/admin/documents` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| `/admin/announcements` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| `/admin/gatepass-monitor` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| `/admin/pos-jaga` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| `/komandan/*` | ✅ | ✅ | ✅* | ❌ | ❌ |
+| `/guard/*` | ✅ | ❌ | ❌ | ✅ | ❌ |
+| `/staf/dashboard` | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `/staf/messages` | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `/prajurit/*` | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-*Admin dapat mengakses semua halaman untuk keperluan monitoring.
+*Staf mendapat akses ke `/komandan/tasks`, `/komandan/personnel`, `/komandan/reports`, dll.
 
 #### ProtectedRoute Component
 
@@ -254,7 +269,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Enum types
-CREATE TYPE user_role AS ENUM ('admin', 'komandan', 'prajurit');
+CREATE TYPE user_role AS ENUM ('admin', 'komandan', 'staf', 'guard', 'prajurit');
 CREATE TYPE task_status AS ENUM ('pending', 'in_progress', 'done', 'approved', 'rejected');
 CREATE TYPE attendance_status AS ENUM ('hadir', 'izin', 'sakit', 'alpa', 'dinas_luar');
 CREATE TYPE leave_status AS ENUM ('pending', 'approved', 'rejected');
@@ -555,7 +570,7 @@ useEffect(() => {
 ```typescript
 // src/types/index.ts
 
-export type Role = 'admin' | 'komandan' | 'prajurit';
+export type Role = 'admin' | 'komandan' | 'staf' | 'guard' | 'prajurit';
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'approved' | 'rejected';
 export type AttendanceStatus = 'hadir' | 'izin' | 'sakit' | 'alpa' | 'dinas_luar';
 
@@ -621,22 +636,31 @@ export interface AuditLog {
 ```typescript
 // router/index.tsx
 const routes = [
-  { path: '/login',               element: <Login />,              public: true },
-  { path: '/admin/dashboard',     element: <AdminDashboard />,     roles: ['admin'] },
-  { path: '/admin/users',         element: <UserManagement />,     roles: ['admin'] },
-  { path: '/admin/audit',         element: <AuditLog />,           roles: ['admin'] },
-  { path: '/admin/logistics',     element: <Logistics />,          roles: ['admin'] },
-  { path: '/admin/settings',      element: <Settings />,           roles: ['admin'] },
-  { path: '/komandan/dashboard',  element: <KomandanDashboard />,  roles: ['komandan', 'admin'] },
-  { path: '/komandan/tasks',      element: <TaskManagement />,     roles: ['komandan', 'admin'] },
-  { path: '/komandan/personnel',  element: <Personnel />,          roles: ['komandan', 'admin'] },
-  { path: '/komandan/reports',    element: <Reports />,            roles: ['komandan', 'admin'] },
-  { path: '/prajurit/dashboard',  element: <PrajuritDashboard />,  roles: ['prajurit', 'komandan', 'admin'] },
-  { path: '/prajurit/tasks',      element: <MyTasks />,            roles: ['prajurit'] },
-  { path: '/prajurit/attendance', element: <Attendance />,         roles: ['prajurit'] },
-  { path: '/prajurit/profile',    element: <Profile />,            roles: ['prajurit'] },
-  { path: '/',                    element: <Navigate to="/login" /> },
-  { path: '*',                    element: <NotFound /> },
+  { path: '/login',                  element: <Login />,              public: true },
+  { path: '/admin/dashboard',        element: <AdminDashboard />,     roles: ['admin'] },
+  { path: '/admin/users',            element: <UserManagement />,     roles: ['admin', 'staf'] },
+  { path: '/admin/audit',            element: <AuditLog />,           roles: ['admin'] },
+  { path: '/admin/logistics',        element: <Logistics />,          roles: ['admin', 'staf'] },
+  { path: '/admin/attendance',       element: <AttendanceReport />,   roles: ['admin', 'staf'] },
+  { path: '/admin/schedule',         element: <ShiftSchedule />,      roles: ['admin', 'staf'] },
+  { path: '/admin/documents',        element: <Documents />,          roles: ['admin', 'staf'] },
+  { path: '/admin/announcements',    element: <Announcements />,      roles: ['admin', 'staf'] },
+  { path: '/admin/gatepass-monitor', element: <GatePassMonitor />,    roles: ['admin', 'staf'] },
+  { path: '/admin/pos-jaga',         element: <PosJaga />,            roles: ['admin', 'staf'] },
+  { path: '/admin/settings',         element: <Settings />,           roles: ['admin'] },
+  { path: '/komandan/dashboard',     element: <KomandanDashboard />,  roles: ['komandan', 'admin', 'staf'] },
+  { path: '/komandan/tasks',         element: <TaskManagement />,     roles: ['komandan', 'admin', 'staf'] },
+  { path: '/komandan/personnel',     element: <Personnel />,          roles: ['komandan', 'admin', 'staf'] },
+  { path: '/komandan/reports',       element: <Reports />,            roles: ['komandan', 'admin', 'staf'] },
+  { path: '/guard/gatepass-scan',    element: <GuardDashboard />,     roles: ['guard', 'admin'] },
+  { path: '/staf/dashboard',         element: <StafDashboard />,      roles: ['staf'] },
+  { path: '/staf/messages',          element: <Messages />,           roles: ['staf'] },
+  { path: '/prajurit/dashboard',     element: <PrajuritDashboard />,  roles: ['prajurit'] },
+  { path: '/prajurit/tasks',         element: <MyTasks />,            roles: ['prajurit'] },
+  { path: '/prajurit/attendance',    element: <Attendance />,         roles: ['prajurit'] },
+  { path: '/prajurit/profile',       element: <Profile />,            roles: ['prajurit'] },
+  { path: '/',                       element: <Navigate to="/login" /> },
+  { path: '*',                       element: <NotFound /> },
 ];
 ```
 
@@ -816,9 +840,56 @@ Aturan bisnis:
 
 ---
 
-## 10. Spesifikasi UI/UX
+## 10. Spesifikasi Dashboard Staf Operasional
 
-### 10.1 Design System
+### 10.1 Halaman & Komponen
+
+| Halaman | Path | Fitur Utama |
+|---|---|---|
+| Pusat Staf | `/staf/dashboard` | Statistik satuan, modul akses cepat per bidang, pengumuman terpinit |
+| Pesan | `/staf/messages` | Inbox & kirim pesan antar personel |
+| Personel | `/admin/users` | Lihat & kelola data personel satuan |
+| Rekap Absensi | `/admin/attendance` | Rekap & export data kehadiran |
+| Jadwal Shift | `/admin/schedule` | Lihat & atur jadwal shift |
+| Logistik | `/admin/logistics` | Inventaris perlengkapan satuan |
+| Tugas | `/komandan/tasks` | Monitor & kelola tugas (S-3) |
+| Pos Jaga | `/admin/pos-jaga` | Kelola pos jaga & QR (S-3) |
+| Gate Pass Monitor | `/admin/gatepass-monitor` | Monitoring gate pass aktif |
+
+### 10.2 Deteksi Bidang Otomatis
+
+Dashboard staf mendeteksi bidang penugasan secara otomatis dari field `jabatan` user:
+
+| Keyword di Jabatan | Bidang | Label |
+|---|---|---|
+| `s-1`, `s1`, `pers` | `pers` | Staf Personel (S-1) |
+| `s-4`, `s4`, `log` | `log` | Staf Logistik (S-4) |
+| `s-3`, `s3`, `ops` | `ops` | Staf Operasional (S-3) |
+| *(lainnya)* | `umum` | Staf Operasional |
+
+### 10.3 Modul Akses Cepat per Bidang
+
+Modul yang ditampilkan di Quick Access disesuaikan per bidang:
+
+- **S-1 (Pers):** Manajemen Personel, Rekap Absensi, Jadwal Shift, Pesan
+- **S-4 (Log):** Inventaris Logistik, Data Personel, Pesan, Rekap Absensi
+- **S-3 (Ops):** Manajemen Tugas, Pos Jaga, Data Personel, Pesan
+- **Umum:** Data Personel, Rekap Absensi, Logistik, Pesan
+
+### 10.4 Statistik Dashboard
+
+| Stat | Sumber Data | Keterangan |
+|---|---|---|
+| Total Personel | `users` WHERE `satuan` AND `is_active` | Personel aktif di satuan staf |
+| Hadir Hari Ini | `attendance` WHERE `tanggal = today` AND `status = hadir` | Kehadiran hari berjalan |
+| Tugas Aktif | `tasks` WHERE `status IN (pending, in_progress)` | Semua tugas aktif satuan |
+| Logistik Pending | `logistics_requests` WHERE `status = pending` | Permintaan logistik menunggu |
+
+---
+
+## 11. Spesifikasi UI/UX
+
+### 11.1 Design System
 
 **Palet Warna (Military Dark Theme)**
 
@@ -840,7 +911,7 @@ Aturan bisnis:
 - Size scale: 12, 14, 16, 18, 24, 32px
 - Weight: 400 (normal), 500 (medium), 700 (bold)
 
-### 10.2 Layout
+### 11.2 Layout
 
 **Desktop (>= 1024px):**
 - Sidebar tetap di kiri (240px lebar)
@@ -852,7 +923,7 @@ Aturan bisnis:
 - Sidebar dalam drawer/overlay
 - Konten full-width
 
-### 10.3 Komponen Kritis
+### 11.3 Komponen Kritis
 
 **LoginPage**
 - 1 input NRP (numeric, maxlength 20)
@@ -882,7 +953,7 @@ Aturan bisnis:
 └────────────────────────────┘
 ```
 
-### 10.4 Aksesibilitas
+### 11.4 Aksesibilitas
 
 - Semua input memiliki label & placeholder
 - Warna tidak menjadi satu-satunya indikator status
@@ -891,9 +962,9 @@ Aturan bisnis:
 
 ---
 
-## 11. Spesifikasi Deployment
+## 12. Spesifikasi Deployment
 
-### 11.1 GitHub Pages Configuration
+### 12.1 GitHub Pages Configuration
 
 Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 
@@ -902,11 +973,11 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 - `public/404.html` sebagai fallback redirect SPA
 - Build production dijalankan oleh workflow GitHub Actions
 
-### 11.2 Vite Configuration
+### 12.2 Vite Configuration
 
 `vite.config.ts` menggunakan base path dari `VITE_BASE_PATH` agar build bisa dipakai di GitHub Pages maupun environment lain.
 
-### 11.3 Checklist Sebelum Deploy
+### 12.3 Checklist Sebelum Deploy
 
 - [ ] Secret GitHub Actions untuk Supabase sudah diset
 - [ ] Build lokal berhasil (`npm run build`)
@@ -916,7 +987,7 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 - [ ] TypeScript tidak ada error (`npm run type-check`)
 - [ ] Semua route protected sudah diuji
 
-### 11.4 Domain & SSL
+### 12.4 Domain & SSL
 
 - GitHub Pages menyediakan domain gratis: `yuniamagsila.github.io/v/`
 - HTTPS otomatis disediakan oleh GitHub Pages
@@ -924,9 +995,9 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 
 ---
 
-## 12. Spesifikasi Keamanan
+## 13. Spesifikasi Keamanan
 
-### 12.1 Prinsip Keamanan
+### 13.1 Prinsip Keamanan
 
 | Prinsip | Implementasi |
 |---|---|
@@ -935,14 +1006,14 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 | **No Trust by Default** | Setiap request divalidasi role-nya |
 | **Audit Everything** | Semua aksi CUD dicatat di audit_logs |
 
-### 12.2 Keamanan PIN
+### 13.2 Keamanan PIN
 
 - PIN tidak pernah dikirim dalam bentuk plaintext ke client
 - Perbandingan PIN dilakukan di PostgreSQL via fungsi `crypt()`
 - PIN hash menggunakan bcrypt dengan salt otomatis
 - Tidak ada endpoint yang mengembalikan `pin_hash`
 
-### 12.3 Keamanan Session
+### 13.3 Keamanan Session
 
 ```typescript
 // Session disimpan di localStorage dengan struktur:
@@ -958,14 +1029,14 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 // Logout otomatis saat browser ditutup (opsional: sessionStorage)
 ```
 
-### 12.4 Proteksi CSRF & XSS
+### 13.4 Proteksi CSRF & XSS
 
 - Content Security Policy header via konfigurasi aplikasi dan build pipeline
 - Input sanitization pada semua form input
 - Tidak menggunakan `dangerouslySetInnerHTML`
 - Semua data dari Supabase di-escape sebelum ditampilkan
 
-### 12.5 Rate Limiting Login
+### 13.5 Rate Limiting Login
 
 ```typescript
 // Logika di frontend + dicatat di DB:
@@ -976,9 +1047,9 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 
 ---
 
-## 13. Spesifikasi Performa
+## 14. Spesifikasi Performa
 
-### 13.1 Target Performa
+### 14.1 Target Performa
 
 | Metrik | Target |
 |---|---|
@@ -988,7 +1059,7 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 | Lighthouse Score | > 80 |
 | API Response time | < 500ms |
 
-### 13.2 Optimasi
+### 14.2 Optimasi
 
 **Code Splitting:**
 - Setiap dashboard di-lazy load (`React.lazy()`)
@@ -1005,7 +1076,7 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 
 ---
 
-## 14. Roadmap Pengembangan
+## 15. Roadmap Pengembangan
 
 ### Phase 1 — MVP (v1.0) ✅ Selesai
 - [x] Spesifikasi & desain sistem
