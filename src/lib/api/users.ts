@@ -33,37 +33,8 @@ export async function fetchUsers(params: FetchUsersParams): Promise<User[]> {
   return (data as unknown as User[]) ?? [];
 }
 
-// Explicit safe column list — deliberately excludes pin_hash
-const USERS_SAFE_COLUMNS = [
-  'id', 'nrp', 'nama', 'role', 'pangkat', 'jabatan', 'satuan', 'foto_url',
-  'is_active', 'is_online', 'login_attempts', 'locked_until', 'last_login',
-  'created_at', 'updated_at', 'tempat_lahir', 'tanggal_lahir', 'no_telepon',
-  'alamat', 'tanggal_masuk_dinas', 'pendidikan_terakhir', 'agama',
-  'status_pernikahan', 'golongan_darah', 'nomor_ktp',
-  'kontak_darurat_nama', 'kontak_darurat_telp', 'catatan_khusus',
-].join(',');
-
 export async function fetchUsersDirect(params: FetchUsersParams): Promise<User[]> {
-  let query = supabase
-    .from('users')
-    .select(USERS_SAFE_COLUMNS)
-    .order(params.orderBy ?? 'nama', { ascending: params.ascending ?? true });
-
-  if (params.role) {
-    query = query.eq('role', params.role);
-  }
-
-  if (params.satuan) {
-    query = query.eq('satuan', params.satuan);
-  }
-
-  if (params.isActive !== undefined) {
-    query = query.eq('is_active', params.isActive);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data as unknown as User[]) ?? [];
+  return fetchUsers(params);
 }
 
 export async function createUserWithPin(userData: {
@@ -175,27 +146,23 @@ export interface UserPersonalStats {
 export async function fetchUserPersonalStats(userId: string): Promise<UserPersonalStats> {
   if (!validateId(userId)) throw new Error('Invalid user ID format');
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
+  const { data, error } = await supabase.rpc('api_get_user_personal_stats', {
+    p_user_id: userId,
+  });
 
-  const [tasksRes, attnRes] = await Promise.all([
-    supabase.from('tasks').select('status').eq('assigned_to', userId),
-    supabase.from('attendance').select('status').eq('user_id', userId).gte('tanggal', dateFrom),
-  ]);
+  if (error) throw error;
 
-  if (tasksRes.error) throw tasksRes.error;
-  if (attnRes.error) throw attnRes.error;
+  const stats = (data as UserPersonalStats | null) ?? null;
+  if (!stats) {
+    return {
+      totalTasks: 0,
+      approvedTasks: 0,
+      totalAttendance: 0,
+      hadirCount: 0,
+    };
+  }
 
-  const tasks = (tasksRes.data ?? []) as { status: string }[];
-  const attn = (attnRes.data ?? []) as { status: string }[];
-
-  return {
-    totalTasks: tasks.length,
-    approvedTasks: tasks.filter((t) => t.status === 'approved').length,
-    totalAttendance: attn.length,
-    hadirCount: attn.filter((a) => a.status === 'hadir').length,
-  };
+  return stats;
 }
 
 // ── Discipline notes ─────────────────────────────────────────────────────────
@@ -203,11 +170,9 @@ export async function fetchUserPersonalStats(userId: string): Promise<UserPerson
 export async function fetchUserDisciplineNotes(userId: string): Promise<DisciplineNote[]> {
   if (!validateId(userId)) throw new Error('Invalid user ID format');
 
-  const { data, error } = await supabase
-    .from('discipline_notes')
-    .select('id, jenis, isi, created_at, created_by')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+  const { data, error } = await supabase.rpc('api_get_user_discipline_notes', {
+    p_user_id: userId,
+  });
 
   if (error) throw error;
   return (data ?? []) as DisciplineNote[];
@@ -236,10 +201,10 @@ export async function uploadAvatar(userId: string, file: File): Promise<UploadAv
   const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
   const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
-  const { error: updateError } = await supabase
-    .from('users')
-    .update({ foto_url: publicUrl })
-    .eq('id', userId);
+  const { error: updateError } = await supabase.rpc('api_update_user_avatar', {
+    p_user_id: userId,
+    p_avatar_url: publicUrl,
+  });
 
   if (updateError) throw updateError;
 

@@ -9,12 +9,14 @@ import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 import PageHeader from '../../components/ui/PageHeader';
 import { useUIStore } from '../../store/uiStore';
+import { useAuthStore } from '../../store/authStore';
 import { useLogisticsRequests } from '../../hooks/useLogisticsRequests';
 import { supabase } from '../../lib/supabase';
 import type { LogisticsItem, LogisticsRequest } from '../../types';
 
 export default function Logistics() {
   const { showNotification } = useUIStore();
+  const { user } = useAuthStore();
   const { requests, reviewRequest } = useLogisticsRequests();
   const [items, setItems] = useState<LogisticsItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +33,7 @@ export default function Logistics() {
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
-    const { data } = await supabase.from('logistics_items').select('*').order('nama_item');
+    const { data } = await supabase.rpc('api_get_logistics_items');
     setItems((data as LogisticsItem[]) ?? []);
     setIsLoading(false);
   }, []);
@@ -44,9 +46,20 @@ export default function Logistics() {
 
   const handleCreate = async () => {
     if (!form.nama_item) { showNotification('Nama item wajib diisi', 'error'); return; }
+    if (!user?.id || !user.role) { showNotification('Sesi tidak valid', 'error'); return; }
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('logistics_items').insert(form);
+      const { error } = await supabase.rpc('api_insert_logistics_item', {
+        p_caller_id: user.id,
+        p_caller_role: user.role,
+        p_nama_item: form.nama_item,
+        p_kategori: form.kategori ?? null,
+        p_jumlah: form.jumlah ?? 0,
+        p_satuan_item: form.satuan_item ?? null,
+        p_kondisi: form.kondisi ?? 'baik',
+        p_lokasi: form.lokasi ?? null,
+        p_catatan: form.catatan ?? null,
+      });
       if (error) throw error;
       showNotification('Item berhasil ditambahkan', 'success');
       setShowCreate(false);

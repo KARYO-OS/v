@@ -8,6 +8,7 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 import Input from '../../components/common/Input';
 import PageHeader from '../../components/ui/PageHeader';
 import { useUIStore } from '../../store/uiStore';
+import { useAuthStore } from '../../store/authStore';
 import { useUsers } from '../../hooks/useUsers';
 import { supabase } from '../../lib/supabase';
 import type { ShiftSchedule } from '../../types';
@@ -30,6 +31,7 @@ const DAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
 export default function ShiftSchedule() {
   const { showNotification } = useUIStore();
+  const { user } = useAuthStore();
   const { users } = useUsers({ isActive: true });
 
   // View mode: 'list' (day list) | 'calendar' (monthly grid)
@@ -64,11 +66,9 @@ export default function ShiftSchedule() {
   // ── List view fetch (by day) ──────────────────────────────────────────────
   const fetchSchedules = useCallback(async () => {
     setIsLoading(true);
-    const { data } = await supabase
-      .from('shift_schedules')
-      .select('*, user:user_id(id,nama,nrp,pangkat,satuan)')
-      .eq('tanggal', selectedDate)
-      .order('shift_mulai');
+    const { data } = await supabase.rpc('api_get_shift_schedules', {
+      p_date: selectedDate,
+    });
     setSchedules((data as ShiftSchedule[]) ?? []);
     setIsLoading(false);
   }, [selectedDate]);
@@ -83,12 +83,10 @@ export default function ShiftSchedule() {
     const firstDay = `${calendarMonth}-01`;
     const lastDay = toISO(new Date(year, month, 0)); // day 0 of next month = last of current
     setIsMonthLoading(true);
-    const { data } = await supabase
-      .from('shift_schedules')
-      .select('*, user:user_id(id,nama,nrp,pangkat,satuan)')
-      .gte('tanggal', firstDay)
-      .lte('tanggal', lastDay)
-      .order('shift_mulai');
+    const { data } = await supabase.rpc('api_get_shift_schedules', {
+      p_date_from: firstDay,
+      p_date_to: lastDay,
+    });
     setMonthSchedules((data as ShiftSchedule[]) ?? []);
     setIsMonthLoading(false);
   }, [calendarMonth]);
@@ -124,9 +122,18 @@ export default function ShiftSchedule() {
   // ── Actions ───────────────────────────────────────────────────────────────
   const handleCreate = async () => {
     if (!form.user_id) { showNotification('Pilih personel', 'error'); return; }
+    if (!user?.id || !user.role) { showNotification('Sesi tidak valid', 'error'); return; }
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('shift_schedules').insert(form);
+      const { error } = await supabase.rpc('api_insert_shift_schedule', {
+        p_caller_id: user.id,
+        p_caller_role: user.role,
+        p_user_id: form.user_id,
+        p_tanggal: form.tanggal,
+        p_shift_mulai: form.shift_mulai,
+        p_shift_selesai: form.shift_selesai,
+        p_jenis_shift: form.jenis_shift,
+      });
       if (error) throw error;
       showNotification('Jadwal shift ditambahkan', 'success');
       setShowCreate(false);
@@ -145,8 +152,13 @@ export default function ShiftSchedule() {
 
   const handleConfirmDelete = async () => {
     if (!confirmDeleteId) return;
+    if (!user?.id || !user.role) { showNotification('Sesi tidak valid', 'error'); return; }
     setIsDeleting(true);
-    const { error } = await supabase.from('shift_schedules').delete().eq('id', confirmDeleteId);
+    const { error } = await supabase.rpc('api_delete_shift_schedule', {
+      p_caller_id: user.id,
+      p_caller_role: user.role,
+      p_id: confirmDeleteId,
+    });
     if (error) { showNotification('Gagal menghapus', 'error'); }
     else {
       showNotification('Jadwal dihapus', 'success');

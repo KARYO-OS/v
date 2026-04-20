@@ -11,21 +11,18 @@ async function ensureSessionContext(callerId: string, callerRole: string): Promi
 
 export async function fetchAllPosJaga(callerId: string, callerRole: string): Promise<PosJaga[]> {
   await ensureSessionContext(callerId, callerRole);
-  const { data, error } = await supabase
-    .from('pos_jaga')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const { data, error } = await supabase.rpc('api_get_pos_jaga');
   if (error) throw error;
   return (data as PosJaga[]) ?? [];
 }
 
 export async function insertPosJaga(callerId: string, callerRole: string, payload: { nama: string }): Promise<PosJaga> {
   await ensureSessionContext(callerId, callerRole);
-  const { data, error } = await supabase
-    .from('pos_jaga')
-    .insert([payload])
-    .select('*')
-    .single();
+  const { data, error } = await supabase.rpc('api_insert_pos_jaga', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_nama: payload.nama,
+  });
   if (error) throw error;
   if (!data) throw new Error('Gagal membuat QR pos jaga');
   return data as PosJaga;
@@ -33,30 +30,33 @@ export async function insertPosJaga(callerId: string, callerRole: string, payloa
 
 export async function patchPosJagaActive(callerId: string, callerRole: string, id: string, is_active: boolean): Promise<void> {
   await ensureSessionContext(callerId, callerRole);
-  const { error } = await supabase
-    .from('pos_jaga')
-    .update({ is_active })
-    .eq('id', id);
+  const { error } = await supabase.rpc('api_set_pos_jaga_active', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_id: id,
+    p_is_active: is_active,
+  });
   if (error) throw error;
 }
 
 export async function deletePosJaga(callerId: string, callerRole: string, id: string): Promise<void> {
   await ensureSessionContext(callerId, callerRole);
-  const { error } = await supabase
-    .from('pos_jaga')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.rpc('api_delete_pos_jaga', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_id: id,
+  });
   if (error) throw error;
 }
 
 export async function renamePosJaga(callerId: string, callerRole: string, id: string, nama: string): Promise<PosJaga> {
   await ensureSessionContext(callerId, callerRole);
-  const { data, error } = await supabase
-    .from('pos_jaga')
-    .update({ nama })
-    .eq('id', id)
-    .select('*')
-    .single();
+  const { data, error } = await supabase.rpc('api_rename_pos_jaga', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_id: id,
+    p_nama: nama,
+  });
   if (error) throw error;
   if (!data) throw new Error('Gagal mengubah nama pos jaga');
   return data as PosJaga;
@@ -65,12 +65,12 @@ export async function renamePosJaga(callerId: string, callerRole: string, id: st
 export async function rotatePosJagaQr(callerId: string, callerRole: string, id: string): Promise<PosJaga> {
   await ensureSessionContext(callerId, callerRole);
   const newToken = crypto.randomUUID();
-  const { data, error } = await supabase
-    .from('pos_jaga')
-    .update({ qr_token: newToken })
-    .eq('id', id)
-    .select('*')
-    .single();
+  const { data, error } = await supabase.rpc('api_rotate_pos_jaga_qr', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_id: id,
+    p_qr_token: newToken,
+  });
   if (error) throw error;
   if (!data) throw new Error('Gagal memperbarui QR pos jaga');
   return data as PosJaga;

@@ -12,6 +12,7 @@ import { useUIStore } from '../../store/uiStore';
 import { useAttendance } from '../../hooks/useAttendance';
 import { useUsers } from '../../hooks/useUsers';
 import { supabase } from '../../lib/supabase';
+import { fetchUserPersonalStats } from '../../lib/api/users';
 import { notifyDataChanged } from '../../lib/dataSync';
 import { handleError } from '../../lib/handleError';
 import type { User } from '../../types';
@@ -78,31 +79,8 @@ export default function Profile() {
   useEffect(() => {
     if (!user?.id) return;
     const fetchStats = async () => {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
-
-      const [tasksRes, attnRes] = await Promise.all([
-        supabase
-          .from('tasks')
-          .select('status')
-          .eq('assigned_to', user.id),
-        supabase
-          .from('attendance')
-          .select('status')
-          .eq('user_id', user.id)
-          .gte('tanggal', dateFrom),
-      ]);
-
-      const tasks = (tasksRes.data ?? []) as { status: string }[];
-      const attn = (attnRes.data ?? []) as { status: string }[];
-
-      setStats({
-        totalTasks: tasks.length,
-        approvedTasks: tasks.filter((t) => t.status === 'approved').length,
-        totalAttendance: attn.length,
-        hadirCount: attn.filter((a) => a.status === 'hadir').length,
-      });
+      const payload = await fetchUserPersonalStats(user.id);
+      setStats(payload);
     };
     void fetchStats();
   }, [user?.id]);

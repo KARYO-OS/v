@@ -37,22 +37,22 @@ export default function Reports() {
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
-    const [attnRes, taskRes] = await Promise.all([
-      supabase
-        .from('attendance')
-        .select('*, user:user_id(id,nama,nrp,pangkat)')
-        .eq('tanggal', selectedDate)
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('tasks')
-        .select('*, assignee:assigned_to(id,nama,nrp), assigner:assigned_by(id,nama)')
-        .eq('satuan', user?.satuan ?? '')
-        .order('created_at', { ascending: false })
-        .limit(50),
-    ]);
-    setAttendances((attnRes.data as Attendance[]) ?? []);
-    setTasks((taskRes.data as Task[]) ?? []);
-    setIsLoading(false);
+    try {
+      const { data, error } = await supabase.rpc('api_get_komandan_reports', {
+        p_satuan: user?.satuan ?? null,
+        p_tanggal: selectedDate,
+      });
+      if (error) throw error;
+
+      const payload = (data as { attendances?: Attendance[]; tasks?: Task[] } | null) ?? null;
+      setAttendances(payload?.attendances ?? []);
+      setTasks(payload?.tasks ?? []);
+    } catch {
+      setAttendances([]);
+      setTasks([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [user?.satuan, selectedDate]);
 
   const refresh = async () => {

@@ -220,11 +220,11 @@ export default function GatePassMonitorPage() {
       
       // Fetch total personil separately - non-blocking
       try {
-        const userCountResult = await supabase
-          .from('users')
-          .select('id', { count: 'exact', head: true })
-          .eq('is_active', true);
-        setTotalPersonil(userCountResult.count ?? 0);
+        const { data: totalCount, error: countError } = await supabase.rpc('api_count_active_users', {
+          p_satuan: null,
+        });
+        if (countError) throw countError;
+        setTotalPersonil((totalCount as number | null) ?? 0);
       } catch (err) {
         console.error('Error fetching total personil:', err);
         setTotalPersonil(0);

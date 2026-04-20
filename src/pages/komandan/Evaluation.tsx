@@ -32,19 +32,11 @@ export default function Evaluation() {
 
   const fetchNotes = useCallback(async () => {
     setIsLoading(true);
-    let query = supabase
-      .from('discipline_notes')
-      .select('*, user:user_id(id,nama,nrp,pangkat,satuan), creator:created_by(id,nama)')
-      .order('created_at', { ascending: false });
-
-    if (filterUserId) query = query.eq('user_id', filterUserId);
-
-    const { data } = await query;
-    // Filter by satuan via joined user
-    const result = ((data as DisciplineNote[]) ?? []).filter(
-      (n) => !user?.satuan || n.user?.satuan === user.satuan,
-    );
-    setNotes(result);
+    const { data } = await supabase.rpc('api_get_discipline_notes', {
+      p_filter_user_id: filterUserId || null,
+      p_satuan_filter: user?.satuan ?? null,
+    });
+    setNotes((data as DisciplineNote[]) ?? []);
     setIsLoading(false);
   }, [filterUserId, user?.satuan]);
 
@@ -57,9 +49,12 @@ export default function Evaluation() {
     }
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('discipline_notes').insert({
-        ...form,
-        created_by: user?.id,
+      const { error } = await supabase.rpc('api_insert_discipline_note', {
+        p_caller_id: user?.id,
+        p_caller_role: user?.role,
+        p_user_id: form.user_id,
+        p_jenis: form.jenis,
+        p_isi: form.isi,
       });
       if (error) throw error;
       showNotification('Catatan berhasil ditambahkan', 'success');
@@ -80,7 +75,11 @@ export default function Evaluation() {
   const handleConfirmDelete = async () => {
     if (!confirmDeleteId) return;
     setIsDeleting(true);
-    const { error } = await supabase.from('discipline_notes').delete().eq('id', confirmDeleteId);
+    const { error } = await supabase.rpc('api_delete_discipline_note', {
+      p_caller_id: user?.id,
+      p_caller_role: user?.role,
+      p_id: confirmDeleteId,
+    });
     if (error) { showNotification('Gagal menghapus', 'error'); }
     else {
       showNotification('Catatan dihapus', 'success');

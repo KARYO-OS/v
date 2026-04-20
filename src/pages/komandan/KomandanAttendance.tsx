@@ -19,17 +19,13 @@ export default function KomandanAttendance() {
 
   const fetchAttendance = useCallback(async () => {
     setIsLoading(true);
-    const { data } = await supabase
-      .from('attendance')
-      .select('*, user:user_id(id,nama,nrp,pangkat,satuan,role)')
-      .eq('tanggal', selectedDate)
-      .order('created_at', { ascending: false });
-
-    // Filter by satuan of the komandan
-    const result = ((data as Attendance[]) ?? []).filter(
-      (a) => !user?.satuan || a.user?.satuan === user.satuan,
-    );
-    setAttendances(result);
+    const { data } = await supabase.rpc('api_get_attendance_report', {
+      p_date_from: selectedDate,
+      p_date_to: selectedDate,
+      p_status: null,
+      p_satuan: user?.satuan ?? null,
+    });
+    setAttendances((data as Attendance[]) ?? []);
     setIsLoading(false);
   }, [selectedDate, user?.satuan]);
 

@@ -41,9 +41,6 @@ type AuditClearRange = '7d' | '30d' | '90d' | 'all';
 /** Supported backup format versions for restore compatibility */
 const SUPPORTED_BACKUP_VERSIONS = ['1.0', '1.2'] as const;
 
-/** Current backup format version written on export */
-const CURRENT_BACKUP_VERSION = '1.2';
-
 /** Download a JS object as a .json file */
 function downloadJson(data: unknown, filename: string) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -123,18 +120,15 @@ export default function Settings() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const tables: Partial<Record<BackupTable, unknown[]>> = {};
-      for (const table of BACKUP_TABLES) {
-        const { data, error } = await supabase.from(table).select('*').order('created_at' as never);
-        if (error) throw new Error(`Gagal mengambil tabel ${table}: ${error.message}`);
-        tables[table] = data ?? [];
-      }
-      const backup: BackupData = {
-        version: CURRENT_BACKUP_VERSION,
-        exported_at: new Date().toISOString(),
-        satuan: user?.satuan ?? '—',
-        tables,
-      };
+      const { data, error } = await supabase.rpc('api_export_backup', {
+        p_caller_role: user?.role,
+        p_satuan: user?.satuan ?? null,
+      });
+      if (error) throw new Error(`Gagal membuat backup: ${error.message}`);
+
+      const backup = (data as BackupData | null) ?? null;
+      if (!backup?.tables) throw new Error('Payload backup tidak valid');
+
       const filename = `karyo_backup_${new Date().toISOString().slice(0, 10)}.json`;
       downloadJson(backup, filename);
       showNotification('Backup berhasil diunduh', 'success');
@@ -175,12 +169,12 @@ export default function Settings() {
     if (!restorePreview) return;
     setIsRestoring(true);
     try {
-      for (const table of BACKUP_TABLES) {
-        const rows = restorePreview.tables[table];
-        if (!rows?.length) continue;
-        const { error } = await supabase.from(table).upsert(rows as never[], { onConflict: 'id' });
-        if (error) throw new Error(`Gagal merestore tabel ${table}: ${error.message}`);
-      }
+      const { error } = await supabase.rpc('api_restore_backup', {
+        p_caller_role: user?.role,
+        p_tables: restorePreview.tables,
+      });
+      if (error) throw new Error(`Gagal merestore data: ${error.message}`);
+
       showNotification('Data berhasil dipulihkan dari backup', 'success');
       setShowRestoreModal(false);
       setRestorePreview(null);

@@ -29,29 +29,24 @@ const EMPTY_STATS: StafStats = {
 };
 
 async function fetchStafStats(satuan: string): Promise<StafStats> {
-  const today = new Date().toISOString().split('T')[0];
-  const [personelRes, hadirRes, tugasRes, logistikRes] = await Promise.all([
-    supabase.from('users').select('id', { count: 'exact', head: true }).eq('satuan', satuan).eq('is_active', true),
-    supabase
-      .from('attendance')
-      .select('id', { count: 'exact', head: true })
-      .eq('tanggal', today)
-      .eq('status', 'hadir'),
-    supabase
-      .from('tasks')
-      .select('id', { count: 'exact', head: true })
-      .in('status', ['pending', 'in_progress']),
-    supabase
-      .from('logistics_requests')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'pending'),
-  ]);
+  const { data, error } = await supabase.rpc('api_get_staf_stats', {
+    p_satuan: satuan,
+  });
+
+  if (error) throw error;
+
+  const row = ((data as Array<{
+    total_personel: number;
+    hadir_hari_ini: number;
+    tugas_aktif: number;
+    logistik_pending: number;
+  }>) ?? [])[0];
 
   return {
-    totalPersonel: personelRes.count ?? 0,
-    hadirHariIni: hadirRes.count ?? 0,
-    tugasAktif: tugasRes.count ?? 0,
-    logistikPending: logistikRes.count ?? 0,
+    totalPersonel: row?.total_personel ?? 0,
+    hadirHariIni: row?.hadir_hari_ini ?? 0,
+    tugasAktif: row?.tugas_aktif ?? 0,
+    logistikPending: row?.logistik_pending ?? 0,
   };
 }
 

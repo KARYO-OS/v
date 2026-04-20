@@ -36,17 +36,12 @@ export default function AttendanceReport() {
 
   const fetchAttendance = useCallback(async () => {
     setIsLoading(true);
-    let query = supabase
-      .from('attendance')
-      .select('*, user:user_id(id,nama,nrp,pangkat,satuan,role)')
-      .gte('tanggal', dateFrom)
-      .lte('tanggal', dateTo)
-      .order('tanggal', { ascending: false })
-      .order('created_at', { ascending: false });
-
-    if (filterStatus) query = query.eq('status', filterStatus);
-
-    const { data } = await query;
+    const { data } = await supabase.rpc('api_get_attendance_report', {
+      p_date_from: dateFrom,
+      p_date_to: dateTo,
+      p_status: filterStatus || null,
+      p_satuan: null,
+    });
     setAttendances((data as Attendance[]) ?? []);
     setIsLoading(false);
   }, [dateFrom, dateTo, filterStatus]);
