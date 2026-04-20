@@ -195,6 +195,14 @@ BEGIN
     RAISE EXCEPTION 'waktu_tutup harus setelah waktu_buka';
   END IF;
 
+  IF v_role = 'admin' AND COALESCE(NULLIF(BTRIM(p_satuan), ''), v_scope_satuan) IS NULL THEN
+    RAISE EXCEPTION 'Satuan wajib diisi';
+  END IF;
+
+  IF v_role <> 'admin' AND v_scope_satuan IS NULL THEN
+    RAISE EXCEPTION 'Satuan pengguna tidak valid';
+  END IF;
+
   INSERT INTO public.apel_sessions (
     satuan,
     jenis,
@@ -273,8 +281,16 @@ BEGIN
     RAISE EXCEPTION 'Sesi apel di luar satuan Anda';
   END IF;
 
+  IF NOW() < v_session.waktu_buka THEN
+    RAISE EXCEPTION 'Sesi apel belum dibuka';
+  END IF;
+
+  IF NOW() > v_session.waktu_tutup THEN
+    RAISE EXCEPTION 'Sesi apel sudah ditutup';
+  END IF;
+
   v_status := CASE
-    WHEN NOW() > v_session.waktu_tutup THEN 'terlambat'
+    WHEN NOW() > (v_session.waktu_buka + INTERVAL '10 minutes') THEN 'terlambat'
     ELSE 'hadir'
   END;
 

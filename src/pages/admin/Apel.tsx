@@ -9,7 +9,12 @@ import { useApel } from '../../hooks/useApel';
 import type { ApelJenis } from '../../types';
 
 function toIsoLocalDateTime(date: string, time: string): string {
-  return new Date(`${date}T${time}:00`).toISOString();
+  const local = new Date(`${date}T${time}:00`);
+  const offsetMinutes = -local.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? '+' : '-';
+  const hh = String(Math.floor(Math.abs(offsetMinutes) / 60)).padStart(2, '0');
+  const mm = String(Math.abs(offsetMinutes) % 60).padStart(2, '0');
+  return `${date}T${time}:00${sign}${hh}:${mm}`;
 }
 
 export default function AdminApelPage() {
