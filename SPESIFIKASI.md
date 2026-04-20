@@ -1238,7 +1238,7 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 - [x] Role Staf Operasional (S-1, S-3, S-4) dengan dashboard, RBAC, dan akses modul
 
 ### Phase 3 — Advanced (v2.0)
-- [ ] PWA (Progressive Web App) untuk akses offline
+- [x] PWA (Progressive Web App) untuk akses offline
 - [ ] Integrasi API eksternal (cuaca, peta)
 - [ ] Analytics dashboard dengan chart canggih
 - [ ] Multi-satuan (satu sistem untuk banyak unit)
