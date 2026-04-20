@@ -43,6 +43,14 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
   guard: [
     { path: '/guard/gatepass-scan', label: 'Scan', icon: <CheckSquare size={20} aria-hidden="true" /> },
   ],
+  // Staf Operasional
+  staf: [
+    { path: '/staf/dashboard',   label: 'Beranda',  icon: <LayoutDashboard size={20} aria-hidden="true" /> },
+    { path: '/admin/users',      label: 'Personel', icon: <Users size={20} aria-hidden="true" /> },
+    { path: '/admin/attendance', label: 'Absensi',  icon: <CalendarDays size={20} aria-hidden="true" /> },
+    { path: '/admin/logistics',  label: 'Logistik', icon: <Package size={20} aria-hidden="true" /> },
+    { path: '/staf/messages',    label: 'Pesan',    icon: <Megaphone size={20} aria-hidden="true" />, hasMessageBadge: true },
+  ],
 };
 
 /**

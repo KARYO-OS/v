@@ -13,6 +13,7 @@ const ROLE_DEFAULT_PATH = {
   komandan: '/komandan/dashboard',
   prajurit: '/prajurit/dashboard',
   guard: '/guard/gatepass-scan',
+  staf: '/staf/dashboard',
 } as const;
 
 export default function Login() {

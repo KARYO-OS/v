@@ -38,7 +38,7 @@ export default function PosJagaQRCode({ posJaga }: Props) {
           <div class="wrap">
             ${printRef.current.innerHTML}
           </div>
-          <script>window.onload = () => { window.print(); window.close(); }<\/script>
+          <script>window.onload = () => { window.print(); window.close(); }</script>
         </body>
       </html>
     `);

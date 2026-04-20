@@ -37,6 +37,8 @@ const GatePassApprovalPage = lazy(() => import('../pages/komandan/GatePassApprov
 const GuardDashboard = lazy(() => import('../pages/guard/GuardDashboard'));
 const GatePassMonitorPage = lazy(() => import('../pages/admin/GatePassMonitorPage'));
 const PosJagaPage = lazy(() => import('../pages/admin/PosJagaPage'));
+const StafDashboard = lazy(() => import('../pages/staf/StafDashboard'));
+const StafMessages = lazy(() => import('../pages/staf/StafMessages'));
 const ErrorPage = lazy(() => import('../pages/ErrorPage'));
 
 const wrap = (element: React.ReactNode) => (
@@ -57,21 +59,27 @@ export const router = createHashRouter([
     element: <ProtectedRoute allowedRoles={['admin']} />,
     children: [
       { path: '/admin/dashboard', element: wrap(<AdminDashboard />) },
-      { path: '/admin/users', element: wrap(<UserManagement />) },
-      { path: '/admin/audit', element: wrap(<AuditLog />) },
-      { path: '/admin/logistics', element: wrap(<Logistics />) },
-      { path: '/admin/documents', element: wrap(<Documents />) },
+      { path: '/admin/audit',     element: wrap(<AuditLog />) },
+      { path: '/admin/settings',  element: wrap(<Settings />) },
+    ],
+  },
+  // Admin + Staf shared routes (Staf dapat akses baca/kelola sesuai bidang)
+  {
+    element: <ProtectedRoute allowedRoles={['admin', 'staf']} />,
+    children: [
+      { path: '/admin/users',         element: wrap(<UserManagement />) },
+      { path: '/admin/logistics',     element: wrap(<Logistics />) },
+      { path: '/admin/documents',     element: wrap(<Documents />) },
       { path: '/admin/announcements', element: wrap(<Announcements />) },
-      { path: '/admin/schedule', element: wrap(<ShiftSchedule />) },
-      { path: '/admin/attendance', element: wrap(<AttendanceReport />) },
-      { path: '/admin/settings', element: wrap(<Settings />) },
+      { path: '/admin/schedule',      element: wrap(<ShiftSchedule />) },
+      { path: '/admin/attendance',    element: wrap(<AttendanceReport />) },
       { path: '/admin/gatepass-monitor', element: wrap(<GatePassMonitorPage />) },
       { path: '/admin/pos-jaga',         element: wrap(<PosJagaPage />) },
     ],
   },
   // Komandan routes
   {
-    element: <ProtectedRoute allowedRoles={['komandan', 'admin']} />,
+    element: <ProtectedRoute allowedRoles={['komandan', 'admin', 'staf']} />,
     children: [
       { path: '/komandan/dashboard', element: wrap(<KomandanDashboard />) },
       { path: '/komandan/tasks', element: wrap(<TaskManagement />) },
@@ -104,6 +112,14 @@ export const router = createHashRouter([
     element: <ProtectedRoute allowedRoles={['guard', 'admin']} />,
     children: [
       { path: '/guard/gatepass-scan', element: wrap(<GuardDashboard />) },
+    ],
+  },
+  // Staf routes
+  {
+    element: <ProtectedRoute allowedRoles={['staf']} />,
+    children: [
+      { path: '/staf/dashboard', element: wrap(<StafDashboard />) },
+      { path: '/staf/messages',  element: wrap(<StafMessages />) },
     ],
   },
   {

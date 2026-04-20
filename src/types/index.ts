@@ -33,7 +33,7 @@ export interface GatePass {
   user?: User;
 }
 
-export type Role = 'admin' | 'komandan' | 'prajurit' | 'guard';
+export type Role = 'admin' | 'komandan' | 'prajurit' | 'guard' | 'staf';
 
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'approved' | 'rejected';
 export type AttendanceStatus = 'hadir' | 'izin' | 'sakit' | 'alpa' | 'dinas_luar';

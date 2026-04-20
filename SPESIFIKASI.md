@@ -1,5 +1,5 @@
 # 📋 SPESIFIKASI TEKNIS — KARYO OS
-### Versi 1.2.1 | April 2026
+### Versi 1.5.0 | April 2026
 
 ---
 
@@ -1030,12 +1030,13 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 - [x] CI/CD pipeline: lint, type-check, test, build, security scan, smoke prod
 - [x] Service worker untuk cache management di GitHub Pages SPA
 
-### Phase 2 — Enhancement (v1.5)
-- [ ] Notifikasi push (browser notifications)
-- [ ] Export PDF laporan kehadiran
-- [ ] Upload foto profil personel
-- [ ] Fitur pencarian global
-- [ ] Kalender interaktif
+### Phase 2 — Enhancement (v1.5) ✅ Selesai
+- [x] Notifikasi push (browser notifications)
+- [x] Export PDF laporan kehadiran (via print API)
+- [x] Upload foto profil personel
+- [x] Fitur pencarian global
+- [x] Kalender interaktif (ShiftSchedule calendar view)
+- [x] Role Staf Operasional (S-1, S-3, S-4) dengan dashboard, RBAC, dan akses modul
 
 ### Phase 3 — Advanced (v2.0)
 - [ ] PWA (Progressive Web App) untuk akses offline
