@@ -60,6 +60,7 @@ import {
   Filter,
   ArrowUpDown,
   Copy,
+  Building2,
 } from 'lucide-react';
 
 
@@ -125,6 +126,7 @@ export const ICONS = {
   Filter,
   ArrowUpDown,
   Copy,
+  Building2,
 } as const;
 
 export type IconName = keyof typeof ICONS;

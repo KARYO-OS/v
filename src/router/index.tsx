@@ -19,6 +19,7 @@ const Announcements = lazy(() => import('../pages/admin/Announcements'));
 const ShiftSchedule = lazy(() => import('../pages/admin/ShiftSchedule'));
 const AttendanceReport = lazy(() => import('../pages/admin/AttendanceReport'));
 const Settings = lazy(() => import('../pages/admin/Settings'));
+const SatuanManagement = lazy(() => import('../pages/admin/SatuanManagement'));
 const KomandanDashboard = lazy(() => import('../pages/komandan/KomandanDashboard'));
 const TaskManagement = lazy(() => import('../pages/komandan/TaskManagement'));
 const Personnel = lazy(() => import('../pages/komandan/Personnel'));
@@ -59,6 +60,7 @@ export const router = createHashRouter([
     element: <ProtectedRoute allowedRoles={['admin']} />,
     children: [
       { path: '/admin/dashboard', element: wrap(<AdminDashboard />) },
+      { path: '/admin/satuan',    element: wrap(<SatuanManagement />) },
       { path: '/admin/audit',     element: wrap(<AuditLog />) },
       { path: '/admin/settings',  element: wrap(<Settings />) },
     ],

@@ -35,6 +35,18 @@ export interface GatePass {
 
 export type Role = 'admin' | 'komandan' | 'prajurit' | 'guard' | 'staf';
 
+export interface Satuan {
+  id: string;
+  nama: string;
+  kode_satuan: string;
+  tingkat?: 'battalion' | 'company' | 'squad' | 'detachment';
+  logo_url?: string;
+  is_active: boolean;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'approved' | 'rejected';
 export type AttendanceStatus = 'hadir' | 'izin' | 'sakit' | 'alpa' | 'dinas_luar';
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';
@@ -51,6 +63,7 @@ export interface User {
   pangkat?: string;
   jabatan?: string;
   satuan: string;
+  satuan_id?: string;
   foto_url?: string;
   is_active: boolean;
   is_online: boolean;
@@ -91,6 +104,7 @@ export interface Task {
   prioritas: 1 | 2 | 3;
   deadline?: string;
   satuan?: string;
+  satuan_id?: string;
   created_at: string;
   updated_at: string;
   // Joined fields
@@ -154,6 +168,7 @@ export interface Announcement {
   isi: string;
   target_role?: Role[];
   target_satuan?: string;
+  satuan_id?: string;
   created_by?: string;
   is_pinned: boolean;
   created_at: string;
@@ -236,6 +251,7 @@ export interface Document {
   file_url: string;
   file_size?: number;
   satuan?: string;
+  satuan_id?: string;
   uploaded_by?: string;
   created_at: string;
   uploader?: User;
@@ -296,6 +312,7 @@ export interface LogisticsRequest {
   id: string;
   requested_by: string;
   satuan: string;
+  satuan_id?: string;
   nama_item: string;
   jumlah: number;
   satuan_item?: string;

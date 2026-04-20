@@ -55,11 +55,43 @@ jobs:
       - name: Test
         run: npm test
 
-  # ── Job 3: Build (menunggu quality + test lulus) ─────────────────────────────
+  # ── Job 3: Offline E2E (Playwright) ──────────────────────────────────────────
+  e2e-offline:
+    name: E2E Offline Workflow
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run offline workflow E2E
+        run: npm run test:offline:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-offline-e2e
+          path: playwright-report
+          if-no-files-found: ignore
+
+  # ── Job 4: Build (menunggu quality + test + e2e-offline lulus) ──────────────
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [quality, test]
+    needs: [quality, test, e2e-offline]
 
     steps:
       - name: Checkout

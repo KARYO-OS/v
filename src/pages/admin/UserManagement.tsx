@@ -4,12 +4,14 @@ import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
+import SatuanSelector from '../../components/common/SatuanSelector';
 import PageHeader from '../../components/ui/PageHeader';
 import { RoleBadge } from '../../components/common/Badge';
 import { TableSkeleton } from '../../components/common/Skeleton';
 import Pagination from '../../components/ui/Pagination';
 import UserDetailModal from '../../components/common/UserDetailModal';
 import { useUsers } from '../../hooks/useUsers';
+import { useSatuans } from '../../hooks/useSatuans';
 import { useUIStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -51,6 +53,7 @@ export default function UserManagement() {
   });
   const { showNotification } = useUIStore();
   const authUser = useAuthStore((s) => s.user);
+  const { satuans, isLoading: isSatuansLoading } = useSatuans({ onlyActive: true });
 
   const [showCreate, setShowCreate] = useState(false);
   const [showResetPin, setShowResetPin] = useState(false);
@@ -560,7 +563,18 @@ export default function UserManagement() {
           <Input label="NRP *" type="text" inputMode="numeric" maxLength={20} value={form.nrp} onChange={(e) => setForm({ ...form, nrp: e.target.value.replace(/\D/g, '') })} required />
           <Input label="Nama Lengkap *" type="text" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} required />
           <Input label="Pangkat" type="text" value={form.pangkat} onChange={(e) => setForm({ ...form, pangkat: e.target.value })} />
-          <Input label="Satuan *" type="text" value={form.satuan} onChange={(e) => setForm({ ...form, satuan: e.target.value })} required />
+          {satuans.length > 0 ? (
+            <SatuanSelector
+              label="Satuan"
+              required
+              value={form.satuan}
+              onChange={(value) => setForm({ ...form, satuan: value })}
+              satuans={satuans}
+              disabled={isSatuansLoading}
+            />
+          ) : (
+            <Input label="Satuan *" type="text" value={form.satuan} onChange={(e) => setForm({ ...form, satuan: e.target.value })} required />
+          )}
           <div>
             <label className="text-sm font-semibold text-text-primary">Role *</label>
             <select className="form-control mt-1" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
