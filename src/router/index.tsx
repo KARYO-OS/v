@@ -42,6 +42,7 @@ const StafDashboard = lazy(() => import('../pages/staf/StafDashboard'));
 const StafMessages = lazy(() => import('../pages/staf/StafMessages'));
 const Analytics = lazy(() => import('../pages/admin/Analytics'));
 const GuardDisciplineNotes = lazy(() => import('../pages/guard/DisciplineNotes'));
+const StafLeaveReview = lazy(() => import('../pages/staf/LeaveReview'));
 const ErrorPage = lazy(() => import('../pages/ErrorPage'));
 
 const wrap = (element: React.ReactNode) => (
@@ -124,8 +125,9 @@ export const router = createHashRouter([
   {
     element: <ProtectedRoute allowedRoles={['staf']} />,
     children: [
-      { path: '/staf/dashboard', element: wrap(<StafDashboard />) },
-      { path: '/staf/messages',  element: wrap(<StafMessages />) },
+      { path: '/staf/dashboard',    element: wrap(<StafDashboard />) },
+      { path: '/staf/messages',     element: wrap(<StafMessages />) },
+      { path: '/staf/leave-review', element: wrap(<StafLeaveReview />) },
     ],
   },
   {

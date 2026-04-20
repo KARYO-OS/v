@@ -12,12 +12,14 @@ import { useUIStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
 import { useLogisticsRequests } from '../../hooks/useLogisticsRequests';
 import { supabase } from '../../lib/supabase';
+import { canWrite, getOperationalRoleLabel } from '../../lib/rolePermissions';
 import type { LogisticsItem, LogisticsRequest } from '../../types';
 
 export default function Logistics() {
   const { showNotification } = useUIStore();
   const { user } = useAuthStore();
   const { requests, reviewRequest } = useLogisticsRequests();
+  const canWriteLogistics = canWrite(user, 'logistics');
   const [items, setItems] = useState<LogisticsItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -128,7 +130,11 @@ export default function Logistics() {
               <span>{filtered.length} data terlihat</span>
             </>
           }
-          actions={<Button onClick={() => setShowCreate(true)} leftIcon={<Plus className="h-4 w-4" />}>Tambah Item</Button>}
+          actions={
+            canWriteLogistics
+              ? <Button onClick={() => setShowCreate(true)} leftIcon={<Plus className="h-4 w-4" />}>Tambah Item</Button>
+              : <span className="text-xs text-text-muted px-3 py-2 rounded-xl border border-surface/70 bg-surface/20">{getOperationalRoleLabel(user)} — hanya baca</span>
+          }
         />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -328,7 +334,7 @@ export default function Logistics() {
                         <span className="text-xs text-text-muted">
                           {new Date(req.created_at).toLocaleDateString('id-ID')}
                         </span>
-                        {req.status === 'pending' && (
+                        {req.status === 'pending' && canWriteLogistics && (
                           <div className="flex gap-2">
                             <Button
                               size="sm"

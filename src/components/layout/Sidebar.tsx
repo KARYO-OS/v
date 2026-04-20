@@ -70,14 +70,15 @@ const NAV_ITEMS: Record<Role, NavItem[]> = {
     { path: '/guard/discipline',    label: 'Catatan Disiplin',      icon: 'ScrollText' },
   ],
   staf: [
-    { path: '/staf/dashboard',      label: 'Pusat Staf',     icon: 'LayoutDashboard' },
-    { path: '/admin/users',         label: 'Personel',        icon: 'Users' },
-    { path: '/admin/attendance',    label: 'Rekap Absensi',   icon: 'ClipboardCheck' },
-    { path: '/admin/schedule',      label: 'Jadwal Shift',    icon: 'CalendarDays' },
-    { path: '/admin/logistics',     label: 'Logistik',        icon: 'Package' },
-    { path: '/komandan/tasks',      label: 'Tugas',           icon: 'CheckSquare' },
-    { path: '/admin/pos-jaga',      label: 'Pos Jaga',        icon: 'MapPin' },
-    { path: '/staf/messages',       label: 'Pesan',           icon: 'Megaphone' },
+    { path: '/staf/dashboard',      label: 'Pusat Staf',      icon: 'LayoutDashboard' },
+    { path: '/admin/users',         label: 'Personel',         icon: 'Users' },
+    { path: '/admin/attendance',    label: 'Rekap Absensi',    icon: 'ClipboardCheck' },
+    { path: '/staf/leave-review',   label: 'Izin Personel',    icon: 'UserCheck' },
+    { path: '/admin/schedule',      label: 'Jadwal Shift',     icon: 'CalendarDays' },
+    { path: '/admin/logistics',     label: 'Logistik',         icon: 'Package' },
+    { path: '/komandan/tasks',      label: 'Tugas',            icon: 'CheckSquare' },
+    { path: '/admin/pos-jaga',      label: 'Pos Jaga',         icon: 'MapPin' },
+    { path: '/staf/messages',       label: 'Pesan',            icon: 'Megaphone' },
   ],
 };
 

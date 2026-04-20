@@ -11,6 +11,8 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versi
 - Dokumentasi role diperbarui agar konsisten dengan struktur terbaru: **Super Admin**, **Komandan Tier (BATALION/KOMPI/PELETON)**, **Staf Bidang (S-1/S-3/S-4)**, **Petugas Jaga/Provost**, dan **Prajurit**.
 - Terminologi `guard` pada dokumentasi diselaraskan menjadi **Petugas Jaga / Provost**.
 - Penjelasan akses admin diperjelas: fokus pada konfigurasi sistem dan audit, bukan input operasional harian.
+- **Logistics** — tombol "Tambah Item" dan "Tinjau" permintaan logistik kini hanya tampil untuk admin dan staf S-4; staf bidang lain mendapat label read-only.
+- **AttendanceReport** — tambah tombol "Tambah Entri" untuk staf S-1 dan admin; buka modal input manual (personel, tanggal, status, check-in/out, keterangan).
 
 ### Ditambahkan
 - Fondasi implementasi database untuk penajaman akses per bidang staf (S-1/S-3/S-4), akses discipline notes untuk guard/provost, dan pembatasan akses operasional admin.
@@ -21,8 +23,11 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versi
 - **`src/lib/rolePermissions.ts`**: utility RBAC lengkap — `canWrite(user, module)`, `getBidangFromJabatan`, `getKomandanScope`, `getKomandanScopeLabel`, `getKomandanScopeDescription`, `getOperationalRoleLabel`, `canReadDisciplineNotes`.
 - **Hierarki Komandan** ditampilkan di dashboard & halaman personel: level BATALION/KOMPI/PELETON tampil di subtitle dan banner informasi cakupan akses data.
 - **Guard: Catatan Disiplin** (`/guard/discipline`): halaman baru read-only untuk Petugas Jaga / Provost membaca catatan disiplin personel satuan, sesuai SPESIFIKASI §3.3.
-- **Staf bidang write-guard** di TaskManagement dan ShiftSchedule: tombol buat/hapus hanya tampil jika staf memiliki bidang yang sesuai (S-3 untuk tugas & shift; S-1 untuk absensi; S-4 untuk logistik).
+- **Staf bidang write-guard** di TaskManagement, ShiftSchedule, Logistics, dan AttendanceReport: tombol buat/hapus hanya tampil jika staf memiliki bidang yang sesuai (S-3 untuk tugas & shift; S-4 untuk logistik; S-1 untuk absensi).
+- **Halaman Izin Personel** (`/staf/leave-review`): staf S-1 dapat melihat dan memproses (setujui/tolak) permohonan izin dari personel satuan. Staf bidang lain hanya dapat membaca.
+- Navigasi staf diperluas dengan item **Izin Personel** di Sidebar dan BottomTabBar.
 - Navigasi guard diperluas dengan tab **Catatan Disiplin** di Sidebar dan BottomTabBar.
+- Feature flag `leave_requests` mencakup path `/staf/leave-review`.
 - Feature flag `reports` mencakup path `/guard/discipline`.
 
 ---

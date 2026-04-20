@@ -45,11 +45,11 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
   ],
   // Staf Operasional
   staf: [
-    { path: '/staf/dashboard',   label: 'Beranda',  icon: <LayoutDashboard size={20} aria-hidden="true" /> },
-    { path: '/admin/users',      label: 'Personel', icon: <Users size={20} aria-hidden="true" /> },
-    { path: '/admin/attendance', label: 'Absensi',  icon: <CalendarDays size={20} aria-hidden="true" /> },
-    { path: '/admin/logistics',  label: 'Logistik', icon: <Package size={20} aria-hidden="true" /> },
-    { path: '/staf/messages',    label: 'Pesan',    icon: <Megaphone size={20} aria-hidden="true" />, hasMessageBadge: true },
+    { path: '/staf/dashboard',    label: 'Beranda',  icon: <LayoutDashboard size={20} aria-hidden="true" /> },
+    { path: '/admin/users',       label: 'Personel', icon: <Users size={20} aria-hidden="true" /> },
+    { path: '/admin/attendance',  label: 'Absensi',  icon: <CalendarDays size={20} aria-hidden="true" /> },
+    { path: '/staf/leave-review', label: 'Izin',     icon: <UserCheck size={20} aria-hidden="true" /> },
+    { path: '/staf/messages',     label: 'Pesan',    icon: <Megaphone size={20} aria-hidden="true" />, hasMessageBadge: true },
   ],
 };
 
