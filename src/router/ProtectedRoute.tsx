@@ -32,26 +32,29 @@ function getRoleFallbackPath(role: Role, flags: ReturnType<typeof useFeatureStor
 }
 
 export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
-  const { isAuthenticated, isInitialized, user } = useAuthStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isInitialized = useAuthStore((s) => s.isInitialized);
+  const hasUser = useAuthStore((s) => Boolean(s.user));
+  const userRole = useAuthStore((s) => s.user?.role ?? null);
   const { pathname } = useLocation();
   const { flags, isLoaded, loadFeatureFlags } = useFeatureStore();
 
   useEffect(() => {
-    if (!user) return;
+    if (!hasUser) return;
     if (isLoaded) return;
     void loadFeatureFlags();
-  }, [user, isLoaded, loadFeatureFlags]);
+  }, [hasUser, isLoaded, loadFeatureFlags]);
 
   if (!isInitialized) {
     return <LoadingSpinner fullScreen />;
   }
 
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated || !userRole) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!allowedRoles.includes(user.role)) {
-    return <Navigate to={ROLE_DEFAULT_PATH[user.role]} replace />;
+  if (!allowedRoles.includes(userRole)) {
+    return <Navigate to={ROLE_DEFAULT_PATH[userRole]} replace />;
   }
 
   if (!isLoaded) {
@@ -59,7 +62,7 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   if (!isPathEnabled(pathname, flags)) {
-    const fallbackPath = getRoleFallbackPath(user.role, flags);
+    const fallbackPath = getRoleFallbackPath(userRole, flags);
     if (!fallbackPath || fallbackPath === pathname) {
       return (
         <Navigate

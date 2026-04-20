@@ -12,8 +12,12 @@ import {
   updateFeatureFlags as apiUpdateFeatureFlags,
   updateFeatureFlag as apiUpdateFeatureFlag,
 } from '../lib/api/featureFlags';
+import { requestCoalescer } from '../lib/requestCoalescer';
 
 const FEATURE_FLAGS_CACHE_KEY = 'karyo_feature_flags';
+const featureFlagsRequestKey = (userId: string, force: boolean) => `feature_flags:${force ? 'force' : 'normal'}:${userId}`;
+
+let featureFlagsLoadVersion = 0;
 
 interface FeatureStore {
   flags: FeatureFlagsState;
@@ -76,12 +80,15 @@ export const useFeatureStore = create<FeatureStore>((set, get) => ({
     if (get().isLoaded && !force && get().loadedForUserId === user.id) return;
 
     set({ isLoading: true });
+    const loadVersion = ++featureFlagsLoadVersion;
 
     try {
-      const flags = await apiGetFeatureFlags(user.id, user.role);
+      const flags = await requestCoalescer.coalesce(featureFlagsRequestKey(user.id, force), () => apiGetFeatureFlags(user.id, user.role));
+      if (loadVersion !== featureFlagsLoadVersion) return;
       persistFlags(flags);
       set({ flags, isLoaded: true, isLoading: false, loadedForUserId: user.id });
     } catch {
+      if (loadVersion !== featureFlagsLoadVersion) return;
       set({ isLoaded: true, isLoading: false, loadedForUserId: user.id });
     }
   },

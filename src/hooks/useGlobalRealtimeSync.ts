@@ -19,11 +19,11 @@ const realtimeTableMap: Array<{ table: string; resource: DataResource }> = [
 ];
 
 export function useGlobalRealtimeSync() {
-  const user = useAuthStore((s) => s.user);
+  const hasUser = useAuthStore((s) => Boolean(s.user));
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
-    if (!user) {
+    if (!hasUser) {
       if (channelRef.current) {
         void supabase.removeChannel(channelRef.current);
         channelRef.current = null;
@@ -53,5 +53,5 @@ export function useGlobalRealtimeSync() {
         channelRef.current = null;
       }
     };
-  }, [user]);
+  }, [hasUser]);
 }

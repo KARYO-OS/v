@@ -22,7 +22,9 @@ import { measurePageLoad } from './lib/metrics';
 measurePageLoad();
 
 export function App() {
-  const { restoreSession, isLoading, user } = useAuthStore();
+  const restoreSession = useAuthStore((s) => s.restoreSession);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const hasUser = useAuthStore((s) => Boolean(s.user));
   const { loadPlatformBranding } = usePlatformStore();
   const { loadFeatureFlags } = useFeatureStore();
   const { loadUserPreferences } = useUIStore();
@@ -37,14 +39,14 @@ export function App() {
   }, [loadPlatformBranding]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!hasUser) return;
     void loadUserPreferences();
-  }, [user, loadUserPreferences]);
+  }, [hasUser, loadUserPreferences]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!hasUser) return;
     void loadFeatureFlags();
-  }, [user, loadFeatureFlags]);
+  }, [hasUser, loadFeatureFlags]);
 
   useEffect(() => {
     return subscribeDataChanges('feature_flags', () => {
