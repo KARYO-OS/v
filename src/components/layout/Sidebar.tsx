@@ -6,7 +6,7 @@ import { useUIStore } from '../../store/uiStore';
 import { usePlatformStore } from '../../store/platformStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { isPathEnabled } from '../../lib/featureFlags';
-import { getRoleDisplayLabel } from '../../lib/rolePermissions';
+import { APP_ROUTE_PATHS, getRoleDisplayLabel, ROLE_ROUTE_PATHS } from '../../lib/rolePermissions';
 import type { Role } from '../../types';
 
 interface NavItem {
@@ -30,56 +30,56 @@ const resolveNavSection = (item: NavItem): NavSection => {
 
 const NAV_ITEMS: Record<Role, NavItem[]> = {
   admin: [
-    { path: '/admin/dashboard',     label: 'Pusat Kendali',  icon: 'LayoutDashboard' },
-    { path: '/admin/satuan',        label: 'Satuan',         icon: 'Building2' },
-    { path: '/admin/users',         label: 'Personel',       icon: 'Users' },
-    { path: '/admin/analytics',     label: 'Analitik',       icon: 'TrendingUp' },
-    { path: '/admin/logistics',     label: 'Logistik',       icon: 'Package' },
-    { path: '/admin/documents',     label: 'Dokumen',        icon: 'FileText' },
-    { path: '/admin/announcements', label: 'Pengumuman',     icon: 'Megaphone' },
-    { path: '/admin/schedule',      label: 'Jadwal Shift',   icon: 'CalendarDays' },
-    { path: '/admin/attendance',    label: 'Rekap Absensi',  icon: 'ClipboardCheck' },
-    { path: '/admin/gatepass-monitor', label: 'Gate Pass',   icon: 'ClipboardCheck' },
-    { path: '/admin/pos-jaga',          label: 'Pos Jaga',    icon: 'MapPin' },
-    { path: '/admin/audit',             label: 'Audit Log',   icon: 'ScrollText' },
-    { path: '/admin/settings',      label: 'Pengaturan',     icon: 'Settings' },
+    { path: ROLE_ROUTE_PATHS.admin.dashboard,       label: 'Pusat Kendali',  icon: 'LayoutDashboard' },
+    { path: ROLE_ROUTE_PATHS.admin.satuan,          label: 'Satuan',         icon: 'Building2' },
+    { path: ROLE_ROUTE_PATHS.admin.users,           label: 'Personel',       icon: 'Users' },
+    { path: ROLE_ROUTE_PATHS.admin.analytics,       label: 'Analitik',       icon: 'TrendingUp' },
+    { path: ROLE_ROUTE_PATHS.admin.logistics,       label: 'Logistik',       icon: 'Package' },
+    { path: ROLE_ROUTE_PATHS.admin.documents,       label: 'Dokumen',        icon: 'FileText' },
+    { path: ROLE_ROUTE_PATHS.admin.announcements,   label: 'Pengumuman',     icon: 'Megaphone' },
+    { path: ROLE_ROUTE_PATHS.admin.schedule,        label: 'Jadwal Shift',   icon: 'CalendarDays' },
+    { path: ROLE_ROUTE_PATHS.admin.attendance,      label: 'Rekap Absensi',  icon: 'ClipboardCheck' },
+    { path: ROLE_ROUTE_PATHS.admin.gatePassMonitor, label: 'Gate Pass',      icon: 'ClipboardCheck' },
+    { path: ROLE_ROUTE_PATHS.admin.posJaga,         label: 'Pos Jaga',       icon: 'MapPin' },
+    { path: ROLE_ROUTE_PATHS.admin.audit,           label: 'Audit Log',      icon: 'ScrollText' },
+    { path: ROLE_ROUTE_PATHS.admin.settings,        label: 'Pengaturan',     icon: 'Settings' },
   ],
   komandan: [
-    { path: '/komandan/dashboard',          label: 'Pusat Operasi',       icon: 'LayoutDashboard' },
-    { path: '/komandan/tasks',              label: 'Tugas',                icon: 'CheckSquare' },
-    { path: '/komandan/personnel',          label: 'Personel',             icon: 'Users' },
-    { path: '/komandan/attendance',         label: 'Kehadiran',            icon: 'CalendarDays' },
-    { path: '/komandan/gatepass-approval',  label: 'Approval Gate Pass',   icon: 'ClipboardCheck' },
-    { path: '/komandan/gatepass-monitor',   label: 'Monitoring Gate Pass', icon: 'BarChart2' },
-    { path: '/komandan/evaluation',         label: 'Evaluasi',             icon: 'NotebookPen' },
-    { path: '/komandan/reports',            label: 'Laporan',              icon: 'BarChart2' },
-    { path: '/komandan/logistics-request',  label: 'Permintaan Logistik',  icon: 'ClipboardList' },
-    { path: '/komandan/messages',           label: 'Pesan',                icon: 'Megaphone' },
+    { path: ROLE_ROUTE_PATHS.komandan.dashboard,       label: 'Pusat Operasi',       icon: 'LayoutDashboard' },
+    { path: ROLE_ROUTE_PATHS.komandan.tasks,           label: 'Tugas',                icon: 'CheckSquare' },
+    { path: ROLE_ROUTE_PATHS.komandan.personnel,       label: 'Personel',             icon: 'Users' },
+    { path: ROLE_ROUTE_PATHS.komandan.attendance,      label: 'Kehadiran',            icon: 'CalendarDays' },
+    { path: ROLE_ROUTE_PATHS.komandan.gatePassApproval,label: 'Approval Gate Pass',   icon: 'ClipboardCheck' },
+    { path: ROLE_ROUTE_PATHS.komandan.gatePassMonitor, label: 'Monitoring Gate Pass', icon: 'BarChart2' },
+    { path: ROLE_ROUTE_PATHS.komandan.evaluation,      label: 'Evaluasi',             icon: 'NotebookPen' },
+    { path: ROLE_ROUTE_PATHS.komandan.reports,         label: 'Laporan',              icon: 'BarChart2' },
+    { path: ROLE_ROUTE_PATHS.komandan.logisticsRequest,label: 'Permintaan Logistik',  icon: 'ClipboardList' },
+    { path: ROLE_ROUTE_PATHS.komandan.messages,        label: 'Pesan',                icon: 'Megaphone' },
   ],
   prajurit: [
-    { path: '/prajurit/dashboard',   label: 'Beranda',           icon: 'LayoutDashboard' },
-    { path: '/prajurit/gatepass',    label: 'Gate Pass',         icon: 'ClipboardCheck' },
-    { path: '/prajurit/scan-pos',    label: 'Scan Pos Jaga',     icon: 'ScanLine' },
-    { path: '/prajurit/tasks',       label: 'Tugas Saya',        icon: 'CheckSquare' },
-    { path: '/prajurit/attendance',  label: 'Absensi',           icon: 'CalendarDays' },
-    { path: '/prajurit/messages',    label: 'Pesan',             icon: 'Megaphone' },
-    { path: '/prajurit/leave',       label: 'Permohonan Izin',   icon: 'UserCheck' },
-    { path: '/prajurit/profile',     label: 'Profil',            icon: 'Users' },
+    { path: ROLE_ROUTE_PATHS.prajurit.dashboard,  label: 'Beranda',           icon: 'LayoutDashboard' },
+    { path: ROLE_ROUTE_PATHS.prajurit.gatePass,   label: 'Gate Pass',         icon: 'ClipboardCheck' },
+    { path: ROLE_ROUTE_PATHS.prajurit.scanPos,    label: 'Scan Pos Jaga',     icon: 'ScanLine' },
+    { path: ROLE_ROUTE_PATHS.prajurit.tasks,      label: 'Tugas Saya',        icon: 'CheckSquare' },
+    { path: ROLE_ROUTE_PATHS.prajurit.attendance, label: 'Absensi',           icon: 'CalendarDays' },
+    { path: ROLE_ROUTE_PATHS.prajurit.messages,   label: 'Pesan',             icon: 'Megaphone' },
+    { path: ROLE_ROUTE_PATHS.prajurit.leave,      label: 'Permohonan Izin',   icon: 'UserCheck' },
+    { path: ROLE_ROUTE_PATHS.prajurit.profile,    label: 'Profil',            icon: 'Users' },
   ],
   guard: [
-    { path: '/guard/gatepass-scan', label: 'Scan Gate Pass',        icon: 'ClipboardCheck' },
-    { path: '/guard/discipline',    label: 'Catatan Disiplin',      icon: 'ScrollText' },
+    { path: ROLE_ROUTE_PATHS.guard.gatePassScan, label: 'Scan Gate Pass',   icon: 'ClipboardCheck' },
+    { path: ROLE_ROUTE_PATHS.guard.discipline,   label: 'Catatan Disiplin', icon: 'ScrollText' },
   ],
   staf: [
-    { path: '/staf/dashboard',      label: 'Pusat Staf',      icon: 'LayoutDashboard' },
-    { path: '/admin/users',         label: 'Personel',         icon: 'Users' },
-    { path: '/admin/attendance',    label: 'Rekap Absensi',    icon: 'ClipboardCheck' },
-    { path: '/staf/leave-review',   label: 'Izin Personel',    icon: 'UserCheck' },
-    { path: '/admin/schedule',      label: 'Jadwal Shift',     icon: 'CalendarDays' },
-    { path: '/admin/logistics',     label: 'Logistik',         icon: 'Package' },
-    { path: '/komandan/tasks',      label: 'Tugas',            icon: 'CheckSquare' },
-    { path: '/admin/pos-jaga',      label: 'Pos Jaga',         icon: 'MapPin' },
-    { path: '/staf/messages',       label: 'Pesan',            icon: 'Megaphone' },
+    { path: ROLE_ROUTE_PATHS.staf.dashboard,      label: 'Pusat Staf',      icon: 'LayoutDashboard' },
+    { path: ROLE_ROUTE_PATHS.admin.users,         label: 'Personel',        icon: 'Users' },
+    { path: ROLE_ROUTE_PATHS.admin.attendance,    label: 'Rekap Absensi',   icon: 'ClipboardCheck' },
+    { path: ROLE_ROUTE_PATHS.staf.leaveReview,    label: 'Izin Personel',   icon: 'UserCheck' },
+    { path: ROLE_ROUTE_PATHS.admin.schedule,      label: 'Jadwal Shift',    icon: 'CalendarDays' },
+    { path: ROLE_ROUTE_PATHS.admin.logistics,     label: 'Logistik',        icon: 'Package' },
+    { path: ROLE_ROUTE_PATHS.komandan.tasks,      label: 'Tugas',           icon: 'CheckSquare' },
+    { path: ROLE_ROUTE_PATHS.admin.posJaga,       label: 'Pos Jaga',        icon: 'MapPin' },
+    { path: ROLE_ROUTE_PATHS.staf.messages,       label: 'Pesan',           icon: 'Megaphone' },
   ],
 };
 
@@ -149,7 +149,7 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate(APP_ROUTE_PATHS.login);
   };
 
   return (

@@ -7,7 +7,7 @@ import Input from '../components/common/Input';
 import Notification from '../components/common/Notification';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { usePlatformStore } from '../store/platformStore';
-import { getRoleDefaultPath } from '../lib/rolePermissions';
+import { APP_ROUTE_PATHS, getRoleDefaultPath } from '../lib/rolePermissions';
 
 export default function Login() {
   const { login, isAuthenticated, user, isLoading, error, clearError } = useAuthStore();
@@ -22,7 +22,7 @@ export default function Login() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      const redirectPath = getRoleDefaultPath(user.role) ?? '/login';
+      const redirectPath = getRoleDefaultPath(user.role) ?? APP_ROUTE_PATHS.login;
       navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);

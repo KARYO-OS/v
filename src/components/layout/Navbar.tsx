@@ -8,30 +8,22 @@ import { useMessages } from '../../hooks/useMessages';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 import { isPathEnabled } from '../../lib/featureFlags';
-import { getRoleDisplayLabel, isRoleAdmin, isRolePrajurit, isRoleStaf } from '../../lib/rolePermissions';
+import {
+  APP_ROUTE_PATHS,
+  getRoleDisplayLabel,
+  getRoleMessagesPath,
+  getRoleProfilePath,
+  isRoleAdmin,
+  isRolePrajurit,
+  isRoleStaf,
+} from '../../lib/rolePermissions';
 import GlobalSearch from '../ui/GlobalSearch';
 import OfflineIndicator from '../common/OfflineIndicator';
 import SyncQueueBadge from '../common/SyncQueueBadge';
-import type { Role } from '../../types';
 
 interface NavbarProps {
   title: string;
 }
-
-const PROFILE_PATH: Record<Role, string> = {
-  prajurit: '/prajurit/profile',
-  komandan: '/komandan/personnel',
-  admin: '/admin/users',
-  guard: '/guard/gatepass-scan',
-  staf: '/staf/dashboard',
-};
-
-/** Rute inbox pesan per role. Guard tidak memiliki halaman pesan. */
-const MESSAGES_PATH: Partial<Record<Role, string>> = {
-  prajurit: '/prajurit/messages',
-  komandan: '/komandan/messages',
-  staf: '/staf/messages',
-};
 
 export default function Navbar({ title }: NavbarProps) {
   const { user, logout } = useAuthStore();
@@ -63,11 +55,12 @@ export default function Navbar({ title }: NavbarProps) {
   const handleLogout = async () => {
     setIsAvatarDropdownOpen(false);
     await logout();
-    navigate('/login');
+    navigate(APP_ROUTE_PATHS.login);
   };
 
-  const messagePath = user?.role ? MESSAGES_PATH[user.role] : undefined;
+  const messagePath = getRoleMessagesPath(user?.role);
   const canOpenMessages = Boolean(messagePath && isPathEnabled(messagePath, flags));
+  const profilePath = getRoleProfilePath(user?.role);
 
   return (
     <header className="sticky top-0 z-20 border-b border-surface/60 bg-bg-card/90 px-4 backdrop-blur-2xl sm:px-5 lg:px-8" data-print-hide>
@@ -198,7 +191,7 @@ export default function Navbar({ title }: NavbarProps) {
               {/* Profil link — only for roles that have a profile page */}
               {(isRolePrajurit(user?.role) || isRoleStaf(user?.role)) && user?.role && (
                 <Link
-                  to={PROFILE_PATH[user.role]}
+                  to={profilePath ?? APP_ROUTE_PATHS.login}
                   role="menuitem"
                   onClick={() => setIsAvatarDropdownOpen(false)}
                   className="dropdown-item"

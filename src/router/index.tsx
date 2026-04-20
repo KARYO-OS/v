@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { createHashRouter, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
+import { APP_ROUTE_PATHS, ROLE_ROUTE_PATHS, ROUTE_ROLE_GROUPS } from '../lib/rolePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 // Lazy-loaded pages
@@ -51,87 +52,87 @@ const wrap = (element: React.ReactNode) => (
 
 export const router = createHashRouter([
   {
-    path: '/',
-    element: <Navigate to="/login" replace />,
+    path: APP_ROUTE_PATHS.root,
+    element: <Navigate to={APP_ROUTE_PATHS.login} replace />,
   },
   {
-    path: '/login',
+    path: APP_ROUTE_PATHS.login,
     element: wrap(<Login />),
   },
   // Admin routes
   {
-    element: <ProtectedRoute allowedRoles={['admin']} />,
+    element: <ProtectedRoute allowedRoles={ROUTE_ROLE_GROUPS.adminOnly} />,
     children: [
-      { path: '/admin/dashboard', element: wrap(<AdminDashboard />) },
-      { path: '/admin/satuan',    element: wrap(<SatuanManagement />) },
-      { path: '/admin/audit',     element: wrap(<AuditLog />) },
-      { path: '/admin/settings',  element: wrap(<Settings />) },
-      { path: '/admin/analytics', element: wrap(<Analytics />) },
+      { path: ROLE_ROUTE_PATHS.admin.dashboard, element: wrap(<AdminDashboard />) },
+      { path: ROLE_ROUTE_PATHS.admin.satuan,    element: wrap(<SatuanManagement />) },
+      { path: ROLE_ROUTE_PATHS.admin.audit,     element: wrap(<AuditLog />) },
+      { path: ROLE_ROUTE_PATHS.admin.settings,  element: wrap(<Settings />) },
+      { path: ROLE_ROUTE_PATHS.admin.analytics, element: wrap(<Analytics />) },
     ],
   },
   // Admin + Staf shared routes (Staf dapat akses baca/kelola sesuai bidang)
   {
-    element: <ProtectedRoute allowedRoles={['admin', 'staf']} />,
+    element: <ProtectedRoute allowedRoles={ROUTE_ROLE_GROUPS.adminStaf} />,
     children: [
-      { path: '/admin/users',         element: wrap(<UserManagement />) },
-      { path: '/admin/logistics',     element: wrap(<Logistics />) },
-      { path: '/admin/documents',     element: wrap(<Documents />) },
-      { path: '/admin/announcements', element: wrap(<Announcements />) },
-      { path: '/admin/schedule',      element: wrap(<ShiftSchedule />) },
-      { path: '/admin/attendance',    element: wrap(<AttendanceReport />) },
-      { path: '/admin/gatepass-monitor', element: wrap(<GatePassMonitorPage />) },
-      { path: '/admin/pos-jaga',         element: wrap(<PosJagaPage />) },
+      { path: ROLE_ROUTE_PATHS.admin.users,           element: wrap(<UserManagement />) },
+      { path: ROLE_ROUTE_PATHS.admin.logistics,       element: wrap(<Logistics />) },
+      { path: ROLE_ROUTE_PATHS.admin.documents,       element: wrap(<Documents />) },
+      { path: ROLE_ROUTE_PATHS.admin.announcements,   element: wrap(<Announcements />) },
+      { path: ROLE_ROUTE_PATHS.admin.schedule,        element: wrap(<ShiftSchedule />) },
+      { path: ROLE_ROUTE_PATHS.admin.attendance,      element: wrap(<AttendanceReport />) },
+      { path: ROLE_ROUTE_PATHS.admin.gatePassMonitor, element: wrap(<GatePassMonitorPage />) },
+      { path: ROLE_ROUTE_PATHS.admin.posJaga,         element: wrap(<PosJagaPage />) },
     ],
   },
   // Komandan routes
   {
-    element: <ProtectedRoute allowedRoles={['komandan', 'admin', 'staf']} />,
+    element: <ProtectedRoute allowedRoles={ROUTE_ROLE_GROUPS.komandanShared} />,
     children: [
-      { path: '/komandan/dashboard', element: wrap(<KomandanDashboard />) },
-      { path: '/komandan/tasks', element: wrap(<TaskManagement />) },
-      { path: '/komandan/personnel', element: wrap(<Personnel />) },
-      { path: '/komandan/reports', element: wrap(<Reports />) },
-      { path: '/komandan/evaluation', element: wrap(<Evaluation />) },
-      { path: '/komandan/attendance', element: wrap(<KomandanAttendance />) },
-      { path: '/komandan/logistics-request', element: wrap(<LogisticsRequest />) },
-      { path: '/komandan/gatepass-approval', element: wrap(<GatePassApprovalPage />) },
-      { path: '/komandan/gatepass-monitor', element: wrap(<GatePassMonitorPage />) },
-      { path: '/komandan/messages', element: wrap(<Messages />) },
+      { path: ROLE_ROUTE_PATHS.komandan.dashboard,       element: wrap(<KomandanDashboard />) },
+      { path: ROLE_ROUTE_PATHS.komandan.tasks,           element: wrap(<TaskManagement />) },
+      { path: ROLE_ROUTE_PATHS.komandan.personnel,       element: wrap(<Personnel />) },
+      { path: ROLE_ROUTE_PATHS.komandan.reports,         element: wrap(<Reports />) },
+      { path: ROLE_ROUTE_PATHS.komandan.evaluation,      element: wrap(<Evaluation />) },
+      { path: ROLE_ROUTE_PATHS.komandan.attendance,      element: wrap(<KomandanAttendance />) },
+      { path: ROLE_ROUTE_PATHS.komandan.logisticsRequest,element: wrap(<LogisticsRequest />) },
+      { path: ROLE_ROUTE_PATHS.komandan.gatePassApproval,element: wrap(<GatePassApprovalPage />) },
+      { path: ROLE_ROUTE_PATHS.komandan.gatePassMonitor, element: wrap(<GatePassMonitorPage />) },
+      { path: ROLE_ROUTE_PATHS.komandan.messages,        element: wrap(<Messages />) },
     ],
   },
   // Prajurit routes
   {
-    element: <ProtectedRoute allowedRoles={['prajurit', 'komandan', 'admin']} />,
+    element: <ProtectedRoute allowedRoles={ROUTE_ROLE_GROUPS.prajuritShared} />,
     children: [
-      { path: '/prajurit/dashboard', element: wrap(<PrajuritDashboard />) },
-      { path: '/prajurit/tasks', element: wrap(<MyTasks />) },
-      { path: '/prajurit/attendance', element: wrap(<Attendance />) },
-      { path: '/prajurit/messages', element: wrap(<Messages />) },
-      { path: '/prajurit/leave', element: wrap(<LeaveRequest />) },
-      { path: '/prajurit/profile', element: wrap(<Profile />) },
-      { path: '/prajurit/gatepass', element: wrap(<GatePassPage />) },
-      { path: '/prajurit/scan-pos', element: wrap(<ScanPosJagaPage />) },
+      { path: ROLE_ROUTE_PATHS.prajurit.dashboard,  element: wrap(<PrajuritDashboard />) },
+      { path: ROLE_ROUTE_PATHS.prajurit.tasks,      element: wrap(<MyTasks />) },
+      { path: ROLE_ROUTE_PATHS.prajurit.attendance, element: wrap(<Attendance />) },
+      { path: ROLE_ROUTE_PATHS.prajurit.messages,   element: wrap(<Messages />) },
+      { path: ROLE_ROUTE_PATHS.prajurit.leave,      element: wrap(<LeaveRequest />) },
+      { path: ROLE_ROUTE_PATHS.prajurit.profile,    element: wrap(<Profile />) },
+      { path: ROLE_ROUTE_PATHS.prajurit.gatePass,   element: wrap(<GatePassPage />) },
+      { path: ROLE_ROUTE_PATHS.prajurit.scanPos,    element: wrap(<ScanPosJagaPage />) },
     ],
   },
   // Guard routes
   {
-    element: <ProtectedRoute allowedRoles={['guard', 'admin']} />,
+    element: <ProtectedRoute allowedRoles={ROUTE_ROLE_GROUPS.guardShared} />,
     children: [
-      { path: '/guard/gatepass-scan', element: wrap(<GuardDashboard />) },
-      { path: '/guard/discipline',    element: wrap(<GuardDisciplineNotes />) },
+      { path: ROLE_ROUTE_PATHS.guard.gatePassScan, element: wrap(<GuardDashboard />) },
+      { path: ROLE_ROUTE_PATHS.guard.discipline,   element: wrap(<GuardDisciplineNotes />) },
     ],
   },
   // Staf routes
   {
-    element: <ProtectedRoute allowedRoles={['staf']} />,
+    element: <ProtectedRoute allowedRoles={ROUTE_ROLE_GROUPS.stafOnly} />,
     children: [
-      { path: '/staf/dashboard',    element: wrap(<StafDashboard />) },
-      { path: '/staf/messages',     element: wrap(<StafMessages />) },
-      { path: '/staf/leave-review', element: wrap(<StafLeaveReview />) },
+      { path: ROLE_ROUTE_PATHS.staf.dashboard,  element: wrap(<StafDashboard />) },
+      { path: ROLE_ROUTE_PATHS.staf.messages,   element: wrap(<StafMessages />) },
+      { path: ROLE_ROUTE_PATHS.staf.leaveReview,element: wrap(<StafLeaveReview />) },
     ],
   },
   {
-    path: '/error',
+    path: APP_ROUTE_PATHS.error,
     element: wrap(<ErrorPage />),
   },
   {
@@ -141,7 +142,7 @@ export const router = createHashRouter([
         <div className="text-center">
           <h1 className="text-6xl font-bold text-primary mb-4">404</h1>
           <p className="text-xl text-text-muted mb-6">Halaman tidak ditemukan</p>
-          <a href={`${import.meta.env.BASE_URL}#/login`} className="btn-primary px-6 py-2 rounded-lg">
+          <a href={`${import.meta.env.BASE_URL}#${APP_ROUTE_PATHS.login}`} className="btn-primary px-6 py-2 rounded-lg">
             Kembali ke Login
           </a>
         </div>

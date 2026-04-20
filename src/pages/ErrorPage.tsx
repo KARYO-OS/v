@@ -1,4 +1,5 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { APP_ROUTE_PATHS } from '../lib/rolePermissions';
 
 interface LocationState {
   message?: string;
@@ -7,9 +8,9 @@ interface LocationState {
 
 /**
  * Halaman error fallback yang informatif.
- * Bisa diakses langsung di /error atau digunakan sebagai target redirect.
+ * Bisa diakses langsung di APP_ROUTE_PATHS.error atau digunakan sebagai target redirect.
  *
- * Contoh redirect: navigate('/error', { state: { message: 'Sesi telah berakhir', code: '401' } })
+ * Contoh redirect: navigate(APP_ROUTE_PATHS.error, { state: { message: 'Sesi telah berakhir', code: '401' } })
  */
 export default function ErrorPage() {
   const navigate = useNavigate();
@@ -59,7 +60,7 @@ export default function ErrorPage() {
             Kembali
           </button>
           <Link
-            to="/login"
+            to={APP_ROUTE_PATHS.login}
             className="w-full rounded-xl border border-surface/70 px-4 py-2.5 text-sm font-semibold text-text-muted transition-colors hover:border-primary hover:text-text-primary"
           >
             Kembali ke Login

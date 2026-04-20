@@ -9,7 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { handleError } from '../../lib/handleError';
-import { getRoleDefaultPath, isRoleAdmin, isRoleKomandan, isRolePrajurit } from '../../lib/rolePermissions';
+import { APP_ROUTE_PATHS, getGlobalSearchResultPath, getRoleDefaultPath } from '../../lib/rolePermissions';
 
 interface SearchResult extends ApiSearchResult {
   href: string;
@@ -17,22 +17,7 @@ interface SearchResult extends ApiSearchResult {
 }
 
 function buildHref(result: ApiSearchResult): string {
-  const role = result.role;
-  if (result.type === 'task') {
-    if (isRolePrajurit(role)) return '/prajurit/tasks';
-    if (isRoleKomandan(role)) return '/komandan/tasks';
-    return getRoleDefaultPath(role) ?? '/login';
-  }
-  if (result.type === 'user') {
-    if (isRoleAdmin(role)) return '/admin/users';
-    if (isRoleKomandan(role)) return '/komandan/personnel';
-    return getRoleDefaultPath(role) ?? '/login';
-  }
-  // announcement
-  if (isRoleAdmin(role)) return '/admin/announcements';
-  if (isRoleKomandan(role)) return '/komandan/dashboard';
-  if (isRolePrajurit(role)) return '/prajurit/dashboard';
-  return getRoleDefaultPath(role) ?? '/login';
+  return getGlobalSearchResultPath(result.type, result.role);
 }
 
 const TYPE_ICON: Record<ApiSearchResult['type'], keyof typeof ICONS> = {
@@ -141,7 +126,7 @@ export default function GlobalSearch() {
       return;
     }
     const safeRole = activeRole ?? 'prajurit';
-    navigate(getRoleDefaultPath(safeRole) ?? '/login');
+    navigate(getRoleDefaultPath(safeRole) ?? APP_ROUTE_PATHS.login);
   };
 
   /** Handle keyboard navigation inside the search overlay */

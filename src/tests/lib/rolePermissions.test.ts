@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  APP_ROUTE_PATHS,
+  ROLE_ROUTE_PATHS,
   ROLE_OPTIONS,
+  getGlobalSearchResultPath,
   getRoleAccessDescription,
   getRoleCode,
   getRoleDefaultPath,
   getRoleDisplayLabel,
   getRoleFallbackPaths,
+  getRoleMessagesPath,
+  getRoleProfilePath,
   isRoleAdmin,
   isRoleGuard,
   isRoleKomandan,
@@ -52,6 +57,33 @@ describe('rolePermissions helpers', () => {
     expect(getRoleDefaultPath('PRJ')).toBe('/prajurit/dashboard');
     expect(getRoleDefaultPath('admin')).toBe('/admin/dashboard');
     expect(getRoleDefaultPath('unknown')).toBeNull();
+  });
+
+  it('returns profile and message paths for canonical and code roles', () => {
+    expect(getRoleProfilePath('PRJ')).toBe('/prajurit/profile');
+    expect(getRoleProfilePath('admin')).toBe('/admin/users');
+    expect(getRoleMessagesPath('KMD')).toBe('/komandan/messages');
+    expect(getRoleMessagesPath('PJP')).toBeNull();
+    expect(getRoleMessagesPath('unknown')).toBeNull();
+  });
+
+  it('keeps centralized route path catalog in sync with helper outputs', () => {
+    expect(ROLE_ROUTE_PATHS.admin.dashboard).toBe('/admin/dashboard');
+    expect(ROLE_ROUTE_PATHS.guard.gatePassScan).toBe('/guard/gatepass-scan');
+    expect(getRoleDefaultPath('admin')).toBe(ROLE_ROUTE_PATHS.admin.dashboard);
+    expect(getRoleProfilePath('PRJ')).toBe(ROLE_ROUTE_PATHS.prajurit.profile);
+    expect(getRoleMessagesPath('STF')).toBe(ROLE_ROUTE_PATHS.staf.messages);
+  });
+
+  it('maps global search result type and role to centralized route paths', () => {
+    expect(getGlobalSearchResultPath('task', 'PRJ')).toBe(ROLE_ROUTE_PATHS.prajurit.tasks);
+    expect(getGlobalSearchResultPath('task', 'KMD')).toBe(ROLE_ROUTE_PATHS.komandan.tasks);
+    expect(getGlobalSearchResultPath('user', 'SAD')).toBe(ROLE_ROUTE_PATHS.admin.users);
+    expect(getGlobalSearchResultPath('user', 'komandan')).toBe(ROLE_ROUTE_PATHS.komandan.personnel);
+    expect(getGlobalSearchResultPath('announcement', 'admin')).toBe(ROLE_ROUTE_PATHS.admin.announcements);
+    expect(getGlobalSearchResultPath('announcement', 'PRJ')).toBe(ROLE_ROUTE_PATHS.prajurit.dashboard);
+    expect(getGlobalSearchResultPath('announcement', 'unknown')).toBe(APP_ROUTE_PATHS.login);
+    expect(APP_ROUTE_PATHS.error).toBe('/error');
   });
 
   it('returns fallback paths and role options with code labels', () => {

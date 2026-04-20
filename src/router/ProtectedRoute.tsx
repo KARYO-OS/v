@@ -3,12 +3,12 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useFeatureStore } from '../store/featureStore';
 import { isPathEnabled } from '../lib/featureFlags';
-import { getRoleDefaultPath, getRoleFallbackPaths } from '../lib/rolePermissions';
+import { APP_ROUTE_PATHS, getRoleDefaultPath, getRoleFallbackPaths } from '../lib/rolePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import type { Role } from '../types';
 
 interface ProtectedRouteProps {
-  allowedRoles: Role[];
+  allowedRoles: readonly Role[];
 }
 
 function getRoleFallbackPath(role: Role, flags: ReturnType<typeof useFeatureStore.getState>['flags']): string | null {
@@ -35,11 +35,11 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   if (!isAuthenticated || !userRole) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={APP_ROUTE_PATHS.login} replace />;
   }
 
   if (!allowedRoles.includes(userRole)) {
-    return <Navigate to={getRoleDefaultPath(userRole) ?? '/login'} replace />;
+    return <Navigate to={getRoleDefaultPath(userRole) ?? APP_ROUTE_PATHS.login} replace />;
   }
 
   if (!isLoaded) {
@@ -51,7 +51,7 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     if (!fallbackPath || fallbackPath === pathname) {
       return (
         <Navigate
-          to="/error"
+          to={APP_ROUTE_PATHS.error}
           replace
           state={{
             code: '403',

@@ -10,6 +10,12 @@
 
 import type { User, CommandLevel } from '../types';
 
+export const APP_ROUTE_PATHS = {
+  root: '/',
+  login: '/login',
+  error: '/error',
+} as const;
+
 export const KNOWN_ROLES = ['admin', 'komandan', 'staf', 'guard', 'prajurit'] as const;
 export type KnownRole = typeof KNOWN_ROLES[number];
 
@@ -20,6 +26,55 @@ export const ROLE_CODE_MAP: Record<KnownRole, string> = {
   prajurit: 'PRJ',
   guard: 'PJP',
 };
+
+export const ROLE_ROUTE_PATHS = {
+  admin: {
+    dashboard: '/admin/dashboard',
+    satuan: '/admin/satuan',
+    users: '/admin/users',
+    analytics: '/admin/analytics',
+    logistics: '/admin/logistics',
+    documents: '/admin/documents',
+    announcements: '/admin/announcements',
+    schedule: '/admin/schedule',
+    attendance: '/admin/attendance',
+    gatePassMonitor: '/admin/gatepass-monitor',
+    posJaga: '/admin/pos-jaga',
+    audit: '/admin/audit',
+    settings: '/admin/settings',
+  },
+  komandan: {
+    dashboard: '/komandan/dashboard',
+    tasks: '/komandan/tasks',
+    personnel: '/komandan/personnel',
+    reports: '/komandan/reports',
+    evaluation: '/komandan/evaluation',
+    attendance: '/komandan/attendance',
+    logisticsRequest: '/komandan/logistics-request',
+    gatePassApproval: '/komandan/gatepass-approval',
+    gatePassMonitor: '/komandan/gatepass-monitor',
+    messages: '/komandan/messages',
+  },
+  prajurit: {
+    dashboard: '/prajurit/dashboard',
+    tasks: '/prajurit/tasks',
+    attendance: '/prajurit/attendance',
+    messages: '/prajurit/messages',
+    leave: '/prajurit/leave',
+    profile: '/prajurit/profile',
+    gatePass: '/prajurit/gatepass',
+    scanPos: '/prajurit/scan-pos',
+  },
+  guard: {
+    gatePassScan: '/guard/gatepass-scan',
+    discipline: '/guard/discipline',
+  },
+  staf: {
+    dashboard: '/staf/dashboard',
+    messages: '/staf/messages',
+    leaveReview: '/staf/leave-review',
+  },
+} as const;
 
 const ROLE_CODE_TO_ROLE: Record<string, KnownRole> = Object.fromEntries(
   Object.entries(ROLE_CODE_MAP).map(([role, code]) => [code, role]),
@@ -34,19 +89,33 @@ const ROLE_ACCESS_MAP: Record<KnownRole, string> = {
 };
 
 const ROLE_DEFAULT_PATH_MAP: Record<KnownRole, string> = {
-  admin: '/admin/dashboard',
-  komandan: '/komandan/dashboard',
-  staf: '/staf/dashboard',
-  prajurit: '/prajurit/dashboard',
-  guard: '/guard/gatepass-scan',
+  admin: ROLE_ROUTE_PATHS.admin.dashboard,
+  komandan: ROLE_ROUTE_PATHS.komandan.dashboard,
+  staf: ROLE_ROUTE_PATHS.staf.dashboard,
+  prajurit: ROLE_ROUTE_PATHS.prajurit.dashboard,
+  guard: ROLE_ROUTE_PATHS.guard.gatePassScan,
 };
 
 const ROLE_FALLBACK_PATH_MAP: Record<KnownRole, string[]> = {
-  admin: ['/admin/dashboard', '/admin/settings'],
-  komandan: ['/komandan/dashboard', '/komandan/tasks', '/komandan/attendance'],
-  staf: ['/staf/dashboard', '/staf/messages', '/staf/leave-review'],
-  prajurit: ['/prajurit/dashboard', '/prajurit/profile'],
-  guard: ['/guard/gatepass-scan', '/guard/discipline'],
+  admin: [ROLE_ROUTE_PATHS.admin.dashboard, ROLE_ROUTE_PATHS.admin.settings],
+  komandan: [ROLE_ROUTE_PATHS.komandan.dashboard, ROLE_ROUTE_PATHS.komandan.tasks, ROLE_ROUTE_PATHS.komandan.attendance],
+  staf: [ROLE_ROUTE_PATHS.staf.dashboard, ROLE_ROUTE_PATHS.staf.messages, ROLE_ROUTE_PATHS.staf.leaveReview],
+  prajurit: [ROLE_ROUTE_PATHS.prajurit.dashboard, ROLE_ROUTE_PATHS.prajurit.profile],
+  guard: [ROLE_ROUTE_PATHS.guard.gatePassScan, ROLE_ROUTE_PATHS.guard.discipline],
+};
+
+const ROLE_PROFILE_PATH_MAP: Record<KnownRole, string> = {
+  admin: ROLE_ROUTE_PATHS.admin.users,
+  komandan: ROLE_ROUTE_PATHS.komandan.personnel,
+  staf: ROLE_ROUTE_PATHS.staf.dashboard,
+  prajurit: ROLE_ROUTE_PATHS.prajurit.profile,
+  guard: ROLE_ROUTE_PATHS.guard.gatePassScan,
+};
+
+const ROLE_MESSAGES_PATH_MAP: Partial<Record<KnownRole, string>> = {
+  komandan: ROLE_ROUTE_PATHS.komandan.messages,
+  staf: ROLE_ROUTE_PATHS.staf.messages,
+  prajurit: ROLE_ROUTE_PATHS.prajurit.messages,
 };
 
 function humanizeRole(role: string): string {
@@ -93,6 +162,15 @@ export const ROLE_OPTIONS = KNOWN_ROLES.map((role) => ({
   description: ROLE_ACCESS_MAP[role],
 }));
 
+export const ROUTE_ROLE_GROUPS = {
+  adminOnly: ['admin'],
+  adminStaf: ['admin', 'staf'],
+  komandanShared: ['komandan', 'admin', 'staf'],
+  prajuritShared: ['prajurit', 'komandan', 'admin'],
+  guardShared: ['guard', 'admin'],
+  stafOnly: ['staf'],
+} as const satisfies Record<string, readonly KnownRole[]>;
+
 export function getRoleCode(role: string | null | undefined): string {
   const normalized = normalizeRole(role);
   if (!normalized) return '—';
@@ -117,6 +195,39 @@ export function getRoleFallbackPaths(role: string | null | undefined): string[] 
   const normalized = normalizeRole(role);
   if (!normalized || !isKnownRole(normalized)) return [];
   return ROLE_FALLBACK_PATH_MAP[normalized];
+}
+
+export function getRoleProfilePath(role: string | null | undefined): string | null {
+  const normalized = normalizeRole(role);
+  if (!normalized || !isKnownRole(normalized)) return null;
+  return ROLE_PROFILE_PATH_MAP[normalized] ?? null;
+}
+
+export function getRoleMessagesPath(role: string | null | undefined): string | null {
+  const normalized = normalizeRole(role);
+  if (!normalized || !isKnownRole(normalized)) return null;
+  return ROLE_MESSAGES_PATH_MAP[normalized] ?? null;
+}
+
+export type GlobalSearchResultType = 'task' | 'user' | 'announcement';
+
+export function getGlobalSearchResultPath(type: GlobalSearchResultType, role: string | null | undefined): string {
+  if (type === 'task') {
+    if (isRolePrajurit(role)) return ROLE_ROUTE_PATHS.prajurit.tasks;
+    if (isRoleKomandan(role)) return ROLE_ROUTE_PATHS.komandan.tasks;
+    return getRoleDefaultPath(role) ?? APP_ROUTE_PATHS.login;
+  }
+
+  if (type === 'user') {
+    if (isRoleAdmin(role)) return ROLE_ROUTE_PATHS.admin.users;
+    if (isRoleKomandan(role)) return ROLE_ROUTE_PATHS.komandan.personnel;
+    return getRoleDefaultPath(role) ?? APP_ROUTE_PATHS.login;
+  }
+
+  if (isRoleAdmin(role)) return ROLE_ROUTE_PATHS.admin.announcements;
+  if (isRoleKomandan(role)) return ROLE_ROUTE_PATHS.komandan.dashboard;
+  if (isRolePrajurit(role)) return ROLE_ROUTE_PATHS.prajurit.dashboard;
+  return getRoleDefaultPath(role) ?? APP_ROUTE_PATHS.login;
 }
 
 export function hasRole(role: string | null | undefined, expectedRole: KnownRole): boolean {
