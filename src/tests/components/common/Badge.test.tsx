@@ -91,7 +91,7 @@ describe('RoleBadge', () => {
     { role: 'admin', label: 'Super Admin' },
     { role: 'komandan', label: 'Komandan' },
     { role: 'prajurit', label: 'Prajurit' },
-    { role: 'guard', label: 'Petugas Jaga' },
+    { role: 'guard', label: 'Petugas Jaga / Provost' },
     { role: 'staf', label: 'Staf' },
   ] as const;
 
