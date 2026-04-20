@@ -235,6 +235,9 @@ bash scripts/setup.sh
 
 # Dev server
 npm run dev
+
+# Verifikasi koneksi frontend -> Supabase
+npm run check:supabase
 ```
 
 Akses di `http://localhost:5173`
@@ -249,6 +252,18 @@ git push origin main
 ## Konfigurasi Supabase
 
 Lihat [DEPLOYMENT.md](./DEPLOYMENT.md) untuk panduan lengkap mendapatkan credentials dan menjalankan migrasi database.
+
+Untuk memastikan frontend benar-benar terhubung ke project Supabase yang benar:
+
+```bash
+npm run check:supabase
+```
+
+Jika ingin simulasi mode tanpa backend (offline/local UI only), gunakan:
+
+```bash
+npm run dev:offline
+```
 
 ---
 

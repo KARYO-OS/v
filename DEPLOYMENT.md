@@ -68,6 +68,14 @@ npm run dev
 
 Akses di `http://localhost:5173`
 
+### Cek koneksi frontend ke Supabase
+
+```bash
+npm run check:supabase
+```
+
+Perintah ini memvalidasi `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` dan mengecek endpoint `auth` serta `rest` Supabase.
+
 ---
 
 ## 3. Environment Variables

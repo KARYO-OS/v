@@ -8,9 +8,11 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "env -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY vite",
+    "dev": "vite",
+    "dev:offline": "env -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY vite",
     "build": "tsc -b && vite build",
     "sync:supabase": "bash scripts/sync-supabase.sh",
+    "check:supabase": "bash scripts/check-supabase.sh",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
