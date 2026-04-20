@@ -30,6 +30,7 @@
     "html5-qrcode": "^2.3.8",
     "idb": "^8.0.3",
     "lucide-react": "^1.8.0",
+    "pg": "^8.20.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-qr-code": "^2.0.18",
