@@ -16,7 +16,7 @@ import Input from '../../components/common/Input';
 
 type Tab = 'inbox' | 'sent';
 type ComposeMode = 'personal' | 'group';
-type GroupTargetRole = 'all' | 'prajurit' | 'guard' | 'staf' | 'komandan';
+type GroupTargetRole = 'all' | 'admin' | 'komandan' | 'staf' | 'guard' | 'prajurit';
 
 export default function Messages() {
   const { user } = useAuthStore();
@@ -305,6 +305,7 @@ export default function Messages() {
                 onChange={(e) => setComposeForm({ ...composeForm, target_role: e.target.value as GroupTargetRole })}
               >
                 <option value="all">Semua role</option>
+                <option value="admin">Admin</option>
                 <option value="prajurit">Prajurit</option>
                 <option value="guard">Guard</option>
                 <option value="staf">Staf</option>
