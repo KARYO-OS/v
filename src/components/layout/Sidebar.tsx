@@ -83,7 +83,6 @@ const NAV_ITEMS: Record<Role, NavItem[]> = {
     { path: ROLE_ROUTE_PATHS.admin.attendance,    label: 'Rekap Absensi',   icon: 'ClipboardCheck' },
     { path: ROLE_ROUTE_PATHS.admin.apel,          label: 'Apel Digital',    icon: 'Bell' },
     { path: ROLE_ROUTE_PATHS.admin.kegiatan,      label: 'Kalender Kegiatan', icon: 'CalendarDays' },
-    { path: ROLE_ROUTE_PATHS.staf.laporanOps,     label: 'Laporan Ops',     icon: 'FileText' },
     { path: ROLE_ROUTE_PATHS.staf.leaveReview,    label: 'Izin Personel',   icon: 'UserCheck' },
     { path: ROLE_ROUTE_PATHS.staf.laporanOps,     label: 'Laporan Ops',     icon: 'FileText' },
     { path: ROLE_ROUTE_PATHS.admin.schedule,      label: 'Jadwal Shift',    icon: 'CalendarDays' },
