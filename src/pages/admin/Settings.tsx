@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Upload, AlertTriangle } from 'lucide-react';
+import { Download, Upload, AlertTriangle, CloudSun } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import Input from '../../components/common/Input';
 import PageHeader from '../../components/ui/PageHeader';
+import WeatherWidget from '../../components/ui/WeatherWidget';
 import { supabase } from '../../lib/supabase';
 import { clearAuditLogs } from '../../lib/api/auditLogs';
 import { handleError } from '../../lib/handleError';
@@ -80,7 +82,7 @@ export default function Settings() {
   const [restorePreview, setRestorePreview] = useState<BackupData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
-  const { settings, updatePlatformBranding, isSaving: isSavingBranding } = usePlatformStore();
+  const { settings, updatePlatformBranding, isSaving: isSavingBranding, weatherSettings, updateWeatherSettings } = usePlatformStore();
   const {
     flags,
     isLoading: isFeatureFlagsLoading,
@@ -93,6 +95,11 @@ export default function Settings() {
   const [platformNameInput, setPlatformNameInput] = useState(settings.platformName);
   const [platformTaglineInput, setPlatformTaglineInput] = useState(settings.platformTagline);
   const [platformLogoInput, setPlatformLogoInput] = useState(settings.platformLogoUrl ?? '');
+
+  // ── Weather / API Eksternal ────────────────────────────────────────────────
+  const [weatherApiKeyInput, setWeatherApiKeyInput] = useState(weatherSettings.weatherApiKey);
+  const [weatherCityInput, setWeatherCityInput] = useState(weatherSettings.weatherCity);
+  const [weatherPreviewKey, setWeatherPreviewKey] = useState(0); // increment to re-trigger preview
 
   // ── Backup otomatis terjadwal ──────────────────────────────────────────────
   const AUTO_BACKUP_KEY = 'karyo_auto_backup_enabled';
@@ -381,6 +388,15 @@ export default function Settings() {
     } catch (error) {
       showNotification(handleError(error, 'Gagal memperbarui kontrol fitur global'), 'error');
     }
+  };
+
+  const handleWeatherSave = () => {
+    updateWeatherSettings({
+      weatherApiKey: weatherApiKeyInput.trim(),
+      weatherCity: weatherCityInput.trim(),
+    });
+    setWeatherPreviewKey((k) => k + 1);
+    showNotification('Pengaturan cuaca disimpan', 'success');
   };
 
   return (
@@ -957,6 +973,67 @@ export default function Settings() {
         <div className="rounded-xl border border-accent-gold/35 bg-accent-gold/10 p-4">
           <p className="text-sm text-accent-gold">
             ⚠ Pengaturan lanjutan (konfigurasi Supabase, RLS policy, dll.) dikelola langsung melalui Supabase Dashboard.
+          </p>
+        </div>
+
+        {/* ── Integrasi API Eksternal — Cuaca ── */}
+        <div className="app-card p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
+              <CloudSun className="h-4 w-4" />
+            </span>
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-text-primary">Integrasi Cuaca (OpenWeatherMap)</h2>
+              <p className="text-xs text-text-muted">Widget cuaca akan tampil di dashboard Admin dan Komandan.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="API Key OpenWeatherMap"
+              type="password"
+              placeholder="Masukkan API Key (gratis di openweathermap.org)"
+              value={weatherApiKeyInput}
+              onChange={(e) => setWeatherApiKeyInput(e.target.value)}
+            />
+            <Input
+              label="Nama Kota (Bahasa Inggris)"
+              placeholder="Contoh: Jakarta, Surabaya, Bandung"
+              value={weatherCityInput}
+              onChange={(e) => setWeatherCityInput(e.target.value)}
+            />
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <a
+              href="https://home.openweathermap.org/api_keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary underline underline-offset-2"
+            >
+              Daftar/ambil API Key gratis →
+            </a>
+            <Button
+              size="sm"
+              onClick={handleWeatherSave}
+            >
+              Simpan & Pratinjau
+            </Button>
+          </div>
+
+          {(weatherSettings.weatherApiKey || weatherApiKeyInput) && (
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-medium text-text-muted">Pratinjau widget:</p>
+              <WeatherWidget
+                key={weatherPreviewKey}
+                apiKey={weatherSettings.weatherApiKey}
+                city={weatherSettings.weatherCity}
+              />
+            </div>
+          )}
+
+          <p className="mt-3 text-xs text-text-muted">
+            API Key dan nama kota disimpan di perangkat ini (localStorage). Tidak dikirim ke server.
           </p>
         </div>
       </div>

@@ -7,6 +7,7 @@ import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import { StatCardsSkeleton } from '../../components/common/Skeleton';
 import { ICONS } from '../../icons';
+import { useSatuans } from '../../hooks/useSatuans';
 import { fetchAnalyticsSnapshot, type AnalyticsSnapshot } from '../../lib/api/analytics';
 import { handleError } from '../../lib/handleError';
 
@@ -72,12 +73,14 @@ export default function Analytics() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
+  const [filterSatuan, setFilterSatuan] = useState('');
+  const { satuans } = useSatuans({ onlyActive: false });
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (satuan?: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await fetchAnalyticsSnapshot();
+      const data = await fetchAnalyticsSnapshot(satuan || null);
       setSnapshot(data);
       setLastFetchedAt(new Date());
     } catch (err) {
@@ -88,8 +91,8 @@ export default function Analytics() {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void load(filterSatuan);
+  }, [load, filterSatuan]);
 
   // Task status bar chart data
   const taskChartData = useMemo(
@@ -189,9 +192,22 @@ export default function Analytics() {
           title="Dashboard Analitik"
           subtitle={`Data diperbarui pada ${lastFetchedAt ? lastFetchedAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—'}`}
           actions={
-            <Button variant="outline" onClick={() => void load()} isLoading={isLoading}>
-              Muat Ulang
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                className="form-control text-sm"
+                value={filterSatuan}
+                onChange={(e) => setFilterSatuan(e.target.value)}
+                aria-label="Filter analitik per satuan"
+              >
+                <option value="">Semua Satuan</option>
+                {satuans.map((s) => (
+                  <option key={s.id} value={s.nama}>{s.nama}</option>
+                ))}
+              </select>
+              <Button variant="outline" onClick={() => void load(filterSatuan)} isLoading={isLoading}>
+                Muat Ulang
+              </Button>
+            </div>
           }
         />
 

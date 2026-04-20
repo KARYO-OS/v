@@ -13,6 +13,7 @@ import { usePagination } from '../../hooks/usePagination';
 import { TableSkeleton } from '../../components/common/Skeleton';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
+import { useSatuans } from '../../hooks/useSatuans';
 import { supabase } from '../../lib/supabase';
 import { canWrite } from '../../lib/rolePermissions';
 import type { Attendance } from '../../types';
@@ -40,6 +41,7 @@ export default function AttendanceReport() {
   const { user } = useAuthStore();
   const { showNotification } = useUIStore();
   const canWriteAttendance = canWrite(user, 'attendance');
+  const { satuans } = useSatuans({ onlyActive: false });
 
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,6 +50,7 @@ export default function AttendanceReport() {
   });
   const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterSatuan, setFilterSatuan] = useState('');
 
   // Manual entry modal state
   const [showManual, setShowManual] = useState(false);
@@ -67,11 +70,11 @@ export default function AttendanceReport() {
       p_date_from: dateFrom,
       p_date_to: dateTo,
       p_status: filterStatus || null,
-      p_satuan: null,
+      p_satuan: filterSatuan || null,
     });
     setAttendances((data as Attendance[]) ?? []);
     setIsLoading(false);
-  }, [dateFrom, dateTo, filterStatus]);
+  }, [dateFrom, dateTo, filterStatus, filterSatuan]);
 
   useEffect(() => { void fetchAttendance(); }, [fetchAttendance]);
 
@@ -132,7 +135,7 @@ export default function AttendanceReport() {
   const izin = attendances.filter((a) => a.status === 'izin').length;
 
   const { currentPage, totalPages, totalItems, paginated, setPage } = usePagination(attendances, PAGE_SIZE);
-  const hasFilters = filterStatus !== '' || dateFrom !== getDefaultDateFrom() || dateTo !== new Date().toISOString().split('T')[0];
+  const hasFilters = filterStatus !== '' || filterSatuan !== '' || dateFrom !== getDefaultDateFrom() || dateTo !== new Date().toISOString().split('T')[0];
 
   return (
     <>
@@ -148,8 +151,8 @@ export default function AttendanceReport() {
           meta={
             <>
               <span>Total entri: {total}</span>
-              <span>Status filter: {filterStatus || 'Semua'}</span>
-              <span>{totalItems} data terhitung</span>
+              <span>Satuan: {filterSatuan || 'Semua'}</span>
+              <span>Status: {filterStatus || 'Semua'}</span>
             </>
           }
           actions={
@@ -209,6 +212,17 @@ export default function AttendanceReport() {
               <option value="izin">Izin</option>
               <option value="dinas_luar">Dinas Luar</option>
             </select>
+            <select
+              value={filterSatuan}
+              onChange={(e) => { setFilterSatuan(e.target.value); setPage(1); }}
+              className="form-control"
+              aria-label="Filter per satuan"
+            >
+              <option value="">Semua Satuan</option>
+              {satuans.map((s) => (
+                <option key={s.id} value={s.nama}>{s.nama}</option>
+              ))}
+            </select>
             <Button variant="secondary" onClick={handleExportCSV} leftIcon={<Download className="h-4 w-4" />}>Export CSV</Button>
             <Button variant="ghost" onClick={() => window.print()} data-print-hide leftIcon={<Printer className="h-4 w-4" />}>Cetak / PDF</Button>
             {hasFilters && (
@@ -218,6 +232,7 @@ export default function AttendanceReport() {
                   setDateFrom(getDefaultDateFrom());
                   setDateTo(new Date().toISOString().split('T')[0]);
                   setFilterStatus('');
+                  setFilterSatuan('');
                   setPage(1);
                 }}
                 leftIcon={<RotateCcw className="h-4 w-4" />}

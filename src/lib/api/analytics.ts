@@ -61,7 +61,7 @@ function computeDailyAttendanceRates(
   return Array.from(map.entries()).map(([date, v]) => ({ date, ...v }));
 }
 
-export async function fetchAnalyticsSnapshot(): Promise<AnalyticsSnapshot> {
+export async function fetchAnalyticsSnapshot(satuan?: string | null): Promise<AnalyticsSnapshot> {
   const today = new Date();
   const day14Ago = new Date(today);
   day14Ago.setDate(today.getDate() - 13);
@@ -74,14 +74,24 @@ export async function fetchAnalyticsSnapshot(): Promise<AnalyticsSnapshot> {
 
   const firstOfMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
 
+  let attendanceQuery = supabase
+    .from('attendance')
+    .select('tanggal, status')
+    .gte('tanggal', day14Ago8601)
+    .lte('tanggal', todayStr);
+
+  let usersQuery = supabase.from('users').select('role').eq('is_active', true);
+
+  // Filter by satuan when provided (via user join)
+  if (satuan) {
+    attendanceQuery = attendanceQuery.eq('satuan', satuan);
+    usersQuery = usersQuery.eq('satuan', satuan);
+  }
+
   const [tasksRes, attendanceRes, usersRes, gatePassRes, gatePassOverdueRes] = await Promise.all([
     supabase.from('tasks').select('status').not('status', 'is', null),
-    supabase
-      .from('attendance')
-      .select('tanggal, status')
-      .gte('tanggal', day14Ago8601)
-      .lte('tanggal', todayStr),
-    supabase.from('users').select('role').eq('is_active', true),
+    attendanceQuery,
+    usersQuery,
     supabase
       .from('gate_pass')
       .select('id', { count: 'exact', head: true })

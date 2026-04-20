@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
 import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/common/Button';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import EmptyState from '../../components/common/EmptyState';
+import WeatherWidget from '../../components/ui/WeatherWidget';
 import { StatCardsSkeleton } from '../../components/common/Skeleton';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
@@ -16,6 +17,7 @@ import { useAdminDashboardStore } from '../../store/adminDashboardStore';
 import { subscribeDataChanges } from '../../lib/dataSync';
 import { useUsers } from '../../hooks/useUsers';
 import { useFeatureStore } from '../../store/featureStore';
+import { usePlatformStore } from '../../store/platformStore';
 import { isPathEnabled } from '../../lib/featureFlags';
 
 const actionLabels: Record<string, string> = {
@@ -48,9 +50,11 @@ const quickLinks: QuickLink[] = [
 ];
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, showNotification } = useUIStore();
   const { flags } = useFeatureStore();
+  const { weatherSettings } = usePlatformStore();
   const { users: latestUsers, isLoading: isMembersLoading, deleteUser } = useUsers({
     orderBy: 'created_at',
     ascending: false,
@@ -200,6 +204,13 @@ export default function AdminDashboard() {
             {error}
           </div>
         )}
+
+        {/* Weather Widget */}
+        <WeatherWidget
+          apiKey={weatherSettings.weatherApiKey || null}
+          city={weatherSettings.weatherCity || null}
+          onConfigureClick={() => navigate('/admin/settings')}
+        />
 
         {/* Stats */}
         {isLoading ? (

@@ -12,7 +12,9 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versi
 - Terminologi `guard` pada dokumentasi diselaraskan menjadi **Petugas Jaga / Provost**.
 - Penjelasan akses admin diperjelas: fokus pada konfigurasi sistem dan audit, bukan input operasional harian.
 - **Logistics** — tombol "Tambah Item" dan "Tinjau" permintaan logistik kini hanya tampil untuk admin dan staf S-4; staf bidang lain mendapat label read-only.
-- **AttendanceReport** — tambah tombol "Tambah Entri" untuk staf S-1 dan admin; buka modal input manual (personel, tanggal, status, check-in/out, keterangan).
+- **AttendanceReport** — tambah tombol "Tambah Entri" untuk staf S-1 dan admin; buka modal input manual (personel, tanggal, status, check-in/out, keterangan). Tambah filter **per satuan** (dropdown semua satuan aktif).
+- **Analytics** — tambah filter **per satuan** sehingga chart distribusi kehadiran dan personel dapat disaring per unit.
+- **Settings** — tambah panel "Integrasi Cuaca (OpenWeatherMap)" untuk mengkonfigurasi API key dan nama kota; pratinjau widget langsung dari halaman pengaturan.
 
 ### Ditambahkan
 - Fondasi implementasi database untuk penajaman akses per bidang staf (S-1/S-3/S-4), akses discipline notes untuk guard/provost, dan pembatasan akses operasional admin.
