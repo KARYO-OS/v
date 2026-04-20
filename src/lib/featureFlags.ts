@@ -93,13 +93,13 @@ export const FEATURE_DEFINITIONS: FeatureDefinition[] = [
     key: 'leave_requests',
     label: 'Permohonan Izin',
     description: 'Pengajuan dan pemantauan izin/cuti personel.',
-    paths: ['/prajurit/leave'],
+    paths: ['/prajurit/leave', '/staf/leave-review'],
   },
   {
     key: 'reports',
     label: 'Laporan & Evaluasi',
     description: 'Halaman laporan dan evaluasi untuk peran komandan.',
-    paths: ['/komandan/reports', '/komandan/evaluation'],
+    paths: ['/komandan/reports', '/komandan/evaluation', '/guard/discipline'],
   },
 ];
 

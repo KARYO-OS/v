@@ -6,6 +6,7 @@ import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
 import { useMessages } from '../../hooks/useMessages';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
+import { usePWAInstall } from '../../hooks/usePWAInstall';
 import { isPathEnabled } from '../../lib/featureFlags';
 import GlobalSearch from '../ui/GlobalSearch';
 import OfflineIndicator from '../common/OfflineIndicator';
@@ -37,6 +38,7 @@ export default function Navbar({ title }: NavbarProps) {
   const { toggleSidebar, toggleDarkMode, isDarkMode } = useUIStore();
   const { unreadCount } = useMessages();
   const { isOnline, isSyncing, syncStats, requestSync, getLastSyncTimeFormatted } = useOfflineSync();
+  const { isInstallAvailable, installApp } = usePWAInstall();
   const navigate = useNavigate();
   const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -224,6 +226,21 @@ export default function Navbar({ title }: NavbarProps) {
                   {ICONS.Settings ? <ICONS.Settings className="w-4 h-4 text-text-muted" aria-hidden="true" /> : null}
                   Pengaturan
                 </Link>
+              )}
+
+              {isInstallAvailable && (
+                <button
+                  role="menuitem"
+                  type="button"
+                  onClick={() => {
+                    void installApp();
+                    setIsAvatarDropdownOpen(false);
+                  }}
+                  className="dropdown-item w-full text-left"
+                >
+                  {ICONS.Download ? <ICONS.Download className="w-4 h-4 text-text-muted" aria-hidden="true" /> : null}
+                  Install Aplikasi
+                </button>
               )}
 
               <div className="my-1 border-t border-surface/60" />

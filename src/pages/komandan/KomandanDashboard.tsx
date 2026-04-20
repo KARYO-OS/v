@@ -6,20 +6,24 @@ import TaskCard from '../../components/ui/TaskCard';
 import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import WeatherWidget from '../../components/ui/WeatherWidget';
 import { CardListSkeleton } from '../../components/common/Skeleton';
 import { useTasks } from '../../hooks/useTasks';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
+import { usePlatformStore } from '../../store/platformStore';
 import { ICONS } from '../../icons';
 import { useKomandanDashboardStore } from '../../store/komandanDashboardStore';
 import { subscribeDataChanges } from '../../lib/dataSync';
 import { isPathEnabled } from '../../lib/featureFlags';
+import { getKomandanScopeLabel } from '../../lib/rolePermissions';
 
 export default function KomandanDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { flags } = useFeatureStore();
+  const { weatherSettings } = usePlatformStore();
   const { tasks, isLoading: tasksLoading, refetch: refetchTasks } = useTasks({ assignedBy: user?.id });
   const { announcements } = useAnnouncements();
   const { onlineCount, totalPersonel, error, fetchStats } = useKomandanDashboardStore();
@@ -66,7 +70,7 @@ export default function KomandanDashboard() {
       <div className="space-y-6">
         <PageHeader
           title={`${user?.pangkat ? `${user.pangkat} ` : ''}${user?.nama ?? 'Komandan'}`}
-          subtitle={`Satuan: ${user?.satuan ?? '—'} · ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
+          subtitle={`${getKomandanScopeLabel(user?.level_komando)} · Satuan: ${user?.satuan ?? '—'} · ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
           meta={
             <>
               <span>Aktif: {onlineCount}/{totalPersonel}</span>
@@ -96,6 +100,13 @@ export default function KomandanDashboard() {
             {error}
           </div>
         )}
+
+        {/* Weather Widget */}
+        <WeatherWidget
+          apiKey={weatherSettings.weatherApiKey || null}
+          city={weatherSettings.weatherCity || null}
+          onConfigureClick={() => navigate('/admin/settings')}
+        />
 
         <StatsGrid>
           {canOpenPersonnel && <StatCard accent="blue" icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Personel" value={totalPersonel} />}

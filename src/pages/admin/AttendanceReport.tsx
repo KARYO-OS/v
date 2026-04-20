@@ -1,14 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Layers3, CalendarDays, Filter, Download, Printer, RotateCcw } from 'lucide-react';
+import { Layers3, CalendarDays, Filter, Download, Printer, RotateCcw, Plus } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
+import Modal from '../../components/common/Modal';
+import Input from '../../components/common/Input';
+import UserSearchSelect from '../../components/common/UserSearchSelect';
 import PageHeader from '../../components/ui/PageHeader';
 import { AttendanceBadge } from '../../components/common/Badge';
 import Pagination from '../../components/ui/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import { TableSkeleton } from '../../components/common/Skeleton';
+import { useAuthStore } from '../../store/authStore';
+import { useUIStore } from '../../store/uiStore';
+import { useSatuans } from '../../hooks/useSatuans';
 import { supabase } from '../../lib/supabase';
+import { canWrite } from '../../lib/rolePermissions';
 import type { Attendance } from '../../types';
 
 const PAGE_SIZE = 50;
@@ -31,6 +38,11 @@ function downloadCSV(rows: string[][], filename: string) {
 }
 
 export default function AttendanceReport() {
+  const { user } = useAuthStore();
+  const { showNotification } = useUIStore();
+  const canWriteAttendance = canWrite(user, 'attendance');
+  const { satuans } = useSatuans({ onlyActive: false });
+
   const [attendances, setAttendances] = useState<Attendance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState(() => {
@@ -38,6 +50,19 @@ export default function AttendanceReport() {
   });
   const [dateTo, setDateTo] = useState(new Date().toISOString().split('T')[0]);
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterSatuan, setFilterSatuan] = useState('');
+
+  // Manual entry modal state
+  const [showManual, setShowManual] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    user_id: '',
+    tanggal: new Date().toISOString().split('T')[0],
+    status: 'hadir' as 'hadir' | 'alpa' | 'sakit' | 'izin' | 'dinas_luar',
+    check_in: '',
+    check_out: '',
+    keterangan: '',
+  });
 
   const fetchAttendance = useCallback(async () => {
     setIsLoading(true);
@@ -45,13 +70,46 @@ export default function AttendanceReport() {
       p_date_from: dateFrom,
       p_date_to: dateTo,
       p_status: filterStatus || null,
-      p_satuan: null,
+      p_satuan: filterSatuan || null,
     });
     setAttendances((data as Attendance[]) ?? []);
     setIsLoading(false);
-  }, [dateFrom, dateTo, filterStatus]);
+  }, [dateFrom, dateTo, filterStatus, filterSatuan]);
 
   useEffect(() => { void fetchAttendance(); }, [fetchAttendance]);
+
+  const handleManualSave = async () => {
+    if (!manualForm.user_id) {
+      showNotification('Pilih personel terlebih dahulu', 'error');
+      return;
+    }
+    if (!user?.id || !user.role) {
+      showNotification('Sesi tidak valid', 'error');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.rpc('api_upsert_attendance', {
+        p_caller_id: user.id,
+        p_caller_role: user.role,
+        p_user_id: manualForm.user_id,
+        p_tanggal: manualForm.tanggal,
+        p_status: manualForm.status,
+        p_check_in: manualForm.check_in || null,
+        p_check_out: manualForm.check_out || null,
+        p_keterangan: manualForm.keterangan || null,
+      });
+      if (error) throw error;
+      showNotification('Entri absensi berhasil disimpan', 'success');
+      setShowManual(false);
+      setManualForm({ user_id: '', tanggal: new Date().toISOString().split('T')[0], status: 'hadir', check_in: '', check_out: '', keterangan: '' });
+      await fetchAttendance();
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal menyimpan entri', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleExportCSV = () => {
     const headers = ['Tanggal', 'NRP', 'Nama', 'Satuan', 'Pangkat', 'Status', 'Check-In', 'Check-Out', 'Keterangan'];
@@ -77,10 +135,11 @@ export default function AttendanceReport() {
   const izin = attendances.filter((a) => a.status === 'izin').length;
 
   const { currentPage, totalPages, totalItems, paginated, setPage } = usePagination(attendances, PAGE_SIZE);
-  const hasFilters = filterStatus !== '' || dateFrom !== getDefaultDateFrom() || dateTo !== new Date().toISOString().split('T')[0];
+  const hasFilters = filterStatus !== '' || filterSatuan !== '' || dateFrom !== getDefaultDateFrom() || dateTo !== new Date().toISOString().split('T')[0];
 
   return (
-    <DashboardLayout title="Rekap Kehadiran">
+    <>
+      <DashboardLayout title="Rekap Kehadiran">
       <div className="space-y-5 animate-fade-up">
         <PageHeader
           title="Rekap Kehadiran"
@@ -92,9 +151,16 @@ export default function AttendanceReport() {
           meta={
             <>
               <span>Total entri: {total}</span>
-              <span>Status filter: {filterStatus || 'Semua'}</span>
-              <span>{totalItems} data terhitung</span>
+              <span>Satuan: {filterSatuan || 'Semua'}</span>
+              <span>Status: {filterStatus || 'Semua'}</span>
             </>
+          }
+          actions={
+            canWriteAttendance ? (
+              <Button onClick={() => setShowManual(true)} leftIcon={<Plus className="h-4 w-4" />}>
+                Tambah Entri
+              </Button>
+            ) : undefined
           }
         />
 
@@ -146,6 +212,17 @@ export default function AttendanceReport() {
               <option value="izin">Izin</option>
               <option value="dinas_luar">Dinas Luar</option>
             </select>
+            <select
+              value={filterSatuan}
+              onChange={(e) => { setFilterSatuan(e.target.value); setPage(1); }}
+              className="form-control"
+              aria-label="Filter per satuan"
+            >
+              <option value="">Semua Satuan</option>
+              {satuans.map((s) => (
+                <option key={s.id} value={s.nama}>{s.nama}</option>
+              ))}
+            </select>
             <Button variant="secondary" onClick={handleExportCSV} leftIcon={<Download className="h-4 w-4" />}>Export CSV</Button>
             <Button variant="ghost" onClick={() => window.print()} data-print-hide leftIcon={<Printer className="h-4 w-4" />}>Cetak / PDF</Button>
             {hasFilters && (
@@ -155,6 +232,7 @@ export default function AttendanceReport() {
                   setDateFrom(getDefaultDateFrom());
                   setDateTo(new Date().toISOString().split('T')[0]);
                   setFilterStatus('');
+                  setFilterSatuan('');
                   setPage(1);
                 }}
                 leftIcon={<RotateCcw className="h-4 w-4" />}
@@ -236,6 +314,74 @@ export default function AttendanceReport() {
         )}
       </div>
     </DashboardLayout>
+
+    {/* Manual attendance entry modal */}
+    <Modal
+      isOpen={showManual}
+      onClose={() => setShowManual(false)}
+      title="Tambah Entri Absensi Manual"
+      size="md"
+      footer={
+        <>
+          <Button variant="ghost" onClick={() => setShowManual(false)}>Batal</Button>
+          <Button isLoading={isSaving} onClick={() => void handleManualSave()}>Simpan</Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-text-muted mb-1.5">Personel</label>
+          <UserSearchSelect
+            value={manualForm.user_id}
+            onChange={(id) => setManualForm((f) => ({ ...f, user_id: id }))}
+            placeholder="Cari NRP atau nama..."
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Tanggal"
+            type="date"
+            value={manualForm.tanggal}
+            onChange={(e) => setManualForm((f) => ({ ...f, tanggal: e.target.value }))}
+          />
+          <div>
+            <label className="block text-sm font-medium text-text-muted mb-1.5">Status</label>
+            <select
+              value={manualForm.status}
+              onChange={(e) => setManualForm((f) => ({ ...f, status: e.target.value as typeof f.status }))}
+              className="form-control w-full"
+            >
+              <option value="hadir">Hadir</option>
+              <option value="alpa">Alpa</option>
+              <option value="sakit">Sakit</option>
+              <option value="izin">Izin</option>
+              <option value="dinas_luar">Dinas Luar</option>
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Check-In (opsional)"
+            type="time"
+            value={manualForm.check_in}
+            onChange={(e) => setManualForm((f) => ({ ...f, check_in: e.target.value }))}
+          />
+          <Input
+            label="Check-Out (opsional)"
+            type="time"
+            value={manualForm.check_out}
+            onChange={(e) => setManualForm((f) => ({ ...f, check_out: e.target.value }))}
+          />
+        </div>
+        <Input
+          label="Keterangan (opsional)"
+          placeholder="Mis. izin keluarga, sakit dengan surat dokter..."
+          value={manualForm.keterangan}
+          onChange={(e) => setManualForm((f) => ({ ...f, keterangan: e.target.value }))}
+        />
+      </div>
+    </Modal>
+    </>
   );
 }
 

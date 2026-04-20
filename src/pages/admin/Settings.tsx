@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Upload, AlertTriangle } from 'lucide-react';
+import { Download, Upload, AlertTriangle, CloudSun } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import Input from '../../components/common/Input';
 import PageHeader from '../../components/ui/PageHeader';
+import WeatherWidget from '../../components/ui/WeatherWidget';
 import { supabase } from '../../lib/supabase';
 import { clearAuditLogs } from '../../lib/api/auditLogs';
 import { handleError } from '../../lib/handleError';
@@ -80,7 +82,7 @@ export default function Settings() {
   const [restorePreview, setRestorePreview] = useState<BackupData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
-  const { settings, updatePlatformBranding, isSaving: isSavingBranding } = usePlatformStore();
+  const { settings, updatePlatformBranding, isSaving: isSavingBranding, weatherSettings, updateWeatherSettings } = usePlatformStore();
   const {
     flags,
     isLoading: isFeatureFlagsLoading,
@@ -93,6 +95,93 @@ export default function Settings() {
   const [platformNameInput, setPlatformNameInput] = useState(settings.platformName);
   const [platformTaglineInput, setPlatformTaglineInput] = useState(settings.platformTagline);
   const [platformLogoInput, setPlatformLogoInput] = useState(settings.platformLogoUrl ?? '');
+
+  // ── Weather / API Eksternal ────────────────────────────────────────────────
+  const [weatherApiKeyInput, setWeatherApiKeyInput] = useState(weatherSettings.weatherApiKey);
+  const [weatherCityInput, setWeatherCityInput] = useState(weatherSettings.weatherCity);
+  const [weatherPreviewKey, setWeatherPreviewKey] = useState(0); // increment to re-trigger preview
+
+  // ── Backup otomatis terjadwal ──────────────────────────────────────────────
+  const AUTO_BACKUP_KEY = 'karyo_auto_backup_enabled';
+  const AUTO_BACKUP_INTERVAL_KEY = 'karyo_auto_backup_interval_days';
+  const AUTO_BACKUP_LAST_KEY = 'karyo_auto_backup_last_at';
+
+  const [autoBackupEnabled, setAutoBackupEnabled] = useState<boolean>(() => {
+    return localStorage.getItem(AUTO_BACKUP_KEY) === 'true';
+  });
+  const [autoBackupIntervalDays, setAutoBackupIntervalDays] = useState<number>(() => {
+    return Number(localStorage.getItem(AUTO_BACKUP_INTERVAL_KEY) ?? '7');
+  });
+  const [lastAutoBackupAt, setLastAutoBackupAt] = useState<string | null>(() => {
+    return localStorage.getItem(AUTO_BACKUP_LAST_KEY);
+  });
+  const [isAutoExporting, setIsAutoExporting] = useState(false);
+
+  const nextAutoBackupDue = useMemo<Date | null>(() => {
+    if (!autoBackupEnabled || !lastAutoBackupAt) return null;
+    const last = new Date(lastAutoBackupAt);
+    last.setDate(last.getDate() + autoBackupIntervalDays);
+    return last;
+  }, [autoBackupEnabled, lastAutoBackupAt, autoBackupIntervalDays]);
+
+  const isAutoBackupOverdue = useMemo<boolean>(() => {
+    if (!autoBackupEnabled) return false;
+    if (!nextAutoBackupDue) return true; // never backed up
+    return new Date() >= nextAutoBackupDue;
+  }, [autoBackupEnabled, nextAutoBackupDue]);
+
+  const saveAutoBackupPrefs = (enabled: boolean, intervalDays: number) => {
+    localStorage.setItem(AUTO_BACKUP_KEY, String(enabled));
+    localStorage.setItem(AUTO_BACKUP_INTERVAL_KEY, String(intervalDays));
+  };
+
+  const handleAutoBackupToggle = (next: boolean) => {
+    setAutoBackupEnabled(next);
+    saveAutoBackupPrefs(next, autoBackupIntervalDays);
+  };
+
+  const handleAutoBackupIntervalChange = (days: number) => {
+    setAutoBackupIntervalDays(days);
+    saveAutoBackupPrefs(autoBackupEnabled, days);
+  };
+
+  const triggerAutoBackup = async () => {
+    if (isAutoExporting) return;
+    setIsAutoExporting(true);
+    try {
+      const { data, error } = await supabase.rpc('api_export_backup', {
+        p_caller_role: user?.role,
+        p_satuan: user?.satuan ?? null,
+      });
+      if (error) throw new Error(`Gagal backup otomatis: ${error.message}`);
+      const backup = (data as BackupData | null) ?? null;
+      if (!backup?.tables) throw new Error('Payload backup tidak valid');
+      const filename = `karyo_autobackup_${new Date().toISOString().slice(0, 10)}.json`;
+      downloadJson(backup, filename);
+      const now = new Date().toISOString();
+      setLastAutoBackupAt(now);
+      localStorage.setItem(AUTO_BACKUP_LAST_KEY, now);
+      showNotification('Backup otomatis berhasil diunduh', 'success');
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal backup otomatis', 'error');
+    } finally {
+      setIsAutoExporting(false);
+    }
+  };
+
+  // Check auto-backup due on mount and every hour
+  useEffect(() => {
+    if (!autoBackupEnabled) return;
+    if (isAutoBackupOverdue) void triggerAutoBackup();
+
+    const intervalId = window.setInterval(() => {
+      if (isAutoBackupOverdue) void triggerAutoBackup();
+    }, 3600000); // re-check every 1 hour
+
+    return () => window.clearInterval(intervalId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoBackupEnabled, isAutoBackupOverdue]);
+  // ── End backup otomatis ────────────────────────────────────────────────────
 
   useEffect(() => {
     setPlatformNameInput(settings.platformName);
@@ -299,6 +388,15 @@ export default function Settings() {
     } catch (error) {
       showNotification(handleError(error, 'Gagal memperbarui kontrol fitur global'), 'error');
     }
+  };
+
+  const handleWeatherSave = () => {
+    updateWeatherSettings({
+      weatherApiKey: weatherApiKeyInput.trim(),
+      weatherCity: weatherCityInput.trim(),
+    });
+    setWeatherPreviewKey((k) => k + 1);
+    showNotification('Pengaturan cuaca disimpan', 'success');
   };
 
   return (
@@ -667,6 +765,102 @@ export default function Settings() {
           </div>
         </div>
 
+        {/* ── Backup Otomatis Terjadwal ── */}
+        <div className="app-card p-6">
+          <h2 className="mb-1 text-lg font-bold tracking-tight text-text-primary">Backup Otomatis Terjadwal</h2>
+          <p className="mb-5 text-sm text-text-muted">
+            Aktifkan pencadangan otomatis agar sistem mengunduh backup setiap periode tertentu saat halaman pengaturan dibuka.
+          </p>
+
+          {isAutoBackupOverdue && autoBackupEnabled && (
+            <div className="mb-4 flex items-start gap-3 rounded-xl border border-accent-gold/40 bg-accent-gold/10 p-4">
+              <AlertTriangle size={16} className="mt-0.5 flex-shrink-0 text-accent-gold" aria-hidden="true" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-accent-gold">Backup terjadwal sudah jatuh tempo</p>
+                <p className="mt-0.5 text-xs text-accent-gold/90">
+                  Backup otomatis akan segera diunduh. Jangan tutup halaman ini.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="setting-row">
+              <div>
+                <p className="text-sm font-semibold text-text-primary">Backup Otomatis</p>
+                <p className="text-xs text-text-muted mt-0.5">
+                  {autoBackupEnabled
+                    ? `Aktif — backup setiap ${autoBackupIntervalDays} hari`
+                    : 'Nonaktif — backup hanya dilakukan secara manual'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleAutoBackupToggle(!autoBackupEnabled)}
+                className="toggle-switch"
+                data-checked={autoBackupEnabled}
+                aria-label="Toggle backup otomatis"
+                role="switch"
+                aria-checked={autoBackupEnabled}
+              >
+                <span />
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div>
+                <label htmlFor="auto-backup-interval" className="text-sm font-semibold text-text-primary">
+                  Interval Backup
+                </label>
+                <select
+                  id="auto-backup-interval"
+                  className="form-control mt-1"
+                  value={autoBackupIntervalDays}
+                  disabled={!autoBackupEnabled}
+                  onChange={(e) => handleAutoBackupIntervalChange(Number(e.target.value))}
+                >
+                  <option value={1}>Setiap 1 hari</option>
+                  <option value={3}>Setiap 3 hari</option>
+                  <option value={7}>Setiap 7 hari</option>
+                  <option value={14}>Setiap 14 hari</option>
+                  <option value={30}>Setiap 30 hari</option>
+                </select>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isAutoExporting}
+                onClick={() => { void triggerAutoBackup(); }}
+              >
+                {isAutoExporting ? 'Mengekspor…' : 'Backup Sekarang'}
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap gap-4 text-xs text-text-muted">
+              <span>
+                Backup terakhir:{' '}
+                <strong className="text-text-primary">
+                  {lastAutoBackupAt
+                    ? new Date(lastAutoBackupAt).toLocaleString('id-ID', {
+                        day: 'numeric', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit',
+                      })
+                    : 'Belum pernah'}
+                </strong>
+              </span>
+              {nextAutoBackupDue && (
+                <span>
+                  Backup berikutnya:{' '}
+                  <strong className="text-text-primary">
+                    {nextAutoBackupDue.toLocaleDateString('id-ID', {
+                      day: 'numeric', month: 'short', year: 'numeric',
+                    })}
+                  </strong>
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* ── Backup & Restore ── */}
         <div className="app-card p-6">
           <h2 className="mb-1 text-lg font-bold tracking-tight text-text-primary">Backup &amp; Restore Data</h2>
@@ -779,6 +973,67 @@ export default function Settings() {
         <div className="rounded-xl border border-accent-gold/35 bg-accent-gold/10 p-4">
           <p className="text-sm text-accent-gold">
             ⚠ Pengaturan lanjutan (konfigurasi Supabase, RLS policy, dll.) dikelola langsung melalui Supabase Dashboard.
+          </p>
+        </div>
+
+        {/* ── Integrasi API Eksternal — Cuaca ── */}
+        <div className="app-card p-6">
+          <div className="mb-4 flex items-center gap-3">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
+              <CloudSun className="h-4 w-4" />
+            </span>
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-text-primary">Integrasi Cuaca (OpenWeatherMap)</h2>
+              <p className="text-xs text-text-muted">Widget cuaca akan tampil di dashboard Admin dan Komandan.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="API Key OpenWeatherMap"
+              type="password"
+              placeholder="Masukkan API Key (gratis di openweathermap.org)"
+              value={weatherApiKeyInput}
+              onChange={(e) => setWeatherApiKeyInput(e.target.value)}
+            />
+            <Input
+              label="Nama Kota (Bahasa Inggris)"
+              placeholder="Contoh: Jakarta, Surabaya, Bandung"
+              value={weatherCityInput}
+              onChange={(e) => setWeatherCityInput(e.target.value)}
+            />
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <a
+              href="https://home.openweathermap.org/api_keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary underline underline-offset-2"
+            >
+              Daftar/ambil API Key gratis →
+            </a>
+            <Button
+              size="sm"
+              onClick={handleWeatherSave}
+            >
+              Simpan & Pratinjau
+            </Button>
+          </div>
+
+          {(weatherSettings.weatherApiKey || weatherApiKeyInput) && (
+            <div className="mt-4">
+              <p className="mb-2 text-xs font-medium text-text-muted">Pratinjau widget:</p>
+              <WeatherWidget
+                key={weatherPreviewKey}
+                apiKey={weatherSettings.weatherApiKey}
+                city={weatherSettings.weatherCity}
+              />
+            </div>
+          )}
+
+          <p className="mt-3 text-xs text-text-muted">
+            API Key dan nama kota disimpan di perangkat ini (localStorage). Tidak dikirim ke server.
           </p>
         </div>
       </div>

@@ -2,11 +2,18 @@ import { create } from 'zustand';
 import { getPlatformSettings, updatePlatformSettings } from '../lib/api/platform';
 
 const PLATFORM_SETTINGS_CACHE_KEY = 'karyo_platform_settings';
+const WEATHER_API_KEY_STORE = 'karyo_weather_api_key';
+const WEATHER_CITY_STORE = 'karyo_weather_city';
 
 export interface PlatformBranding {
   platformName: string;
   platformTagline: string;
   platformLogoUrl: string | null;
+}
+
+export interface WeatherSettings {
+  weatherApiKey: string;
+  weatherCity: string;
 }
 
 const DEFAULT_PLATFORM_BRANDING: PlatformBranding = {
@@ -17,10 +24,12 @@ const DEFAULT_PLATFORM_BRANDING: PlatformBranding = {
 
 interface PlatformStore {
   settings: PlatformBranding;
+  weatherSettings: WeatherSettings;
   isLoaded: boolean;
   isSaving: boolean;
   loadPlatformBranding: (force?: boolean) => Promise<void>;
   updatePlatformBranding: (settings: PlatformBranding) => Promise<void>;
+  updateWeatherSettings: (settings: WeatherSettings) => void;
 }
 
 const safeStorageGet = (key: string): string | null => {
@@ -63,6 +72,11 @@ const loadCachedBranding = (): PlatformBranding => {
   }
 };
 
+const loadCachedWeatherSettings = (): WeatherSettings => ({
+  weatherApiKey: safeStorageGet(WEATHER_API_KEY_STORE) ?? '',
+  weatherCity: safeStorageGet(WEATHER_CITY_STORE) ?? '',
+});
+
 const applyDocumentBranding = (settings: PlatformBranding) => {
   if (typeof document === 'undefined') return;
 
@@ -81,6 +95,7 @@ const persistBranding = (settings: PlatformBranding) => {
 
 export const usePlatformStore = create<PlatformStore>((set, get) => ({
   settings: loadCachedBranding(),
+  weatherSettings: loadCachedWeatherSettings(),
   isLoaded: false,
   isSaving: false,
 
@@ -119,6 +134,12 @@ export const usePlatformStore = create<PlatformStore>((set, get) => ({
       set({ isSaving: false });
       throw error;
     }
+  },
+
+  updateWeatherSettings: (weatherSettings: WeatherSettings) => {
+    safeStorageSet(WEATHER_API_KEY_STORE, weatherSettings.weatherApiKey);
+    safeStorageSet(WEATHER_CITY_STORE, weatherSettings.weatherCity);
+    set({ weatherSettings });
   },
 }));
 
