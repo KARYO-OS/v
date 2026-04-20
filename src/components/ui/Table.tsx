@@ -44,6 +44,8 @@ interface TableProps<T> {
   emptyMessage?: string;
   /** Deskripsi aksesibel untuk tabel — dirender sebagai caption tersembunyi */
   caption?: string;
+  /** Callback saat baris diklik */
+  onRowClick?: (row: T) => void;
 }
 
 export default function Table<T>({
@@ -53,6 +55,7 @@ export default function Table<T>({
   isLoading,
   emptyMessage = 'Tidak ada data',
   caption,
+  onRowClick,
 }: TableProps<T>) {
   const { displayDensity } = useUIStore();
   const isCompact = displayDensity === 'compact';
@@ -67,13 +70,13 @@ export default function Table<T>({
     return (
       <div className="app-panel overflow-hidden rounded-2xl border border-surface/70 shadow-sm">
         <div className="border-b border-surface/70 px-4 py-3 text-xs font-medium text-text-muted sm:px-5">Memuat data tabel...</div>
-        <div className="space-y-3 p-4 sm:p-5">
+        <div className="space-y-2 p-4 sm:p-5">
           {Array.from({ length: 5 }).map((_, idx) => (
             <div key={idx} className="grid gap-3 rounded-xl border border-surface/60 bg-bg-card px-4 py-3 sm:grid-cols-[1.2fr_1fr_0.8fr_1fr]">
-              <div className="h-4 animate-pulse rounded bg-slate-100 dark:bg-surface/70" />
-              <div className="h-4 animate-pulse rounded bg-slate-100 dark:bg-surface/70" />
-              <div className="h-4 animate-pulse rounded bg-slate-100 dark:bg-surface/70" />
-              <div className="h-4 animate-pulse rounded bg-slate-100 dark:bg-surface/70" />
+              <div className="h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${65 + (idx % 3) * 12}%` }} />
+              <div className="hidden sm:block h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${50 + (idx % 4) * 10}%` }} />
+              <div className="hidden sm:block h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${40 + (idx % 2) * 15}%` }} />
+              <div className="hidden sm:block h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${60 + (idx % 3) * 8}%` }} />
             </div>
           ))}
         </div>
@@ -114,8 +117,12 @@ export default function Table<T>({
                 </td>
               </tr>
             ) : (
-              data.map((row) => (
-                <tr key={keyExtractor(row)} className="transition-colors hover:bg-slate-50/80 dark:hover:bg-surface/25">
+              data.map((row, idx) => (
+                <tr
+                  key={keyExtractor(row)}
+                  className={`transition-colors hover:bg-slate-50/80 dark:hover:bg-surface/25 ${idx % 2 === 1 ? 'bg-slate-50/30 dark:bg-surface/10' : ''} ${onRowClick ? 'cursor-pointer' : ''}`}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                >
                   {columns.map((col) => (
                     <td key={String(col.key)} className={`${bodyCellClass} text-text-primary ${col.className ?? ''}`}>
                       {col.render

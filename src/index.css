@@ -342,6 +342,86 @@ html {
   text-size-adjust: 100%;
 }
 
+/* ── Section heading ──────────────────────────────────────── */
+.section-header {
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+}
+
+/* ── Progress bar ─────────────────────────────────────────── */
+.progress-bar {
+  height: 0.375rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 70%, #818cf8));
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── kbd element ──────────────────────────────────────────── */
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.6875rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-surface) 65%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-surface) 90%, transparent);
+  border-bottom-width: 2px;
+  border-radius: 0.375rem;
+  line-height: 1.4;
+}
+
+/* ── Divider with text ────────────────────────────────────── */
+.divider-text {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.divider-text::before,
+.divider-text::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+}
+
+/* ── Numeric tabular figures utility ─────────────────────── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Focus ring visible utility ──────────────────────────── */
+.focus-ring {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
 /* ── Print / PDF export ─────────────────────────────────── */
 @media print {
   /* Hide chrome */

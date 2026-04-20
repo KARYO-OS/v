@@ -92,8 +92,8 @@ export default function Navbar({ title }: NavbarProps) {
         </button>
 
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-sm font-bold text-text-primary sm:text-base">{title}</h1>
-          <p className="hidden text-[11px] text-text-muted sm:block">Workspace operasional terintegrasi</p>
+          <h1 className="truncate text-sm font-bold text-text-primary sm:text-base leading-tight">{title}</h1>
+          <p className="hidden text-[11px] text-text-muted sm:block leading-tight">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
