@@ -141,6 +141,34 @@ export interface Attendance {
   user?: User;
 }
 
+export type ApelJenis = 'pagi' | 'siang' | 'malam' | 'upacara';
+export type ApelStatus = 'hadir' | 'terlambat' | 'absen' | 'dinas_luar' | 'izin';
+
+export interface ApelSession {
+  id: string;
+  satuan: string;
+  jenis: ApelJenis;
+  tanggal: string;
+  waktu_buka: string;
+  waktu_tutup: string;
+  created_by?: string;
+  created_at: string;
+  hadir_count?: number;
+  terlambat_count?: number;
+  total_tercatat?: number;
+}
+
+export interface ApelAttendance {
+  id: string;
+  session_id: string;
+  user_id: string;
+  status: ApelStatus;
+  check_in_at?: string;
+  keterangan?: string;
+  created_at: string;
+  user?: Pick<User, 'id' | 'nama' | 'nrp' | 'pangkat'>;
+}
+
 // ============================================================
 // Leave Request
 // ============================================================

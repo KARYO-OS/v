@@ -19,6 +19,7 @@ const Documents = lazy(() => import('../pages/admin/Documents'));
 const Announcements = lazy(() => import('../pages/admin/Announcements'));
 const ShiftSchedule = lazy(() => import('../pages/admin/ShiftSchedule'));
 const AttendanceReport = lazy(() => import('../pages/admin/AttendanceReport'));
+const AdminApel = lazy(() => import('../pages/admin/Apel'));
 const Settings = lazy(() => import('../pages/admin/Settings'));
 const SatuanManagement = lazy(() => import('../pages/admin/SatuanManagement'));
 const KomandanDashboard = lazy(() => import('../pages/komandan/KomandanDashboard'));
@@ -27,10 +28,12 @@ const Personnel = lazy(() => import('../pages/komandan/Personnel'));
 const Reports = lazy(() => import('../pages/komandan/Reports'));
 const Evaluation = lazy(() => import('../pages/komandan/Evaluation'));
 const KomandanAttendance = lazy(() => import('../pages/komandan/KomandanAttendance'));
+const KomandanApel = lazy(() => import('../pages/komandan/Apel'));
 const LogisticsRequest = lazy(() => import('../pages/komandan/LogisticsRequest'));
 const PrajuritDashboard = lazy(() => import('../pages/prajurit/PrajuritDashboard'));
 const MyTasks = lazy(() => import('../pages/prajurit/MyTasks'));
 const Attendance = lazy(() => import('../pages/prajurit/Attendance'));
+const PrajuritApel = lazy(() => import('../pages/prajurit/Apel'));
 const Messages = lazy(() => import('../pages/prajurit/Messages'));
 const LeaveRequest = lazy(() => import('../pages/prajurit/LeaveRequest'));const Profile = lazy(() => import('../pages/prajurit/Profile'));
 const GatePassPage = lazy(() => import('../pages/prajurit/GatePassPage'));
@@ -68,6 +71,7 @@ export const router = createHashRouter([
       { path: ROLE_ROUTE_PATHS.admin.audit,     element: wrap(<AuditLog />) },
       { path: ROLE_ROUTE_PATHS.admin.settings,  element: wrap(<Settings />) },
       { path: ROLE_ROUTE_PATHS.admin.analytics, element: wrap(<Analytics />) },
+      { path: ROLE_ROUTE_PATHS.admin.apel,      element: wrap(<AdminApel />) },
     ],
   },
   // Admin + Staf shared routes (Staf dapat akses baca/kelola sesuai bidang)
@@ -94,6 +98,7 @@ export const router = createHashRouter([
       { path: ROLE_ROUTE_PATHS.komandan.reports,         element: wrap(<Reports />) },
       { path: ROLE_ROUTE_PATHS.komandan.evaluation,      element: wrap(<Evaluation />) },
       { path: ROLE_ROUTE_PATHS.komandan.attendance,      element: wrap(<KomandanAttendance />) },
+      { path: ROLE_ROUTE_PATHS.komandan.apel,            element: wrap(<KomandanApel />) },
       { path: ROLE_ROUTE_PATHS.komandan.logisticsRequest,element: wrap(<LogisticsRequest />) },
       { path: ROLE_ROUTE_PATHS.komandan.gatePassApproval,element: wrap(<GatePassApprovalPage />) },
       { path: ROLE_ROUTE_PATHS.komandan.gatePassMonitor, element: wrap(<GatePassMonitorPage />) },
@@ -107,6 +112,7 @@ export const router = createHashRouter([
       { path: ROLE_ROUTE_PATHS.prajurit.dashboard,  element: wrap(<PrajuritDashboard />) },
       { path: ROLE_ROUTE_PATHS.prajurit.tasks,      element: wrap(<MyTasks />) },
       { path: ROLE_ROUTE_PATHS.prajurit.attendance, element: wrap(<Attendance />) },
+      { path: ROLE_ROUTE_PATHS.prajurit.apel,      element: wrap(<PrajuritApel />) },
       { path: ROLE_ROUTE_PATHS.prajurit.messages,   element: wrap(<Messages />) },
       { path: ROLE_ROUTE_PATHS.prajurit.leave,      element: wrap(<LeaveRequest />) },
       { path: ROLE_ROUTE_PATHS.prajurit.profile,    element: wrap(<Profile />) },

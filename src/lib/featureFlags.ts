@@ -5,6 +5,7 @@ export type FeatureKey =
   | 'announcements'
   | 'shift_schedule'
   | 'attendance'
+  | 'apel_digital'
   | 'gate_pass'
   | 'pos_jaga'
   | 'audit_log'
@@ -58,6 +59,12 @@ export const FEATURE_DEFINITIONS: FeatureDefinition[] = [
     label: 'Absensi',
     description: 'Rekap dan pencatatan kehadiran lintas peran.',
     paths: ['/admin/attendance', '/komandan/attendance', '/prajurit/attendance'],
+  },
+  {
+    key: 'apel_digital',
+    label: 'Apel Digital',
+    description: 'Sesi apel terjadwal dan pelaporan kehadiran apel per role.',
+    paths: ['/admin/apel', '/komandan/apel', '/prajurit/apel'],
   },
   {
     key: 'gate_pass',
