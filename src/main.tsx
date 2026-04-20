@@ -24,6 +24,7 @@ measurePageLoad();
 
 export function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession);
+  const updateOnlineStatus = useAuthStore((s) => s.updateOnlineStatus);
   const isLoading = useAuthStore((s) => s.isLoading);
   const hasUser = useAuthStore((s) => Boolean(s.user));
   const { loadPlatformBranding } = usePlatformStore();
@@ -49,6 +50,27 @@ export function App() {
     if (!hasUser) return;
     void loadFeatureFlags();
   }, [hasUser, loadFeatureFlags]);
+
+  useEffect(() => {
+    if (!hasUser) return;
+
+    const syncPresence = (isOnline: boolean) => {
+      void updateOnlineStatus(isOnline);
+    };
+
+    syncPresence(navigator.onLine);
+
+    const handleOnline = () => syncPresence(true);
+    const handleOffline = () => syncPresence(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [hasUser, updateOnlineStatus]);
 
   useEffect(() => {
     return subscribeDataChanges('feature_flags', () => {

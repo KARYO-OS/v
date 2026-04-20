@@ -189,6 +189,17 @@ describe('authStore', () => {
         await useAuthStore.getState().updateOnlineStatus(true);
       });
     });
+
+    it('keeps local state updated even when rpc sync fails', async () => {
+      useAuthStore.setState({ user: { ...mockUser, is_online: false } });
+      mockSupabase.rpc.mockReturnValue(buildRpcQuery({ data: null, error: new Error('offline') }));
+
+      await act(async () => {
+        await useAuthStore.getState().updateOnlineStatus(true);
+      });
+
+      expect(useAuthStore.getState().user?.is_online).toBe(true);
+    });
   });
 
   // ── login ─────────────────────────────────────────────────

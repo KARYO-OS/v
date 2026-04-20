@@ -190,6 +190,19 @@ async function restoreSessionWithRetry(
         ...(userData as User),
         role: (normalizeRole((userData as User).role) ?? (userData as User).role) as User['role'],
       };
+
+      // Keep presence in sync when a valid encrypted session is restored.
+      try {
+        await supabase.rpc('update_user_login', {
+          p_user_id: session.user_id,
+          p_is_online: true,
+        });
+      } catch (presenceErr) {
+        if (import.meta.env.DEV) {
+          console.warn('Failed to refresh online presence on restore:', presenceErr);
+        }
+      }
+
       set({ user, isAuthenticated: true, isLoading: false, isInitialized: true });
       return true;
     } catch (err) {
@@ -322,11 +335,19 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   updateOnlineStatus: async (status: boolean) => {
     const { user } = get();
     if (!user) return;
-    await supabase.rpc('update_user_login', {
-      p_user_id: user.id,
-      p_is_online: status
-    });
+    // Optimistically update UI state first so frontend status stays responsive.
     set({ user: { ...user, is_online: status } });
+
+    try {
+      await supabase.rpc('update_user_login', {
+        p_user_id: user.id,
+        p_is_online: status,
+      });
+    } catch (err) {
+      if (import.meta.env.DEV) {
+        console.warn('Failed to sync online status to Supabase:', err);
+      }
+    }
   },
 }));
 
