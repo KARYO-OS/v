@@ -368,7 +368,9 @@ export default function UserManagement() {
               <option value="">Semua Role</option>
               <option value="admin">Admin</option>
               <option value="komandan">Komandan</option>
+              <option value="staf">Staf</option>
               <option value="prajurit">Prajurit</option>
+              <option value="guard">Guard</option>
             </select>
             <select
               value={filterStatus}
@@ -561,7 +563,9 @@ export default function UserManagement() {
             <label className="text-sm font-semibold text-text-primary">Role *</label>
             <select className="form-control mt-1" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
               <option value="prajurit">Prajurit</option>
+              <option value="staf">Staf Operasional</option>
               <option value="komandan">Komandan</option>
+              <option value="guard">Guard</option>
               <option value="admin">Admin</option>
             </select>
           </div>
@@ -657,7 +661,7 @@ export default function UserManagement() {
                 </p>
                 <p>Kolom: <code className="font-mono text-xs bg-surface/50 px-1.5 py-0.5 rounded-md">nrp, nama, pin, role, satuan, pangkat, jabatan</code></p>
                 <p>• PIN default 6 digit angka (contoh: 123456)</p>
-                <p>• Role: <code className="font-mono text-xs">prajurit</code> / <code className="font-mono text-xs">komandan</code> / <code className="font-mono text-xs">admin</code></p>
+                <p>• Role: <code className="font-mono text-xs">prajurit</code> / <code className="font-mono text-xs">staf</code> / <code className="font-mono text-xs">komandan</code> / <code className="font-mono text-xs">guard</code> / <code className="font-mono text-xs">admin</code></p>
                 <p>• Unduh template di bawah untuk format yang tepat</p>
               </div>
 

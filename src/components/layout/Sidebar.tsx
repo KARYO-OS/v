@@ -53,6 +53,16 @@ const NAV_ITEMS: Record<Role, NavItem[]> = {
   guard: [
     { path: '/guard/gatepass-scan', label: 'Scan Gate Pass', icon: 'ClipboardCheck' },
   ],
+  staf: [
+    { path: '/staf/dashboard',      label: 'Pusat Staf',     icon: 'LayoutDashboard' },
+    { path: '/admin/users',         label: 'Personel',        icon: 'Users' },
+    { path: '/admin/attendance',    label: 'Rekap Absensi',   icon: 'ClipboardCheck' },
+    { path: '/admin/schedule',      label: 'Jadwal Shift',    icon: 'CalendarDays' },
+    { path: '/admin/logistics',     label: 'Logistik',        icon: 'Package' },
+    { path: '/komandan/tasks',      label: 'Tugas',           icon: 'CheckSquare' },
+    { path: '/admin/pos-jaga',      label: 'Pos Jaga',        icon: 'MapPin' },
+    { path: '/staf/messages',       label: 'Pesan',           icon: 'Megaphone' },
+  ],
 };
 
 export default function Sidebar() {
@@ -91,6 +101,7 @@ export default function Sidebar() {
     komandan: 'Komandan',
     prajurit: 'Prajurit',
     guard: 'Guard',
+    staf: 'Staf Operasional',
   };
 
   return (

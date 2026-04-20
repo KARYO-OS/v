@@ -21,6 +21,7 @@ const ROLE_DEFAULT_PATH: Record<Role, string> = {
   komandan: '/komandan/dashboard',
   prajurit: '/prajurit/dashboard',
   guard: '/guard/gatepass-scan',
+  staf: '/staf/dashboard',
 };
 
 function buildHref(result: ApiSearchResult): string {

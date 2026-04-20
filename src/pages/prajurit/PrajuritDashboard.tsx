@@ -8,12 +8,13 @@ import { useMessages } from '../../hooks/useMessages';
 import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
+import { useGatePassStore } from '../../store/gatePassStore';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { AttendanceBadge } from '../../components/common/Badge';
 import { CardListSkeleton } from '../../components/common/Skeleton';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
 import { ICONS } from '../../icons';
@@ -28,12 +29,23 @@ export default function PrajuritDashboard() {
   const { todayAttendance, isLoading: attnLoading, checkIn, checkOut } = useAttendance();
   const { announcements, isLoading: annLoading } = useAnnouncements();
   const { unreadCount } = useMessages();
+  const { gatePasses, fetchGatePasses } = useGatePassStore();
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
 
   const activeTasks = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress');
   const doneTasks = tasks.filter((t) => t.status === 'done' || t.status === 'approved');
   const rejectedTasks = tasks.filter((t) => t.status === 'rejected');
+
+  const canOpenGatePass = isPathEnabled('/prajurit/gatepass', flags);
+  // Active gate pass: sudah scan keluar (checked_in) atau overdue
+  const activeGatePass = canOpenGatePass
+    ? gatePasses.find((gp) => gp.status === 'checked_in' || gp.status === 'overdue')
+    : undefined;
+
+  useEffect(() => {
+    if (canOpenGatePass) void fetchGatePasses();
+  }, [canOpenGatePass, fetchGatePasses]);
 
   // Recent announcements: pinned first, limit 3
   const recentAnnouncements = [...announcements]
@@ -43,7 +55,6 @@ export default function PrajuritDashboard() {
   const canOpenTasks = isPathEnabled('/prajurit/tasks', flags);
   const canOpenMessages = isPathEnabled('/prajurit/messages', flags);
   const canOpenAttendance = isPathEnabled('/prajurit/attendance', flags);
-  const canOpenGatePass = isPathEnabled('/prajurit/gatepass', flags);
   const canOpenScanPos = isPathEnabled('/prajurit/scan-pos', flags);
   const canOpenLeave = isPathEnabled('/prajurit/leave', flags);
   const canViewTaskModules = canOpenTasks;
@@ -110,6 +121,30 @@ export default function PrajuritDashboard() {
             </>
           }
         />
+
+        {/* Alert: gate pass sedang aktif (checked_in / overdue) */}
+        {activeGatePass && (
+          <div className={`flex items-start gap-3 rounded-2xl border p-4 shadow-sm ${activeGatePass.status === 'overdue' ? 'border-accent-red/30 bg-gradient-to-r from-accent-red/10 to-rose-500/5' : 'border-primary/30 bg-gradient-to-r from-primary/8 to-emerald-500/5'}`}>
+            <span className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl ${activeGatePass.status === 'overdue' ? 'bg-accent-red/15 text-accent-red' : 'bg-primary/15 text-primary'}`}>
+              <ICONS.ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className={`font-semibold text-sm ${activeGatePass.status === 'overdue' ? 'text-accent-red' : 'text-primary'}`}>
+                {activeGatePass.status === 'overdue' ? 'Gate Pass Anda OVERDUE!' : 'Gate Pass Aktif — Anda Sedang di Luar'}
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">
+                {activeGatePass.status === 'overdue'
+                  ? 'Segera kembali dan scan Pos Jaga untuk menyelesaikan gate pass.'
+                  : 'Scan QR Pos Jaga saat kembali untuk menyelesaikan gate pass.'}
+              </p>
+              {canOpenGatePass && (
+                <Link to="/prajurit/gatepass" className={`mt-1.5 inline-flex items-center gap-1 text-xs font-semibold hover:underline ${activeGatePass.status === 'overdue' ? 'text-accent-red' : 'text-primary'}`}>
+                  Lihat detail gate pass →
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-3 sm:grid-cols-3">
           {canOpenTasks && (

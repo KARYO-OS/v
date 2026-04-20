@@ -18,12 +18,14 @@ const PROFILE_PATH: Record<Role, string> = {
   komandan: '/komandan/personnel',
   admin: '/admin/users',
   guard: '/guard/gatepass-scan',
+  staf: '/staf/dashboard',
 };
 
 /** Rute inbox pesan per role. Guard tidak memiliki halaman pesan. */
 const MESSAGES_PATH: Partial<Record<Role, string>> = {
   prajurit: '/prajurit/messages',
   komandan: '/komandan/messages',
+  staf: '/staf/messages',
 };
 
 export default function Navbar({ title }: NavbarProps) {
@@ -62,6 +64,7 @@ export default function Navbar({ title }: NavbarProps) {
     komandan: 'Komandan',
     prajurit: 'Prajurit',
     guard: 'Guard',
+    staf: 'Staf Operasional',
   };
 
   const messagePath = user?.role ? MESSAGES_PATH[user.role] : undefined;
@@ -179,7 +182,7 @@ export default function Navbar({ title }: NavbarProps) {
               </div>
 
               {/* Profil link — only for roles that have a profile page */}
-              {user?.role === 'prajurit' && (
+              {(user?.role === 'prajurit' || user?.role === 'staf') && (
                 <Link
                   to={PROFILE_PATH[user.role]}
                   role="menuitem"
@@ -187,7 +190,7 @@ export default function Navbar({ title }: NavbarProps) {
                   className="flex min-h-[44px] items-center gap-2.5 rounded-xl px-2 py-2.5 text-sm text-text-primary transition-all duration-150 hover:bg-slate-100/80 dark:hover:bg-surface/50"
                 >
                   {ICONS.User ? <ICONS.User className="w-4 h-4 text-text-muted" aria-hidden="true" /> : null}
-                  Profil Saya
+                  {user.role === 'staf' ? 'Dasbor Staf' : 'Profil Saya'}
                 </Link>
               )}
 

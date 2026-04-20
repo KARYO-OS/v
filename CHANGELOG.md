@@ -5,6 +5,28 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versi
 
 ---
 
+## [1.5.0] — 2026-04-20
+
+### Ditambahkan
+- **Role Staf Operasional**: role ke-5 (`staf`) untuk Pasi dan Bamin di bidang S-1, S-3, dan S-4.
+- **StafDashboard**: halaman dasbor khusus `/staf/dashboard` dengan deteksi bidang otomatis (pers/log/ops) berdasarkan field `jabatan`, menampilkan statistik personel, kehadiran, tugas aktif, dan logistik pending.
+- **Akses Modul Staf**: role `staf` mendapat akses ke Manajemen Personel, Rekap Absensi, Jadwal Shift, Logistik, Manajemen Tugas, Pos Jaga, dan Pesan — sesuai wewenang Staf Operasional.
+- **Pesan untuk Staf**: rute `/staf/messages` untuk inbox dan kirim pesan antar personel.
+- **RBAC lengkap 5 role**: Admin (Super Admin), Komandan, Staf Operasional, Guard (Personel Jaga), dan Prajurit — sesuai hierarki satuan TNI.
+
+### Diubah
+- `RoleBadge` menambahkan tampilan badge untuk role `staf` (warna warning/amber).
+- Sidebar, BottomTabBar, dan Navbar diperbarui untuk mendukung navigasi role `staf`.
+- Dropdown filter dan form buat user di UserManagement kini menyertakan pilihan role `staf` dan `guard`.
+- ProtectedRoute, Login, dan GlobalSearch diperbarui dengan path default dan fallback untuk role `staf`.
+- Feature flag `messages` mencakup path `/staf/messages`.
+- Roadmap `SPESIFIKASI.md` diperbarui: Phase 2 (v1.5) ditandai selesai.
+
+### Diperbaiki
+- Karakter escape tidak perlu (`\/`) pada template HTML di `PosJagaQRCode.tsx` (lint error `no-useless-escape`).
+
+---
+
 ## [1.2.1] — 2026-04-19
 
 ### Ditambahkan

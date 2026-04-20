@@ -70,6 +70,7 @@ export function RoleBadge({ role }: { role: Role }) {
     komandan: { label: 'Komandan', variant: 'info' },
     prajurit: { label: 'Prajurit', variant: 'neutral' },
     guard: { label: 'Guard', variant: 'info' },
+    staf: { label: 'Staf', variant: 'warning' },
   };
   const { label, variant } = map[role];
   return <Badge variant={variant}>{label}</Badge>;

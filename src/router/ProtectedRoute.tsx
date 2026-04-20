@@ -15,6 +15,7 @@ const ROLE_DEFAULT_PATH: Record<Role, string> = {
   komandan: '/komandan/dashboard',
   prajurit: '/prajurit/dashboard',
   guard: '/guard/gatepass-scan',
+  staf: '/staf/dashboard',
 };
 
 const ROLE_FALLBACK_PATHS: Record<Role, string[]> = {
@@ -22,6 +23,7 @@ const ROLE_FALLBACK_PATHS: Record<Role, string[]> = {
   komandan: ['/komandan/dashboard', '/komandan/tasks', '/komandan/attendance'],
   prajurit: ['/prajurit/dashboard', '/prajurit/profile'],
   guard: ['/guard/gatepass-scan'],
+  staf: ['/staf/dashboard', '/staf/messages'],
 };
 
 function getRoleFallbackPath(role: Role, flags: ReturnType<typeof useFeatureStore.getState>['flags']): string | null {
