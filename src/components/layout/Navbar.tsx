@@ -5,8 +5,11 @@ import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
 import { useMessages } from '../../hooks/useMessages';
+import { useOfflineSync } from '../../hooks/useOfflineSync';
 import { isPathEnabled } from '../../lib/featureFlags';
 import GlobalSearch from '../ui/GlobalSearch';
+import OfflineIndicator from '../common/OfflineIndicator';
+import SyncQueueBadge from '../common/SyncQueueBadge';
 import type { Role } from '../../types';
 
 interface NavbarProps {
@@ -33,6 +36,7 @@ export default function Navbar({ title }: NavbarProps) {
   const { flags } = useFeatureStore();
   const { toggleSidebar, toggleDarkMode, isDarkMode } = useUIStore();
   const { unreadCount } = useMessages();
+  const { isOnline, isSyncing, syncStats, requestSync, getLastSyncTimeFormatted } = useOfflineSync();
   const navigate = useNavigate();
   const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -93,6 +97,21 @@ export default function Navbar({ title }: NavbarProps) {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <OfflineIndicator
+            isOnline={isOnline}
+            isSyncing={isSyncing}
+            lastSyncLabel={getLastSyncTimeFormatted()}
+          />
+          <SyncQueueBadge
+            pending={syncStats.pending}
+            failed={syncStats.failed}
+            isSyncing={isSyncing}
+            isOnline={isOnline}
+            onSync={() => {
+              void requestSync();
+            }}
+          />
+
           {/* Global search */}
           <GlobalSearch />
 
