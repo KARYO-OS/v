@@ -71,14 +71,21 @@ export default function Table<T>({
       <div className="app-panel overflow-hidden rounded-2xl border border-surface/70 shadow-sm">
         <div className="border-b border-surface/70 px-4 py-3 text-xs font-medium text-text-muted sm:px-5">Memuat data tabel...</div>
         <div className="space-y-2 p-4 sm:p-5">
-          {Array.from({ length: 5 }).map((_, idx) => (
-            <div key={idx} className="grid gap-3 rounded-xl border border-surface/60 bg-bg-card px-4 py-3 sm:grid-cols-[1.2fr_1fr_0.8fr_1fr]">
-              <div className="h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${65 + (idx % 3) * 12}%` }} />
-              <div className="hidden sm:block h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${50 + (idx % 4) * 10}%` }} />
-              <div className="hidden sm:block h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${40 + (idx % 2) * 15}%` }} />
-              <div className="hidden sm:block h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${60 + (idx % 3) * 8}%` }} />
-            </div>
-          ))}
+          {Array.from({ length: 5 }).map((_, idx) => {
+            // Vary widths to make the skeleton look more realistic
+            const primaryW = [65, 77, 55, 82, 70][idx] ?? 65;
+            const secondW  = [50, 62, 45, 70, 55][idx] ?? 50;
+            const thirdW   = [40, 55, 38, 62, 48][idx] ?? 40;
+            const fourthW  = [60, 68, 52, 75, 63][idx] ?? 60;
+            return (
+              <div key={idx} className="grid gap-3 rounded-xl border border-surface/60 bg-bg-card px-4 py-3 sm:grid-cols-[1.2fr_1fr_0.8fr_1fr]">
+                <div className="h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${primaryW}%` }} />
+                <div className="hidden sm:block h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${secondW}%` }} />
+                <div className="hidden sm:block h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${thirdW}%` }} />
+                <div className="hidden sm:block h-4 animate-pulse rounded-lg bg-slate-100 dark:bg-surface/70" style={{ width: `${fourthW}%` }} />
+              </div>
+            );
+          })}
         </div>
       </div>
     );

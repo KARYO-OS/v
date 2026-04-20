@@ -16,8 +16,17 @@ const priorityConfig = {
   3: { label: 'Rendah', bar: 'border-l-success',     bg: 'bg-emerald-500/10 text-success border-emerald-300/40', dot: 'bg-success' },
 };
 
+function isTaskOverdue(task: Task): boolean {
+  return Boolean(
+    task.deadline &&
+    new Date(task.deadline) < new Date() &&
+    task.status !== 'approved' &&
+    task.status !== 'done',
+  );
+}
+
 export default function TaskCard({ task, onAction, actionLabel = 'Lihat', showAssignee }: TaskCardProps) {
-  const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'approved' && task.status !== 'done';
+  const overdue = isTaskOverdue(task);
   const cfg = priorityConfig[task.prioritas];
 
   return (
@@ -41,8 +50,8 @@ export default function TaskCard({ task, onAction, actionLabel = 'Lihat', showAs
           {cfg.label}
         </span>
         {/* Deadline */}
-        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 ${isOverdue ? 'border-accent-red/30 bg-accent-red/10 text-accent-red font-semibold' : 'border-surface bg-slate-50 text-text-muted dark:bg-surface/40'}`}>
-          {isOverdue
+        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 ${overdue ? 'border-accent-red/30 bg-accent-red/10 text-accent-red font-semibold' : 'border-surface bg-slate-50 text-text-muted dark:bg-surface/40'}`}>
+          {overdue
             ? <Clock className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
             : <CalendarDays className="h-3 w-3 flex-shrink-0 text-text-muted/70" aria-hidden="true" />}
           {task.deadline ? new Date(task.deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Tidak ada deadline'}
