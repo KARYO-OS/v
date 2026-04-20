@@ -39,6 +39,7 @@ export const ROLE_ROUTE_PATHS = {
     schedule: '/admin/schedule',
     attendance: '/admin/attendance',
     apel: '/admin/apel',
+    kegiatan: '/admin/kegiatan',
     gatePassMonitor: '/admin/gatepass-monitor',
     posJaga: '/admin/pos-jaga',
     audit: '/admin/audit',
@@ -52,6 +53,8 @@ export const ROLE_ROUTE_PATHS = {
     evaluation: '/komandan/evaluation',
     attendance: '/komandan/attendance',
     apel: '/komandan/apel',
+    kegiatan: '/komandan/kegiatan',
+    laporanOps: '/komandan/laporan-ops',
     logisticsRequest: '/komandan/logistics-request',
     gatePassApproval: '/komandan/gatepass-approval',
     gatePassMonitor: '/komandan/gatepass-monitor',
@@ -62,6 +65,7 @@ export const ROLE_ROUTE_PATHS = {
     tasks: '/prajurit/tasks',
     attendance: '/prajurit/attendance',
     apel: '/prajurit/apel',
+    kegiatan: '/prajurit/kegiatan',
     messages: '/prajurit/messages',
     leave: '/prajurit/leave',
     profile: '/prajurit/profile',
@@ -76,6 +80,7 @@ export const ROLE_ROUTE_PATHS = {
     dashboard: '/staf/dashboard',
     messages: '/staf/messages',
     leaveReview: '/staf/leave-review',
+    laporanOps: '/staf/laporan-ops',
   },
 } as const;
 

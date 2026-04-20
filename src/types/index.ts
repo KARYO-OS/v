@@ -141,6 +141,60 @@ export interface Attendance {
   user?: User;
 }
 
+// ============================================================
+// Kalender Kegiatan Satuan
+// ============================================================
+
+export type KegiatanJenis = 'latihan' | 'upacara' | 'inspeksi' | 'perjalanan' | 'rapat' | 'lainnya';
+export type RsvpStatus = 'hadir' | 'tidak_hadir' | 'belum';
+
+export interface Kegiatan {
+  id: string;
+  satuan: string;
+  satuan_id?: string;
+  judul: string;
+  deskripsi?: string;
+  jenis: KegiatanJenis;
+  tanggal_mulai: string;
+  tanggal_selesai: string;
+  lokasi?: string;
+  target_role?: string[];
+  is_wajib: boolean;
+  created_by?: string;
+  created_at: string;
+  rsvp_hadir?: number;
+  rsvp_tidak_hadir?: number;
+  rsvp_total?: number;
+  my_rsvp?: RsvpStatus;
+}
+
+// ============================================================
+// Laporan Operasional (Laphar)
+// ============================================================
+
+export type LaporanOpsJenis = 'harian' | 'insidentil' | 'latihan' | 'inspeksi' | 'lainnya';
+export type LaporanOpsStatus = 'draft' | 'diajukan' | 'diketahui' | 'diarsipkan';
+
+export interface LaporanOps {
+  id: string;
+  nomor_laporan?: string;
+  satuan: string;
+  jenis: LaporanOpsJenis;
+  tanggal_kejadian: string;
+  waktu_kejadian?: string;
+  lokasi?: string;
+  judul: string;
+  uraian: string;
+  tindakan?: string;
+  rekomendasi?: string;
+  status: LaporanOpsStatus;
+  dibuat_oleh?: string;
+  diketahui_oleh?: string;
+  diketahui_at?: string;
+  created_at: string;
+  pembuat?: Pick<User, 'id' | 'nama' | 'nrp' | 'pangkat'>;
+}
+
 export type ApelJenis = 'pagi' | 'siang' | 'malam' | 'upacara';
 export type ApelStatus = 'hadir' | 'terlambat' | 'absen' | 'dinas_luar' | 'izin';
 
