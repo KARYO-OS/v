@@ -5,6 +5,9 @@ export type FeatureKey =
   | 'announcements'
   | 'shift_schedule'
   | 'attendance'
+  | 'apel_digital'
+  | 'kalender_kegiatan'
+  | 'laporan_ops'
   | 'gate_pass'
   | 'pos_jaga'
   | 'audit_log'
@@ -58,6 +61,24 @@ export const FEATURE_DEFINITIONS: FeatureDefinition[] = [
     label: 'Absensi',
     description: 'Rekap dan pencatatan kehadiran lintas peran.',
     paths: ['/admin/attendance', '/komandan/attendance', '/prajurit/attendance'],
+  },
+  {
+    key: 'apel_digital',
+    label: 'Apel Digital',
+    description: 'Sesi apel terjadwal dan pelaporan kehadiran apel per role.',
+    paths: ['/admin/apel', '/komandan/apel', '/prajurit/apel'],
+  },
+  {
+    key: 'kalender_kegiatan',
+    label: 'Kalender Kegiatan',
+    description: 'Jadwal kegiatan satuan dengan konfirmasi kehadiran (RSVP) personel.',
+    paths: ['/admin/kegiatan', '/komandan/kegiatan', '/prajurit/kegiatan'],
+  },
+  {
+    key: 'laporan_ops',
+    label: 'Laporan Operasional',
+    description: 'Laporan harian dan insidentil dari Staf S-3 dengan alur review komandan.',
+    paths: ['/staf/laporan-ops', '/komandan/laporan-ops'],
   },
   {
     key: 'gate_pass',

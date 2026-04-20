@@ -77,10 +77,6 @@ export async function countUsers(params: FetchUsersPageParams): Promise<number> 
   return Number(data ?? 0);
 }
 
-export async function fetchUsersDirect(params: FetchUsersParams): Promise<User[]> {
-  return fetchUsers(params);
-}
-
 export async function createUserWithPin(userData: {
   nrp: string;
   pin: string;
