@@ -10,6 +10,7 @@ import { RoleBadge } from '../../components/common/Badge';
 import { TableSkeleton } from '../../components/common/Skeleton';
 import Pagination from '../../components/ui/Pagination';
 import UserDetailModal from '../../components/common/UserDetailModal';
+import UserTableActions from '../../components/admin/UserTableActions';
 import { useUsers } from '../../hooks/useUsers';
 import { useSatuans } from '../../hooks/useSatuans';
 import { useUIStore } from '../../store/uiStore';
@@ -20,6 +21,7 @@ import { supabase } from '../../lib/supabase';
 import { notifyDataChanged } from '../../lib/dataSync';
 import { ensureSessionContext } from '../../lib/api/sessionContext';
 import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleAdmin, isRoleKomandan, normalizeRole } from '../../lib/rolePermissions';
+import { validateNewUserForm, validatePin, validateRoleEditForm, getFirstErrorMessage } from '../../lib/validation/personelValidation';
 import type { User, Role, CommandLevel } from '../../types';
 
 const PAGE_SIZE = 50;
@@ -149,18 +151,21 @@ export default function UserManagement() {
   }, [users, currentPage]);
 
   const handleCreate = async () => {
-    if (!form.nrp || !form.nama || !form.pin || !form.satuan) {
-      showNotification('Harap isi semua field wajib', 'error');
+    // Validate form data
+    const errors = validateNewUserForm({
+      nrp: form.nrp,
+      nama: form.nama,
+      pin: form.pin,
+      role: form.role as Role,
+      satuan: form.satuan,
+      level_komando: form.level_komando || undefined,
+    });
+
+    if (errors.length > 0) {
+      showNotification(getFirstErrorMessage(errors) || 'Validasi gagal', 'error');
       return;
     }
-    if (!/^\d{6}$/.test(form.pin)) {
-      showNotification('PIN harus 6 digit angka', 'error');
-      return;
-    }
-    if (isRoleKomandan(form.role) && !form.level_komando) {
-      showNotification('Tingkat komando wajib diisi untuk role Komandan', 'error');
-      return;
-    }
+
     setIsSaving(true);
     try {
       const { level_komando: rawLevelKomando, ...formRest } = form;
@@ -186,10 +191,13 @@ export default function UserManagement() {
 
   const handleResetPin = async () => {
     if (!selectedUser) return;
-    if (!/^\d{6}$/.test(newPin)) {
-      showNotification('PIN baru harus 6 digit angka', 'error');
+
+    const pinError = validatePin(newPin);
+    if (pinError) {
+      showNotification(pinError.message, 'error');
       return;
     }
+
     setIsSaving(true);
     try {
       await resetUserPin(selectedUser.id, newPin);
@@ -208,10 +216,13 @@ export default function UserManagement() {
       showNotification('Pilih minimal satu personel', 'error');
       return;
     }
-    if (!/^\d{6}$/.test(bulkPin)) {
-      showNotification('PIN baru harus 6 digit angka', 'error');
+
+    const pinError = validatePin(bulkPin);
+    if (pinError) {
+      showNotification(pinError.message, 'error');
       return;
     }
+
     setIsSaving(true);
     try {
       const { data, error } = await supabase.rpc('bulk_reset_pins', {
@@ -405,8 +416,15 @@ export default function UserManagement() {
 
   const handleRoleUpdate = async () => {
     if (!roleEditUser) return;
-    if (isRoleKomandan(roleEditForm.role) && !roleEditForm.level_komando) {
-      showNotification('Tingkat komando wajib diisi untuk role Komandan', 'error');
+
+    // Validate role edit form
+    const errors = validateRoleEditForm({
+      role: roleEditForm.role,
+      level_komando: roleEditForm.level_komando || undefined,
+    });
+
+    if (errors.length > 0) {
+      showNotification(getFirstErrorMessage(errors) || 'Validasi gagal', 'error');
       return;
     }
 
@@ -724,61 +742,18 @@ export default function UserManagement() {
                 },
               },
               {
-                key: 'actions', header: 'Aksi', render: (u) => {
-                  const isLocked = u.locked_until && new Date(u.locked_until) > new Date();
-                  return (
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => handleOpenDetail(u)}
-                      >
-                        Detail
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => { setSelectedUser(u); setShowResetPin(true); }}
-                      >
-                        Reset PIN
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => openRoleEdit(u)}
-                      >
-                        Ubah Role
-                      </Button>
-                      {isLocked && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => { setSelectedUser(u); setShowUnlock(true); }}
-                        >
-                          <span className="flex items-center gap-1 text-accent-gold">
-                            <ICONS.Unlock className="h-3 w-3" aria-hidden="true" />
-                            Buka Kunci
-                          </span>
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant={u.is_active ? 'ghost' : 'secondary'}
-                        onClick={() => handleToggleActive(u)}
-                      >
-                        {u.is_active ? 'Nonaktif' : 'Aktifkan'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        disabled={authUser?.id === u.id}
-                        onClick={() => { setSelectedUser(u); setShowDelete(true); }}
-                      >
-                        Hapus
-                      </Button>
-                    </div>
-                  );
-                },
+                key: 'actions', header: 'Aksi', render: (u) => (
+                  <UserTableActions
+                    user={u}
+                    currentUserId={authUser?.id}
+                    onDetail={() => handleOpenDetail(u)}
+                    onResetPin={() => { setSelectedUser(u); setShowResetPin(true); }}
+                    onRoleEdit={() => openRoleEdit(u)}
+                    onToggleActive={() => handleToggleActive(u)}
+                    onUnlock={() => { setSelectedUser(u); setShowUnlock(true); }}
+                    onDelete={() => { setSelectedUser(u); setShowDelete(true); }}
+                  />
+                ),
               },
             ]}
             data={users}

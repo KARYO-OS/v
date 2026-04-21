@@ -174,14 +174,28 @@ export function useUsers(options: UseUsersOptions = {}) {
       channelRef.current = null;
     }
 
-    const channel = supabase.channel(`users-changes-${user.id}`);
+    // Create unique nonce to prevent StrictMode double-subscription issues
+    const nonce = Math.random().toString(36).slice(2);
+    const channel = supabase.channel(`users-changes-${user.id}-${nonce}`);
+    
+    // Debounced fetch to prevent cascade on realtime updates
+    let fetchTimeout: NodeJS.Timeout | null = null;
+    const debouncedFetch = () => {
+      if (fetchTimeout) clearTimeout(fetchTimeout);
+      fetchTimeout = setTimeout(() => {
+        void fetchUsers();
+      }, 300); // 300ms debounce for realtime channel
+    };
+
     channel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
-      void fetchUsers();
+      debouncedFetch();
     });
+    
     channel.subscribe();
     channelRef.current = channel;
 
     return () => {
+      if (fetchTimeout) clearTimeout(fetchTimeout);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
