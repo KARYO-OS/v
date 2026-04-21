@@ -86,7 +86,7 @@ export default function ImportPersonelModal({
         <div className="bg-info-light rounded-md p-3">
           <p className="text-sm text-info-dark font-semibold mb-2">Format CSV:</p>
           <p className="text-xs text-info-dark font-mono bg-white rounded p-2 overflow-x-auto">
-            NRP,Nama,Pangkat,Satuan,Role,Level_Komando
+            NRP,Nama/Nama Lengkap,Pangkat,Satuan/Unit,Role,Tingkat Komando (opsional)
           </p>
           <p className="text-xs text-info-dark mt-2">
             <strong>Contoh:</strong> 123456,Budi Santoso,Sertu,Komando I,komandan,KOMPI

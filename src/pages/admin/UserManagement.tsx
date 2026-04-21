@@ -99,6 +99,30 @@ function normalizeCsvHeader(value: string): string {
     .replace(/^_+|_+$/g, '');
 }
 
+function pickRowValue(row: Record<string, string>, aliases: string[]): string {
+  for (const alias of aliases) {
+    const value = row[alias];
+    if (value !== undefined && value.trim() !== '') {
+      return value.trim();
+    }
+  }
+
+  return '';
+}
+
+function normalizeImportRow(row: Record<string, string>): Record<string, string> {
+  return {
+    nrp: pickRowValue(row, ['nrp', 'nomor_registrasi_personel', 'nomor_registrasi', 'nomor_induk', 'nip']),
+    nama: pickRowValue(row, ['nama', 'nama_lengkap', 'nama_personel', 'nama_anggota']),
+    pangkat: pickRowValue(row, ['pangkat']),
+    satuan: pickRowValue(row, ['satuan', 'unit', 'subunit']),
+    role: pickRowValue(row, ['role', 'jabatan_role', 'jenis_role', 'status_role']),
+    level_komando: pickRowValue(row, ['level_komando', 'tingkat_komando', 'levelkomando', 'tingkatkomando']),
+    jabatan: pickRowValue(row, ['jabatan']),
+    pin: pickRowValue(row, ['pin', 'pin_awal']),
+  };
+}
+
 /** Parse CSV text into array of objects keyed by header row. */
 function parseCSV(text: string): Record<string, string>[] {
   const normalized = text.replace(/^\uFEFF/, '').trim();
@@ -243,14 +267,14 @@ export default function UserManagement() {
 
   const readImportRowsFromFile = async (file: File): Promise<Record<string, string>[]> => {
     const text = await file.text();
-    const rows = parseCSV(text);
+    const rows = parseCSV(text).map(normalizeImportRow);
     if (rows.length === 0) {
       throw new Error('CSV tidak berisi data yang bisa diproses');
     }
 
     const first = rows[0] ?? {};
     const required = ['nrp', 'nama', 'role', 'satuan'];
-    const missing = required.filter((key) => !(key in first));
+    const missing = required.filter((key) => !(first[key]?.trim()));
     if (missing.length > 0) {
       throw new Error(`Kolom wajib belum lengkap: ${missing.join(', ')}`);
     }
