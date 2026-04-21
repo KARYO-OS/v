@@ -1,13 +1,6 @@
 import { supabase } from '../supabase';
 import type { PosJaga, ScanPosJagaResult } from '../../types';
-
-async function ensureSessionContext(callerId: string, callerRole: string): Promise<void> {
-  const res = await supabase.rpc('set_session_context', {
-    p_user_id: callerId,
-    p_role: callerRole,
-  });
-  if (res?.error) throw res.error;
-}
+import { ensureSessionContext } from './sessionContext';
 
 export async function fetchAllPosJaga(callerId: string, callerRole: string): Promise<PosJaga[]> {
   await ensureSessionContext(callerId, callerRole);

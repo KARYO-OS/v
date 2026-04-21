@@ -43,7 +43,7 @@ export default function GatePassForm() {
         waktu_kembali: waktuKembali,
       });
       setKeperluan(''); setTujuan(''); setWaktuKeluar(''); setWaktuKembali('');
-      showNotification('Gate Pass berhasil diajukan', 'success');
+      showNotification('Gate Pass berhasil diajukan dan menunggu persetujuan komandan', 'success');
     } catch (e: unknown) {
       const err = e instanceof Error ? e : new Error('Gagal mengajukan izin');
       setError(err.message);
@@ -54,7 +54,7 @@ export default function GatePassForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-text-primary">
-        Setelah diajukan, pengajuan otomatis disetujui. Verifikasi keluar dan kembali dilakukan dengan scan QR statis di Pos Jaga.
+        Pengajuan akan ditinjau oleh komandan terlebih dahulu. Setelah disetujui, verifikasi keluar dan kembali dilakukan lewat scan QR Pos Jaga.
       </div>
       {error && (
         <div role="alert" className="rounded-2xl border border-accent-red/20 bg-accent-red/10 px-4 py-3 text-sm text-accent-red">

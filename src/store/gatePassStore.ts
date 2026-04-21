@@ -69,7 +69,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
       throw new Error('Akses hanya untuk petugas jaga');
     }
     const normalizedToken = normalizeScannedQrToken(qrToken);
-    await rpcScanGatePass(normalizedToken);
+    await rpcScanGatePass(user.id, user.role, normalizedToken);
     // Fetch the updated gate pass with user data so callers can render scan result
     const updated = await fetchGatePassByQrToken(user.id, user.role, normalizedToken);
     if (!updated) throw new Error('Gate pass tidak ditemukan setelah scan');

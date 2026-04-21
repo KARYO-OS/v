@@ -134,20 +134,20 @@ describe('gatepass API', () => {
   describe('rpcScanGatePass', () => {
     it('calls server_scan_gate_pass RPC and returns message', async () => {
       mockSupabase.rpc.mockResolvedValue({ data: { message: 'Keluar berhasil' }, error: null });
-      const result = await rpcScanGatePass('qr-1');
+      const result = await rpcScanGatePass(CALLER_ID, CALLER_ROLE, 'qr-1');
       expect(mockSupabase.rpc).toHaveBeenCalledWith('server_scan_gate_pass', { p_qr_token: 'qr-1' });
       expect(result).toBe('Keluar berhasil');
     });
 
     it('returns fallback message when data has no message field', async () => {
       mockSupabase.rpc.mockResolvedValue({ data: {}, error: null });
-      const result = await rpcScanGatePass('qr-1');
+      const result = await rpcScanGatePass(CALLER_ID, CALLER_ROLE, 'qr-1');
       expect(result).toBe('Scan berhasil');
     });
 
     it('throws on RPC error', async () => {
       mockSupabase.rpc.mockResolvedValue({ data: null, error: new Error('QR tidak valid') });
-      await expect(rpcScanGatePass('bad')).rejects.toThrow('QR tidak valid');
+      await expect(rpcScanGatePass(CALLER_ID, CALLER_ROLE, 'bad')).rejects.toThrow('QR tidak valid');
     });
   });
 });

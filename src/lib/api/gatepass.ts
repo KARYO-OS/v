@@ -1,13 +1,6 @@
 import { supabase } from '../supabase';
 import type { GatePass } from '../../types';
-
-async function ensureSessionContext(callerId: string, callerRole: string): Promise<void> {
-  const { error } = await supabase.rpc('set_session_context', {
-    p_user_id: callerId,
-    p_role: callerRole,
-  });
-  if (error) throw error;
-}
+import { ensureSessionContext } from './sessionContext';
 
 export async function fetchGatePassesByUser(callerId: string, callerRole: string, userId: string): Promise<GatePass[]> {
   await ensureSessionContext(callerId, callerRole);
@@ -56,7 +49,8 @@ export async function fetchGatePassByQrToken(callerId: string, callerRole: strin
   return (data as GatePass) ?? null;
 }
 
-export async function insertGatePass(_callerId: string, callerRole: string, payload: Partial<GatePass> & { user_id: string; qr_token: string }): Promise<void> {
+export async function insertGatePass(callerId: string, callerRole: string, payload: Partial<GatePass> & { user_id: string; qr_token: string }): Promise<void> {
+  await ensureSessionContext(callerId, callerRole);
   const { error } = await supabase.rpc('api_insert_gate_pass', {
     p_user_id: payload.user_id,
     p_caller_role: callerRole,
@@ -76,6 +70,7 @@ export async function patchGatePassStatus(
   status: GatePass['status'],
   approvedBy?: string,
 ): Promise<void> {
+  await ensureSessionContext(callerId, callerRole);
   const { error } = await supabase.rpc('api_update_gate_pass_status', {
     p_caller_id: callerId,
     p_caller_role: callerRole,
@@ -91,7 +86,8 @@ interface ScanGatePassResponse {
   message?: string;
 }
 
-export async function rpcScanGatePass(qrToken: string): Promise<string> {
+export async function rpcScanGatePass(callerId: string, callerRole: string, qrToken: string): Promise<string> {
+  await ensureSessionContext(callerId, callerRole);
   const { data, error } = await supabase.rpc('server_scan_gate_pass', { p_qr_token: qrToken });
   if (error || !data) throw new Error(error?.message ?? 'QR tidak valid');
   return (data as ScanGatePassResponse).message ?? 'Scan berhasil';
