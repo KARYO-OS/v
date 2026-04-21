@@ -90,6 +90,21 @@ const ROLE_CODE_TO_ROLE: Record<string, KnownRole> = Object.fromEntries(
   Object.entries(ROLE_CODE_MAP).map(([role, code]) => [code, role]),
 ) as Record<string, KnownRole>;
 
+const ROLE_ALIASES: Record<string, KnownRole> = {
+  superadmin: 'admin',
+  super_admin: 'admin',
+  super-admin: 'admin',
+  admin_super: 'admin',
+  staff: 'staf',
+  staf_operasional: 'staf',
+  staff_operasional: 'staf',
+  stafop: 'staf',
+  provos: 'guard',
+  provost: 'guard',
+  petugas_jaga: 'guard',
+  petugas-jaga: 'guard',
+};
+
 const ROLE_ACCESS_MAP: Record<KnownRole, string> = {
   admin: 'Super Admin: konfigurasi sistem & audit',
   komandan: 'Komando bertingkat (BATALION/KOMPI/PELETON)',
@@ -142,6 +157,8 @@ export function normalizeRole(role: string | null | undefined): KnownRole | stri
   const trimmed = role.trim();
   const lowered = trimmed.toLowerCase();
   if (KNOWN_ROLES.includes(lowered as KnownRole)) return lowered as KnownRole;
+  const aliasMatch = ROLE_ALIASES[lowered];
+  if (aliasMatch) return aliasMatch;
   const codeMatch = ROLE_CODE_TO_ROLE[trimmed.toUpperCase()];
   if (codeMatch) return codeMatch;
   return trimmed;

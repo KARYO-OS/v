@@ -99,6 +99,7 @@ export default function AdminDashboard() {
       () => {
         void refreshDashboard();
       },
+      { debounceMs: 450 },
     );
   }, [refreshDashboard]);
 

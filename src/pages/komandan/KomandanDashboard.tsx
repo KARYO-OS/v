@@ -50,8 +50,19 @@ export default function KomandanDashboard() {
       if (changed.includes('tasks')) {
         void refetchTasks();
       }
-    });
+    }, { debounceMs: 500 });
   }, [fetchStats, refetchTasks, user?.satuan]);
+
+  useEffect(() => {
+    if (!user?.satuan) return undefined;
+    const intervalId = window.setInterval(() => {
+      void fetchStats(user.satuan);
+    }, 60 * 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [fetchStats, user?.satuan]);
 
   const pendingTasks = useMemo(() => tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress'), [tasks]);
   const doneTasks = useMemo(() => tasks.filter((t) => t.status === 'done'), [tasks]);

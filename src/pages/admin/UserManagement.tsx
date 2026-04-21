@@ -17,19 +17,54 @@ import { useAuthStore } from '../../store/authStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
-import { ensureSessionContext } from '../../lib/api/sessionContext';
 import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleKomandan } from '../../lib/rolePermissions';
 import type { User, Role, CommandLevel } from '../../types';
 
 const PAGE_SIZE = 50;
+const MAX_IMPORT_ROWS = 500;
+const IMPORT_CHUNK_SIZE = 100;
+
+function splitCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    const next = line[i + 1];
+
+    if (ch === '"') {
+      if (inQuotes && next === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (ch === ',' && !inQuotes) {
+      out.push(current.trim());
+      current = '';
+      continue;
+    }
+
+    current += ch;
+  }
+
+  out.push(current.trim());
+  return out;
+}
 
 /** Parse CSV text into array of objects keyed by header row. */
 function parseCSV(text: string): Record<string, string>[] {
-  const lines = text.trim().split(/\r?\n/);
+  const normalized = text.replace(/^\uFEFF/, '').trim();
+  if (!normalized) return [];
+  const lines = normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
   if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
+  const headers = splitCsvLine(lines[0]).map((h) => h.trim().replace(/^"|"$/g, '').toLowerCase());
   return lines.slice(1).map((line) => {
-    const values = line.split(',').map((v) => v.trim().replace(/^"|"$/g, ''));
+    const values = splitCsvLine(line).map((v) => v.trim().replace(/^"|"$/g, ''));
     return Object.fromEntries(headers.map((h, i) => [h, values[i] ?? '']));
   });
 }
@@ -220,18 +255,55 @@ export default function UserManagement() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      const rows = parseCSV(text);
-      setImportRows(rows);
-      setImportResult(null);
+      try {
+        const rows = parseCSV(text);
+        if (rows.length === 0) {
+          showNotification('CSV tidak berisi data yang bisa diproses', 'error');
+          setImportRows([]);
+          return;
+        }
+
+        if (rows.length > MAX_IMPORT_ROWS) {
+          showNotification(`Maksimal import ${MAX_IMPORT_ROWS} baris per file`, 'error');
+          setImportRows([]);
+          return;
+        }
+
+        const first = rows[0] ?? {};
+        const required = ['nrp', 'nama', 'role', 'satuan'];
+        const missing = required.filter((key) => !(key in first));
+        if (missing.length > 0) {
+          showNotification(`Kolom wajib belum lengkap: ${missing.join(', ')}`, 'error');
+          setImportRows([]);
+          return;
+        }
+
+        setImportRows(rows);
+        setImportResult(null);
+      } catch {
+        showNotification('Gagal membaca CSV. Pastikan file valid UTF-8.', 'error');
+        setImportRows([]);
+      }
     };
     reader.readAsText(file, 'utf-8');
   };
 
   const handleImport = async () => {
+    if (!isRoleAdmin(authUser?.role)) {
+      showNotification('Import CSV hanya untuk Super Admin', 'error');
+      return;
+    }
+
     if (importRows.length === 0) {
       showNotification('File CSV kosong atau format tidak valid', 'error');
       return;
     }
+
+    if (importRows.length > MAX_IMPORT_ROWS) {
+      showNotification(`Maksimal ${MAX_IMPORT_ROWS} data per import`, 'error');
+      return;
+    }
+
     setIsImporting(true);
     try {
       const authUser = useAuthStore.getState().user;
@@ -246,22 +318,17 @@ export default function UserManagement() {
         nrp: r['nrp'] ?? '',
         pin: r['pin'] ?? '123456',
         nama: r['nama'] ?? '',
-        role: r['role'] ?? 'prajurit',
+        role: (r['role'] ?? 'prajurit').toLowerCase(),
         satuan: r['satuan'] ?? '',
         pangkat: r['pangkat'] ?? '',
         jabatan: r['jabatan'] ?? '',
       }));
-      
       const { data, error } = await supabase.rpc('import_users_csv', { p_users: payload });
-      if (error) {
-        throw new Error(error.message || 'Gagal mengimpor data dari RPC');
-      }
-      
+      if (error) throw error;
       const result = data as { success: number; failed: number; errors: { nrp: string; error: string }[] };
       setImportResult(result);
-      
       if (result.success > 0) {
-        showNotification(`${result.success} personel berhasil diimpor${result.failed > 0 ? `, ${result.failed} gagal` : ''}`, result.failed > 0 ? 'warning' : 'success');
+        showNotification(`${result.success} personel berhasil diimpor`, 'success');
         setPage(1);
         // Refresh users list
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -270,6 +337,9 @@ export default function UserManagement() {
       if (result.failed > 0 && result.errors && result.errors.length > 0) {
         const errorMsgs = result.errors.slice(0, 3).map(e => `${e.nrp}: ${e.error}`).join('; ');
         showNotification(`Gagal: ${errorMsgs}${result.errors.length > 3 ? '...' : ''}`, 'warning');
+      }
+      if (aggregated.failed > 0) {
+        showNotification(`${aggregated.failed} data gagal diimpor`, 'warning');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Gagal mengimpor data';
@@ -772,7 +842,7 @@ export default function UserManagement() {
             <Button variant="ghost" onClick={() => { setShowImport(false); setImportRows([]); setImportResult(null); }}>Tutup</Button>
             <Button variant="secondary" onClick={downloadTemplate}>⬇ Unduh Template</Button>
             {importRows.length > 0 && !importResult && (
-              <Button onClick={handleImport} isLoading={isImporting}>
+              <Button onClick={handleImport} isLoading={isImporting} disabled={!isRoleAdmin(authUser?.role)}>
                 Import {importRows.length} Personel
               </Button>
             )}
@@ -790,6 +860,7 @@ export default function UserManagement() {
                 <p>Kolom: <code className="font-mono text-xs bg-surface/50 px-1.5 py-0.5 rounded-md">nrp, nama, pin, role, satuan, pangkat, jabatan</code></p>
                 <p>• PIN default 6 digit angka (contoh: 123456)</p>
                 <p>• Role: <code className="font-mono text-xs">prajurit</code> / <code className="font-mono text-xs">staf</code> / <code className="font-mono text-xs">komandan</code> / <code className="font-mono text-xs">guard</code> / <code className="font-mono text-xs">admin</code></p>
+                <p>• Maksimum {MAX_IMPORT_ROWS} baris per file (diproses bertahap per {IMPORT_CHUNK_SIZE} data)</p>
                 <p>• Unduh template di bawah untuk format yang tepat</p>
               </div>
 

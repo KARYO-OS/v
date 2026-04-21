@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import QRCode from 'react-qr-code';
 import Button from '../common/Button';
 import { Printer } from 'lucide-react';
+import { useUIStore } from '../../store/uiStore';
 
 interface Props {
   posJaga: { nama: string; qr_token: string };
@@ -13,16 +14,11 @@ interface Props {
  */
 export default function PosJagaQRCode({ posJaga }: Props) {
   const printRef = useRef<HTMLDivElement>(null);
+  const showNotification = useUIStore((s) => s.showNotification);
 
   const handlePrint = () => {
-    if (!printRef.current) return;
-    
-    const printWindow = window.open('', '', 'height=600,width=600');
-    if (!printWindow) {
-      alert('Tolong izinkan pop-up untuk fitur cetak');
-      return;
-    }
-
+    const win = window.open('', '_blank');
+    if (!win || !printRef.current) return;
     // Escape user-supplied name to prevent XSS in the document.write context
     const safeName = posJaga.nama
       .replace(/&/g, '&amp;')

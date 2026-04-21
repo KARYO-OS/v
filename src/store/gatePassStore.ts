@@ -4,12 +4,14 @@ import { GatePass, GatePassStatus } from '../types';
 import { isRoleAdmin, isRoleGuard, isRolePrajurit } from '../lib/rolePermissions';
 import { generateQrToken, normalizeScannedQrToken } from '../utils/gatepass';
 import { useAuthStore } from './authStore';
+import { notifyDataChanged } from '../lib/dataSync';
 
 interface GatePassState {
   gatePasses: GatePass[];
   fetchGatePasses: () => Promise<void>;
   createGatePass: (payload: Partial<GatePass>) => Promise<void>;
   approveGatePass: (id: string, approved: boolean) => Promise<void>;
+  approvePendingGatePasses: (ids: string[]) => Promise<{ approved: number; failed: number }>;
   /**
    * Scan a gate pass QR token.
    * Returns the updated GatePass with joined user data so the caller can
@@ -53,6 +55,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     const qr_token = generateQrToken();
     await insertGatePass(user.id, user.role, { ...payload, user_id: user.id, qr_token });
     await get().fetchGatePasses();
+    notifyDataChanged('gate_pass');
   },
 
   async approveGatePass(id, approved) {
@@ -61,6 +64,27 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     const status: GatePassStatus = approved ? 'approved' : 'rejected';
     await patchGatePassStatus(user.id, user.role, id, status, user.id);
     await get().fetchGatePasses();
+    notifyDataChanged('gate_pass');
+  },
+
+  async approvePendingGatePasses(ids) {
+    const user = useAuthStore.getState().user;
+    if (!user) throw new Error('User tidak ditemukan');
+
+    if (ids.length === 0) {
+      return { approved: 0, failed: 0 };
+    }
+
+    const results = await Promise.allSettled(
+      ids.map((id) => patchGatePassStatus(user.id, user.role, id, 'approved', user.id)),
+    );
+    const approved = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.length - approved;
+
+    await get().fetchGatePasses();
+    notifyDataChanged('gate_pass');
+
+    return { approved, failed };
   },
 
   async scanGatePass(qrToken) {
@@ -74,6 +98,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     const updated = await fetchGatePassByQrToken(user.id, user.role, normalizedToken);
     if (!updated) throw new Error('Gate pass tidak ditemukan setelah scan');
     await get().fetchGatePasses();
+    notifyDataChanged('gate_pass');
     return updated;
   },
 }));

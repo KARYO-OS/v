@@ -75,6 +75,8 @@ export const router = createHashRouter([
     children: [
       { path: ROLE_ROUTE_PATHS.admin.dashboard, element: wrap(<AdminDashboard />) },
       { path: ROLE_ROUTE_PATHS.admin.satuan,    element: wrap(<SatuanManagement />) },
+      { path: ROLE_ROUTE_PATHS.admin.users,     element: wrap(<UserManagement />) },
+      { path: ROLE_ROUTE_PATHS.admin.posJaga,   element: wrap(<PosJagaPage />) },
       { path: ROLE_ROUTE_PATHS.admin.audit,     element: wrap(<AuditLog />) },
       { path: ROLE_ROUTE_PATHS.admin.settings,  element: wrap(<Settings />) },
       { path: ROLE_ROUTE_PATHS.admin.analytics, element: wrap(<Analytics />) },
@@ -86,14 +88,12 @@ export const router = createHashRouter([
   {
     element: <ProtectedRoute allowedRoles={ROUTE_ROLE_GROUPS.adminStaf} />,
     children: [
-      { path: ROLE_ROUTE_PATHS.admin.users,           element: wrap(<UserManagement />) },
       { path: ROLE_ROUTE_PATHS.admin.logistics,       element: wrap(<Logistics />) },
       { path: ROLE_ROUTE_PATHS.admin.documents,       element: wrap(<Documents />) },
       { path: ROLE_ROUTE_PATHS.admin.announcements,   element: wrap(<Announcements />) },
       { path: ROLE_ROUTE_PATHS.admin.schedule,        element: wrap(<ShiftSchedule />) },
       { path: ROLE_ROUTE_PATHS.admin.attendance,      element: wrap(<AttendanceReport />) },
       { path: ROLE_ROUTE_PATHS.admin.gatePassMonitor, element: wrap(<GatePassMonitorPage />) },
-      { path: ROLE_ROUTE_PATHS.admin.posJaga,         element: wrap(<PosJagaPage />) },
     ],
   },
   // Komandan routes
