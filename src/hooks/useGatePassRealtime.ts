@@ -43,8 +43,6 @@ export function useGatePassRealtime() {
           event: '*',
           schema: 'public',
           table: 'gate_pass',
-          // Optimization: only listen to status and time-related changes
-          filter: 'status neq(completed)',
         },
         () => {
           // Use debounced fetch to prevent multiple rapid updates

@@ -37,6 +37,12 @@ describe('rolePermissions helpers', () => {
     expect(normalizeRole('guard')).toBe('guard');
   });
 
+  it('normalizes common human-friendly role aliases', () => {
+    expect(normalizeRole('Super Admin')).toBe('admin');
+    expect(normalizeRole('Staff Operasional')).toBe('staf');
+    expect(normalizeRole('Petugas Jaga / Provos')).toBe('guard');
+  });
+
   it('recognizes known roles from canonical and code forms', () => {
     expect(isKnownRole('admin')).toBe(true);
     expect(isKnownRole('SAD')).toBe(true);

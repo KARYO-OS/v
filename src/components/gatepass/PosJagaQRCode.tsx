@@ -17,8 +17,12 @@ export default function PosJagaQRCode({ posJaga }: Props) {
   const showNotification = useUIStore((s) => s.showNotification);
 
   const handlePrint = () => {
-    const win = window.open('', '_blank');
-    if (!win || !printRef.current) return;
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+    if (!printWindow || !printRef.current) {
+      showNotification('Browser memblokir jendela cetak QR', 'error');
+      return;
+    }
+
     // Escape user-supplied name to prevent XSS in the document.write context
     const safeName = posJaga.nama
       .replace(/&/g, '&amp;')
@@ -89,6 +93,7 @@ export default function PosJagaQRCode({ posJaga }: Props) {
       </html>
     `);
     printWindow.document.close();
+    printWindow.focus();
   };
 
   return (

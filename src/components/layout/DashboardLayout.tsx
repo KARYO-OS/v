@@ -59,7 +59,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
         />
         {/* pb-28 on mobile to avoid content being hidden behind BottomTabBar + safe area */}
         <main ref={mainRef} className={`relative flex-1 overflow-y-auto scroll-y ${mainPadding}`}>
-          <div key={location.pathname} className={`mx-auto w-full ${shellWidth} animate-fade-up`}>
+          <div className={`mx-auto w-full ${shellWidth} animate-fade-up`}>
             {children}
           </div>
         </main>

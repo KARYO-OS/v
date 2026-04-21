@@ -17,12 +17,21 @@ import { useAuthStore } from '../../store/authStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
-import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleKomandan } from '../../lib/rolePermissions';
+import { notifyDataChanged } from '../../lib/dataSync';
+import { ensureSessionContext } from '../../lib/api/sessionContext';
+import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleKomandan, normalizeRole } from '../../lib/rolePermissions';
 import type { User, Role, CommandLevel } from '../../types';
 
 const PAGE_SIZE = 50;
 const MAX_IMPORT_ROWS = 500;
 const IMPORT_CHUNK_SIZE = 100;
+
+function normalizeImportedRole(value: string | undefined): Role {
+  const normalized = normalizeRole(value ?? '') ?? 'prajurit';
+  return (normalized === 'admin' || normalized === 'komandan' || normalized === 'staf' || normalized === 'guard' || normalized === 'prajurit')
+    ? normalized
+    : 'prajurit';
+}
 
 function splitCsvLine(line: string): string[] {
   const out: string[] = [];
@@ -310,35 +319,59 @@ export default function UserManagement() {
       if (!authUser) {
         throw new Error('Anda harus login terlebih dahulu');
       }
-      
+
       // Ensure session context is set before RPC call
       await ensureSessionContext(authUser.id, authUser.role);
-      
-      const payload = importRows.map((r) => ({
-        nrp: r['nrp'] ?? '',
-        pin: r['pin'] ?? '123456',
-        nama: r['nama'] ?? '',
-        role: (r['role'] ?? 'prajurit').toLowerCase(),
-        satuan: r['satuan'] ?? '',
-        pangkat: r['pangkat'] ?? '',
-        jabatan: r['jabatan'] ?? '',
-      }));
-      const { data, error } = await supabase.rpc('import_users_csv', { p_users: payload });
-      if (error) throw error;
-      const result = data as { success: number; failed: number; errors: { nrp: string; error: string }[] };
-      setImportResult(result);
-      if (result.success > 0) {
-        showNotification(`${result.success} personel berhasil diimpor`, 'success');
+
+      const batches = [] as Record<string, string>[][];
+      for (let i = 0; i < importRows.length; i += IMPORT_CHUNK_SIZE) {
+        batches.push(importRows.slice(i, i + IMPORT_CHUNK_SIZE));
+      }
+
+      let totalSuccess = 0;
+      let totalFailed = 0;
+      const allErrors: { nrp: string; error: string }[] = [];
+
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+        const batch = batches[batchIndex];
+        const payload = batch.map((r) => ({
+          nrp: r.nrp ?? '',
+          pin: r.pin ?? '123456',
+          nama: r.nama ?? '',
+          role: normalizeImportedRole(r.role),
+          satuan: r.satuan ?? '',
+          pangkat: r.pangkat ?? '',
+          jabatan: r.jabatan ?? '',
+        }));
+
+        const { data, error } = await supabase.rpc('import_users_csv', { p_users: payload });
+        if (error) throw error;
+
+        const result = data as { success: number; failed: number; errors: { nrp: string; error: string }[] };
+        totalSuccess += result.success;
+        totalFailed += result.failed;
+        if (result.errors?.length) {
+          allErrors.push(...result.errors);
+        }
+
+        if (batches.length > 1) {
+          showNotification(`Memproses import ${batchIndex + 1}/${batches.length}...`, 'info');
+        }
+      }
+
+      const aggregated = { success: totalSuccess, failed: totalFailed, errors: allErrors };
+      setImportResult(aggregated);
+
+      if (aggregated.success > 0) {
+        showNotification(`${aggregated.success} personel berhasil diimpor`, 'success');
         setPage(1);
-        // Refresh users list
-        await new Promise(resolve => setTimeout(resolve, 500));
+        notifyDataChanged('users');
       }
-      
-      if (result.failed > 0 && result.errors && result.errors.length > 0) {
-        const errorMsgs = result.errors.slice(0, 3).map(e => `${e.nrp}: ${e.error}`).join('; ');
-        showNotification(`Gagal: ${errorMsgs}${result.errors.length > 3 ? '...' : ''}`, 'warning');
-      }
-      if (aggregated.failed > 0) {
+
+      if (aggregated.failed > 0 && aggregated.errors.length > 0) {
+        const errorMsgs = aggregated.errors.slice(0, 3).map((e) => `${e.nrp}: ${e.error}`).join('; ');
+        showNotification(`Gagal: ${errorMsgs}${aggregated.errors.length > 3 ? '...' : ''}`, 'warning');
+      } else if (aggregated.failed > 0) {
         showNotification(`${aggregated.failed} data gagal diimpor`, 'warning');
       }
     } catch (err) {

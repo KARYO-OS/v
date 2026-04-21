@@ -95,14 +95,25 @@ const ROLE_ALIASES: Record<string, KnownRole> = {
   super_admin: 'admin',
   'super-admin': 'admin',
   admin_super: 'admin',
+  'super admin': 'admin',
   staff: 'staf',
+  'staf operasional': 'staf',
   staf_operasional: 'staf',
   staff_operasional: 'staf',
+  'staff operasional': 'staf',
+  'staf ops': 'staf',
+  'staff ops': 'staf',
+  stafops: 'staf',
   stafop: 'staf',
+  'petugas jaga': 'guard',
   provos: 'guard',
   provost: 'guard',
+  'petugas jaga provos': 'guard',
+  'petugas jaga provost': 'guard',
   petugas_jaga: 'guard',
   'petugas-jaga': 'guard',
+  'petugas jaga / provos': 'guard',
+  'petugas jaga / provost': 'guard',
 };
 
 const ROLE_ACCESS_MAP: Record<KnownRole, string> = {
@@ -159,6 +170,9 @@ export function normalizeRole(role: string | null | undefined): KnownRole | stri
   if (KNOWN_ROLES.includes(lowered as KnownRole)) return lowered as KnownRole;
   const aliasMatch = ROLE_ALIASES[lowered];
   if (aliasMatch) return aliasMatch;
+  const compacted = lowered.replace(/[\s_/-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const compactAliasMatch = ROLE_ALIASES[compacted];
+  if (compactAliasMatch) return compactAliasMatch;
   const codeMatch = ROLE_CODE_TO_ROLE[trimmed.toUpperCase()];
   if (codeMatch) return codeMatch;
   return trimmed;

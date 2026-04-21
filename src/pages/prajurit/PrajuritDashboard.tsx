@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
 import { useGatePassStore } from '../../store/gatePassStore';
+import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -32,6 +33,7 @@ export default function PrajuritDashboard() {
   const { gatePasses, fetchGatePasses } = useGatePassStore();
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  useGatePassRealtime();
 
   const activeTasks = useMemo(() => tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress'), [tasks]);
   const doneTasks = useMemo(() => tasks.filter((t) => t.status === 'done' || t.status === 'approved'), [tasks]);
