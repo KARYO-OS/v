@@ -1,6 +1,6 @@
 // Service Worker for cache management and offline sync support
 
-const APP_VERSION = '1.3.1-offline';
+const APP_VERSION = '1.5.0-offline';
 const CACHE_VERSION = 'v' + APP_VERSION;
 const ASSET_CACHE = 'assets-' + CACHE_VERSION;
 const DOC_CACHE = 'docs-' + CACHE_VERSION;

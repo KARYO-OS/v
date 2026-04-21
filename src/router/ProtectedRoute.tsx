@@ -42,10 +42,6 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to={getRoleDefaultPath(userRole) ?? APP_ROUTE_PATHS.login} replace />;
   }
 
-  if (!isLoaded) {
-    return <LoadingSpinner fullScreen />;
-  }
-
   if (!isPathEnabled(pathname, flags)) {
     const fallbackPath = getRoleFallbackPath(userRole, flags);
     if (!fallbackPath || fallbackPath === pathname) {

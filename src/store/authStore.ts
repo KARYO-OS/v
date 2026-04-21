@@ -6,9 +6,7 @@ import type { User, KaryoSession } from '../types';
 
 const SESSION_KEY = 'karyo_session';
 const CRYPTO_KEY_SESSION = 'karyo_session_key';
-const PLAINTEXT_SESSION_KEY = 'karyo_session_plain'; // Strong fallback (non-expiring for graceful degradation)
 const SESSION_DURATION_HOURS = 12; // Extended from 8 to 12 hours
-const SESSION_REFRESH_ATTEMPT_MAX = 6; // Increased from 3 to 6
 const AUTH_BROADCAST_CHANNEL = 'karyo_auth_sync';
 
 type AuthSyncMessage =
@@ -101,35 +99,13 @@ export const saveSession = async (session: KaryoSession): Promise<void> => {
     SESSION_KEY,
     JSON.stringify({ iv: encodeBase64(iv), data: encodeBase64(new Uint8Array(ciphertext)) }),
   );
-  
-  // Save plaintext backup (without expiry) for maximum resilience across browser tab/session storage edge cases
-  localStorage.setItem(PLAINTEXT_SESSION_KEY, JSON.stringify(session));
-  
+
   writeSessionContext(session);
 };
 
 export const loadSession = async (): Promise<KaryoSession | null> => {
   const raw = localStorage.getItem(SESSION_KEY);
   if (!raw) {
-    // If encrypted session not found, try plaintext backup
-    const plaintextSession = localStorage.getItem(PLAINTEXT_SESSION_KEY);
-    if (plaintextSession) {
-      try {
-        const session = JSON.parse(plaintextSession) as KaryoSession;
-        if (session.user_id && session.role && session.expires_at) {
-          // Allow session 1 hour past expiry before giving up (graceful degradation)
-          const expiryWithGrace = new Date(session.expires_at).getTime() + (60 * 60 * 1000);
-          if (Date.now() <= expiryWithGrace) {
-            writeSessionContext(session);
-            if (import.meta.env.DEV) console.log('[AUTH] Using plaintext session backup (encrypted not found)');
-            return session;
-          }
-        }
-      } catch {
-        // Invalid plaintext session, continue
-      }
-    }
-    
     const fallbackSession = readSessionContext();
     if (fallbackSession) {
       writeSessionContext(fallbackSession);
@@ -141,26 +117,7 @@ export const loadSession = async (): Promise<KaryoSession | null> => {
   
   const key = await loadStoredKey();
   if (!key) {
-    // If crypto key is unavailable, try plaintext backup first
-    const plaintextSession = localStorage.getItem(PLAINTEXT_SESSION_KEY);
-    if (plaintextSession) {
-      try {
-        const session = JSON.parse(plaintextSession) as KaryoSession;
-        if (session.user_id && session.role && session.expires_at) {
-          // Allow session 1 hour past expiry before giving up
-          const expiryWithGrace = new Date(session.expires_at).getTime() + (60 * 60 * 1000);
-          if (Date.now() <= expiryWithGrace) {
-            writeSessionContext(session);
-            if (import.meta.env.DEV) console.log('[AUTH] Using plaintext backup (crypto key unavailable)');
-            return session;
-          }
-        }
-      } catch {
-        // Invalid plaintext session, try plain context
-      }
-    }
-
-    // Fall back to plain text session context
+    // Fall back to session context when tab-scoped crypto key is unavailable.
     const fallbackSession = readSessionContext();
     if (fallbackSession) {
       writeSessionContext(fallbackSession);
@@ -170,7 +127,6 @@ export const loadSession = async (): Promise<KaryoSession | null> => {
 
     // No recoverable session remains
     localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(PLAINTEXT_SESSION_KEY);
     return null;
   }
   
@@ -183,24 +139,6 @@ export const loadSession = async (): Promise<KaryoSession | null> => {
     );
     const session = JSON.parse(new TextDecoder().decode(decrypted)) as KaryoSession;
     if (new Date(session.expires_at) < new Date()) {
-      // Session expired, try plaintext backup as last resort
-      const plaintextSession = localStorage.getItem(PLAINTEXT_SESSION_KEY);
-      if (plaintextSession) {
-        try {
-          const backupSession = JSON.parse(plaintextSession) as KaryoSession;
-          if (backupSession.user_id && backupSession.role && backupSession.expires_at) {
-            // Allow session 1 hour past expiry
-            const expiryWithGrace = new Date(backupSession.expires_at).getTime() + (60 * 60 * 1000);
-            if (Date.now() <= expiryWithGrace) {
-              writeSessionContext(backupSession);
-              if (import.meta.env.DEV) console.log('[AUTH] Using plaintext backup (crypted expired)');
-              return backupSession;
-            }
-          }
-        } catch {
-          // Invalid backup, proceed with cleanup
-        }
-      }
       clearSession();
       return null;
     }
@@ -208,24 +146,6 @@ export const loadSession = async (): Promise<KaryoSession | null> => {
     return session;
   } catch (err) {
     if (import.meta.env.DEV) console.warn('[AUTH] Failed to decrypt session:', err instanceof Error ? err.message : String(err));
-    
-    // Try plaintext backup on decrypt error
-    const plaintextSession = localStorage.getItem(PLAINTEXT_SESSION_KEY);
-    if (plaintextSession) {
-      try {
-        const session = JSON.parse(plaintextSession) as KaryoSession;
-        if (session.user_id && session.role && session.expires_at) {
-          const expiryWithGrace = new Date(session.expires_at).getTime() + (60 * 60 * 1000);
-          if (Date.now() <= expiryWithGrace) {
-            writeSessionContext(session);
-            if (import.meta.env.DEV) console.log('[AUTH] Recovery with plaintext backup (decrypt error)');
-            return session;
-          }
-        }
-      } catch {
-        // Invalid backup, cleanup
-      }
-    }
     clearSession();
     return null;
   }
@@ -233,7 +153,6 @@ export const loadSession = async (): Promise<KaryoSession | null> => {
 
 const clearSession = (): void => {
   localStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem(PLAINTEXT_SESSION_KEY);
   sessionStorage.removeItem(CRYPTO_KEY_SESSION);
   clearSessionContext();
 };
@@ -267,8 +186,8 @@ async function restoreSessionWithRetry(
   session: KaryoSession,
   set: (partial: Partial<AuthStore>) => void,
 ): Promise<boolean> {
-  const maxRetries = 6; // Increased from 3 to 6
-  const delays = [500, 1000, 2000, 4000, 5000, 5000]; // Exponential backoff capped at 5s
+  const maxRetries = 2;
+  const delays = [300, 700];
 
   // Helper: check if error is transient (should retry) vs permanent (should fail-fast)
   const isTransientError = (err: unknown): boolean => {
@@ -511,8 +430,8 @@ if (typeof window !== 'undefined') {
     globalWindow[AUTH_LISTENERS_INITIALIZED_KEY] = true;
 
     window.addEventListener('storage', (event) => {
-      // Monitor both encrypted and plaintext session keys
-      if ((event.key === SESSION_KEY || event.key === PLAINTEXT_SESSION_KEY) && event.newValue === null) {
+      // Monitor encrypted session key removal to sync logout across tabs
+      if (event.key === SESSION_KEY && event.newValue === null) {
         if (import.meta.env.DEV) console.log('[AUTH] Session cleared from storage event, cleaning up local state');
         cleanupLocalAuthState();
       }

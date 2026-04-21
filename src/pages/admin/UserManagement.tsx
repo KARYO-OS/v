@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
@@ -124,10 +124,6 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showRoleEdit, setShowRoleEdit] = useState(false);
   const [roleEditUser, setRoleEditUser] = useState<User | null>(null);
-  const [roleEditForm, setRoleEditForm] = useState<{ role: Role; level_komando: '' | 'BATALION' | 'KOMPI' | 'PELETON' }>({
-    role: 'prajurit',
-    level_komando: '',
-  });
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
 
   // Form state
@@ -137,7 +133,6 @@ export default function UserManagement() {
   const [isSaving, setIsSaving] = useState(false);
 
   // CSV import state
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [importRows, setImportRows] = useState<Record<string, string>[]>([]);
   const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: { nrp: string; error: string }[] } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -290,57 +285,53 @@ export default function UserManagement() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      try {
-        const rows = parseCSV(text);
-        if (rows.length === 0) {
-          showNotification('CSV tidak berisi data yang bisa diproses', 'error');
-          setImportRows([]);
-          return;
-        }
+  const readImportRowsFromFile = async (file: File): Promise<Record<string, string>[]> => {
+    const text = await file.text();
+    const rows = parseCSV(text);
+    if (rows.length === 0) {
+      throw new Error('CSV tidak berisi data yang bisa diproses');
+    }
 
-        const first = rows[0] ?? {};
-        const required = ['nrp', 'nama', 'role', 'satuan'];
-        const missing = required.filter((key) => !(key in first));
-        if (missing.length > 0) {
-          showNotification(`Kolom wajib belum lengkap: ${missing.join(', ')}`, 'error');
-          setImportRows([]);
-          return;
-        }
+    const first = rows[0] ?? {};
+    const required = ['nrp', 'nama', 'role', 'satuan'];
+    const missing = required.filter((key) => !(key in first));
+    if (missing.length > 0) {
+      throw new Error(`Kolom wajib belum lengkap: ${missing.join(', ')}`);
+    }
 
-        setImportRows(rows);
-        setImportResult(null);
-      } catch {
-        showNotification('Gagal membaca CSV. Pastikan file valid UTF-8.', 'error');
-        setImportRows([]);
-      }
-    };
-    reader.readAsText(file, 'utf-8');
+    return rows;
   };
 
-  const handleImport = async () => {
+  const handleImportFile = async (file: File) => {
     if (!isRoleAdmin(authUser?.role)) {
       showNotification('Import CSV hanya untuk Super Admin', 'error');
       return;
     }
 
-    if (importRows.length === 0) {
+    let rows: Record<string, string>[];
+    try {
+      rows = await readImportRowsFromFile(file);
+      setImportRows(rows);
+      setImportResult(null);
+    } catch (err) {
+      setImportRows([]);
+      const message = err instanceof Error ? err.message : 'Gagal membaca CSV. Pastikan file valid UTF-8.';
+      showNotification(message, 'error');
+      throw err;
+    }
+
+    if (rows.length === 0) {
       showNotification('File CSV kosong atau format tidak valid', 'error');
       return;
     }
 
-    if (importRows.length > MAX_IMPORT_ROWS) {
+    if (rows.length > MAX_IMPORT_ROWS) {
       showNotification(`Maksimal ${MAX_IMPORT_ROWS} data per import`, 'error');
       return;
     }
 
     setIsImporting(true);
-    setImportProgress({ current: 0, total: Math.ceil(importRows.length / IMPORT_CHUNK_SIZE) });
+    setImportProgress({ current: 0, total: Math.ceil(rows.length / IMPORT_CHUNK_SIZE) });
     try {
       const authUser = useAuthStore.getState().user;
       if (!authUser) {
@@ -351,8 +342,8 @@ export default function UserManagement() {
       await ensureSessionContext(authUser.id, authUser.role);
 
       const batches = [] as Record<string, string>[][];
-      for (let i = 0; i < importRows.length; i += IMPORT_CHUNK_SIZE) {
-        batches.push(importRows.slice(i, i + IMPORT_CHUNK_SIZE));
+      for (let i = 0; i < rows.length; i += IMPORT_CHUNK_SIZE) {
+        batches.push(rows.slice(i, i + IMPORT_CHUNK_SIZE));
       }
 
       let totalSuccess = 0;
@@ -421,20 +412,16 @@ export default function UserManagement() {
 
   const openRoleEdit = (user: User) => {
     setRoleEditUser(user);
-    setRoleEditForm({
-      role: user.role,
-      level_komando: user.level_komando ?? '',
-    });
     setShowRoleEdit(true);
   };
 
-  const handleRoleUpdate = async () => {
-    if (!roleEditUser) return;
+  const handleRoleUpdate = async (userId: string, role: Role, levelKomando?: CommandLevel) => {
+    if (!userId) return;
 
     // Validate role edit form
     const errors = validateRoleEditForm({
-      role: roleEditForm.role,
-      level_komando: roleEditForm.level_komando || undefined,
+      role,
+      level_komando: levelKomando,
     });
 
     if (errors.length > 0) {
@@ -444,11 +431,11 @@ export default function UserManagement() {
 
     setIsSaving(true);
     try {
-      await updateUser(roleEditUser.id, {
-        role: roleEditForm.role,
-        level_komando: isRoleKomandan(roleEditForm.role) ? roleEditForm.level_komando : undefined,
+      await updateUser(userId, {
+        role,
+        level_komando: isRoleKomandan(role) ? levelKomando : undefined,
       });
-      showNotification(`Role ${roleEditUser.nama} berhasil diubah`, 'success');
+      showNotification(`Role ${roleEditUser?.nama ?? 'personel'} berhasil diubah`, 'success');
       setShowRoleEdit(false);
       setRoleEditUser(null);
     } catch (err) {
