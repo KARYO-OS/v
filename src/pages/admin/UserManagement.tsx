@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import VirtualizedTable from '../../components/ui/VirtualizedTable';
 import Button from '../../components/common/Button';
@@ -352,6 +352,9 @@ interface ImportRowsResult {
 }
 
 export default function UserManagement() {
+  const nrpInputRef = useRef<HTMLInputElement | null>(null);
+  const namaInputRef = useRef<HTMLInputElement | null>(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const setPage = (page: number) => setCurrentPage(Math.max(1, page));
 
@@ -447,16 +450,16 @@ export default function UserManagement() {
     return { active, inactive };
   }, [selectedUsersOnPage]);
 
-  const resetAllFilters = () => {
+  const resetAllFilters = useCallback(() => {
     setSearchNrpRaw('');
     setSearchNamaRaw('');
     setFilterRole('');
     setFilterStatus('');
     setFilterSatuan('');
     setPage(1);
-  };
+  }, []);
 
-  const applyQuickFilter = (preset: 'all' | 'active' | 'inactive' | 'admin' | 'komandan' | 'my-satuan') => {
+  const applyQuickFilter = useCallback((preset: 'all' | 'active' | 'inactive' | 'admin' | 'komandan' | 'my-satuan') => {
     if (preset === 'all') {
       resetAllFilters();
       return;
@@ -484,7 +487,42 @@ export default function UserManagement() {
       setFilterSatuan(authUser.satuan);
       setPage(1);
     }
-  };
+  }, [authUser?.satuan, resetAllFilters]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName;
+      const isTypingContext =
+        !!target &&
+        (target.isContentEditable || tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT');
+
+      if (event.key === '/' && !isTypingContext) {
+        event.preventDefault();
+        namaInputRef.current?.focus();
+        return;
+      }
+
+      if (event.key.toLowerCase() === 'n' && event.altKey && !isTypingContext) {
+        event.preventDefault();
+        nrpInputRef.current?.focus();
+        return;
+      }
+
+      if (event.key === 'Escape' && hasFilters) {
+        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
+          (target as HTMLElement).blur();
+        }
+        resetAllFilters();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [hasFilters, resetAllFilters]);
+
+  const quickFilterButtonClass =
+    'min-h-[34px] rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors duration-150';
 
   useEffect(() => {
     setSelectedUserIds(new Set());
@@ -1086,6 +1124,7 @@ export default function UserManagement() {
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               </span>
               <input
+                ref={nrpInputRef}
                 type="text"
                 placeholder="Contoh: 1234567890"
                 value={searchNrpRaw}
@@ -1100,6 +1139,7 @@ export default function UserManagement() {
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               </span>
               <input
+                ref={namaInputRef}
                 type="text"
                 placeholder="Contoh: Ahmad Reza"
                 value={searchNamaRaw}
@@ -1174,16 +1214,57 @@ export default function UserManagement() {
 
           <div className="flex flex-wrap items-center gap-2 rounded-xl border border-surface/60 bg-surface/20 p-2">
             <span className="px-1 text-[11px] font-semibold uppercase tracking-wide text-text-muted">Preset Cepat:</span>
-            <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('all')}>Semua</Button>
-            <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('active')}>Aktif</Button>
-            <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('inactive')}>Nonaktif</Button>
-            <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('admin')}>Admin</Button>
-            <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('komandan')}>Komandan</Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className={`${quickFilterButtonClass} ${!hasFilters ? 'bg-primary/10 text-primary' : ''}`}
+              onClick={() => applyQuickFilter('all')}
+            >
+              Semua
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className={`${quickFilterButtonClass} ${filterStatus === 'active' ? 'bg-primary/10 text-primary' : ''}`}
+              onClick={() => applyQuickFilter('active')}
+            >
+              Aktif
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className={`${quickFilterButtonClass} ${filterStatus === 'inactive' ? 'bg-primary/10 text-primary' : ''}`}
+              onClick={() => applyQuickFilter('inactive')}
+            >
+              Nonaktif
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className={`${quickFilterButtonClass} ${filterRole === 'admin' ? 'bg-primary/10 text-primary' : ''}`}
+              onClick={() => applyQuickFilter('admin')}
+            >
+              Admin
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className={`${quickFilterButtonClass} ${filterRole === 'komandan' ? 'bg-primary/10 text-primary' : ''}`}
+              onClick={() => applyQuickFilter('komandan')}
+            >
+              Komandan
+            </Button>
             {authUser?.satuan && (
-              <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('my-satuan')}>
+              <Button
+                size="sm"
+                variant="ghost"
+                className={`${quickFilterButtonClass} ${filterSatuan === authUser.satuan ? 'bg-primary/10 text-primary' : ''}`}
+                onClick={() => applyQuickFilter('my-satuan')}
+              >
                 Satuan Saya
               </Button>
             )}
+            <span className="ml-auto px-1 text-[11px] text-text-muted">Shortcut: / Nama • Alt+N NRP • Esc Reset</span>
           </div>
 
           {/* Filter summary tags with performance info */}
