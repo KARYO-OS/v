@@ -118,7 +118,7 @@ code,
 }
 
 .app-card {
-  border-radius: 1rem;
+  border-radius: 1.125rem;
   background: color-mix(in srgb, var(--color-bg-card) 99%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-surface) 88%, transparent);
   box-shadow: var(--ui-shadow-app-card);
@@ -127,6 +127,10 @@ code,
 
 .app-card:hover {
   box-shadow: var(--ui-shadow-app-card-hover);
+}
+
+.app-card:focus-within {
+  border-color: color-mix(in srgb, var(--color-primary) 26%, var(--color-surface));
 }
 
 /* Glass morphism utility */
@@ -371,6 +375,7 @@ code,
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scrollbar-gutter: stable;
 }
 
 /* ── Section heading ──────────────────────────────────────── */

@@ -32,12 +32,12 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     }
   }, [location.pathname]);
 
-  const mobileBottomPadding = bottomNavigationEnabled ? 'pb-36' : 'pb-12';
+  const mobileBottomPadding = bottomNavigationEnabled ? 'pb-40' : 'pb-16';
   const mainPadding = displayDensity === 'compact'
-    ? `px-4 py-3 ${mobileBottomPadding} sm:px-5 sm:py-4 lg:px-6 lg:py-6 lg:pb-10`
-    : `px-5 py-5 ${mobileBottomPadding} sm:px-6 lg:px-8 lg:py-7 lg:pb-10`;
+    ? `px-4 py-3 ${mobileBottomPadding} sm:px-5 sm:py-4 lg:px-7 lg:py-6 lg:pb-12`
+    : `px-5 py-5 ${mobileBottomPadding} sm:px-6 lg:px-10 lg:py-8 lg:pb-12`;
 
-  const shellWidth = displayDensity === 'compact' ? 'max-w-[1440px]' : 'max-w-[1360px]';
+  const shellWidth = displayDensity === 'compact' ? 'max-w-[1560px]' : 'max-w-[1480px]';
 
   return (
     <div className="desktop-shell flex min-h-[100dvh] overflow-hidden bg-military-dark" data-density={displayDensity}>
