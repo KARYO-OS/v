@@ -33,7 +33,9 @@ import { bulkImportUsers, invalidateUserStatsCache } from '../../lib/api/optimiz
 import { optimizedRealtimeSubscriber } from '../../lib/api/realtimeOptimized600Users';
 import type { User, Role, CommandLevel } from '../../types';
 
-const PAGE_SIZE = 50;
+// Page size options for 1000+ user management
+const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
+const PAGE_SIZE = 50 as const; // Default, but can be changed by user
 const MAX_IMPORT_ROWS = 5000;
 const DEFAULT_IMPORT_PIN = '123456';
 const FALLBACK_HEADERS = ['nrp', 'nama', 'pangkat', 'satuan', 'role', 'level_komando', 'jabatan', 'pin'];
@@ -353,6 +355,9 @@ export default function UserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const setPage = (page: number) => setCurrentPage(Math.max(1, page));
 
+  // Page size selector for 1000+ users (25, 50, or 100 per page)
+  const [pageSize, setPageSize] = useState<typeof PAGE_SIZE_OPTIONS[number]>(PAGE_SIZE);
+
   // Dedicated search fields for NRP and NAMA (1000+ user optimization)
   const [searchNrpRaw, setSearchNrpRaw] = useState('');
   const searchNrp = useDebounce(searchNrpRaw, 400);
@@ -377,7 +382,7 @@ export default function UserManagement() {
     ascending: false,
     serverPaginated: true,
     page: currentPage,
-    pageSize: PAGE_SIZE,
+    pageSize: pageSize,
     searchQuery: combinedSearch,
     role: filterRole || undefined,
     isActive: filterStatus ? filterStatus === 'active' : undefined,
@@ -1377,13 +1382,33 @@ export default function UserManagement() {
             rowHeight={52}
             overscan={5}
           />
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
-          />
+          
+          {/* Pagination controls with page size selector */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold uppercase tracking-wide text-text-muted">Data per halaman:</label>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number.parseInt(e.target.value, 10) as typeof PAGE_SIZE_OPTIONS[number]);
+                  setPage(1); // Reset to first page when changing page size
+                }}
+                className="form-control w-20 bg-bg-card text-sm"
+              >
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </div>
+
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setPage}
+            />
+          </div>
           </>
         )}
       </div>
