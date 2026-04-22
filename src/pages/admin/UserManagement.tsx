@@ -124,6 +124,36 @@ function normalizeCsvHeader(value: string): string {
     .replace(/^_+|_+$/g, '');
 }
 
+function toPlainNumberString(value: string): string {
+  const normalized = value.trim().replace(',', '.');
+
+  if (!/^[+-]?(\d+(\.\d+)?|\.\d+)(e[+-]?\d+)?$/i.test(normalized)) {
+    return value.trim();
+  }
+
+  const numberValue = Number(normalized);
+  if (!Number.isFinite(numberValue)) return value.trim();
+
+  if (Number.isInteger(numberValue) && Math.abs(numberValue) <= Number.MAX_SAFE_INTEGER) {
+    return Math.trunc(numberValue).toString();
+  }
+
+  return numberValue.toString();
+}
+
+function normalizeNrp(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  const plain = toPlainNumberString(trimmed)
+    .replace(/^'+/, '')
+    .replace(/\s+/g, '')
+    .replace(/\.0+$/, '');
+
+  const digitsOnly = plain.replace(/[^0-9]/g, '');
+  return digitsOnly || plain;
+}
+
 function mapTabularRowsToObjects(records: TabularRow[]): Record<string, string>[] {
   if (records.length === 0) return [];
 
@@ -213,10 +243,18 @@ async function parseSpreadsheetFile(file: File): Promise<Record<string, string>[
     header: 1,
     blankrows: false,
     defval: '',
-    raw: false,
+    raw: true,
   });
 
-  const rows = matrix.map((row) => row.map((cell) => String(cell ?? '').trim()));
+  const rows = matrix.map((row) => row.map((cell) => {
+    if (typeof cell === 'number') {
+      if (Number.isInteger(cell) && Math.abs(cell) <= Number.MAX_SAFE_INTEGER) {
+        return Math.trunc(cell).toString();
+      }
+      return cell.toString();
+    }
+    return String(cell ?? '').trim();
+  }));
   return mapTabularRowsToObjects(rows);
 }
 
@@ -579,7 +617,7 @@ export default function UserManagement() {
 
     for (const row of rows) {
       const normalizedRow = {
-        nrp: (row.nrp ?? '').trim(),
+        nrp: normalizeNrp(row.nrp ?? ''),
         nama: (row.nama ?? '').trim(),
         pangkat: (row.pangkat ?? '').trim(),
         satuan: (row.satuan ?? '').trim(),
@@ -734,7 +772,7 @@ export default function UserManagement() {
 
       const aggregated = { success: totalSuccess, failed: totalFailed, errors: allErrors };
       if (aggregated.success > 0) {
-        showNotification(`${aggregated.success} personel berhasil diimpor`, 'success');
+        showNotification(`${aggregated.success} personel berhasil diimpor. PIN awal: ${DEFAULT_IMPORT_PIN}`, 'success');
         setPage(1);
         notifyDataChanged('users');
       }
