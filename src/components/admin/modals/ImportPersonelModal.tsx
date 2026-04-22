@@ -20,18 +20,21 @@ export default function ImportPersonelModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isDelimitedTextFile = (file: File): boolean => {
+  const isSupportedImportFile = (file: File): boolean => {
     const fileName = file.name.trim().toLowerCase();
     const mimeType = file.type.trim().toLowerCase();
     return (
       fileName.endsWith('.csv') ||
       fileName.endsWith('.tsv') ||
       fileName.endsWith('.txt') ||
+      fileName.endsWith('.xlsx') ||
+      fileName.endsWith('.xls') ||
       mimeType === 'text/csv' ||
       mimeType === 'text/tab-separated-values' ||
       mimeType === 'text/plain' ||
       mimeType === 'application/csv' ||
-      mimeType === 'application/vnd.ms-excel'
+      mimeType === 'application/vnd.ms-excel' ||
+      mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
   };
 
@@ -39,8 +42,8 @@ export default function ImportPersonelModal({
     const file = e.target.files?.[0];
     if (file) {
       // Validate file type
-      if (!isDelimitedTextFile(file)) {
-        onError('Hanya file CSV/TSV/TXT yang diizinkan');
+      if (!isSupportedImportFile(file)) {
+        onError('Hanya file CSV/TSV/TXT/XLS/XLSX yang diizinkan');
         return;
       }
 
@@ -108,12 +111,12 @@ export default function ImportPersonelModal({
         </div>
 
         <div>
-          <label htmlFor="personel-csv-input" className="text-sm font-semibold text-text-primary">File CSV/TSV/TXT *</label>
+          <label htmlFor="personel-csv-input" className="text-sm font-semibold text-text-primary">File CSV/TSV/TXT/XLS/XLSX *</label>
           <input
             id="personel-csv-input"
             ref={fileInputRef}
             type="file"
-            accept=".csv,.CSV,.tsv,.TSV,.txt,.TXT,text/csv,text/tab-separated-values,text/plain"
+            accept=".csv,.CSV,.tsv,.TSV,.txt,.TXT,.xls,.XLS,.xlsx,.XLSX,text/csv,text/tab-separated-values,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             onChange={handleFileChange}
             disabled={isSaving}
             className="mt-1 block w-full text-sm text-text-secondary
@@ -134,7 +137,8 @@ export default function ImportPersonelModal({
         <div className="text-xs text-text-secondary space-y-1">
           <p>• Maksimal ukuran file: 5MB</p>
           <p>• NRP, Nama, dan Satuan wajib diisi (Role opsional, default prajurit)</p>
-          <p>• Mendukung pemisah koma, titik koma, tab, dan pipe (|)</p>
+          <p>• Mendukung format CSV/TSV/TXT/XLS/XLSX</p>
+          <p>• Untuk file teks: mendukung pemisah koma, titik koma, tab, dan pipe (|)</p>
           <p>• PIN di CSV diabaikan, sistem memakai PIN default 123456</p>
           <p>• Duplikat NRP akan dilewati</p>
         </div>

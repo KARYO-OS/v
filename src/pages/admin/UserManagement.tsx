@@ -38,6 +38,7 @@ const DEFAULT_IMPORT_PIN = '123456';
 const FALLBACK_HEADERS = ['nrp', 'nama', 'pangkat', 'satuan', 'role', 'level_komando', 'jabatan', 'pin'];
 
 type CsvDelimiter = ',' | ';' | '\t' | '|';
+type TabularRow = string[];
 
 interface RegistrationFormLink {
   id: string;
@@ -123,6 +124,24 @@ function normalizeCsvHeader(value: string): string {
     .replace(/^_+|_+$/g, '');
 }
 
+function mapTabularRowsToObjects(records: TabularRow[]): Record<string, string>[] {
+  if (records.length === 0) return [];
+
+  const firstRow = records[0];
+  const hasHeader = isLikelyHeaderRow(firstRow);
+  const headerRow = hasHeader ? firstRow : FALLBACK_HEADERS;
+  const headers = headerRow.map((h, index) => {
+    const normalizedHeader = normalizeCsvHeader(h);
+    if (normalizedHeader.length > 0) return normalizedHeader;
+    return `column_${index + 1}`;
+  });
+
+  const dataRows = hasHeader ? records.slice(1) : records;
+  return dataRows
+    .filter((row) => row.some((value) => value.trim() !== ''))
+    .map((row) => Object.fromEntries(headers.map((header, index) => [header, (row[index] ?? '').trim()])));
+}
+
 function parseDelimitedText(text: string, delimiter: CsvDelimiter): string[][] {
   const rows: string[][] = [];
   let currentRow: string[] = [];
@@ -169,6 +188,36 @@ function parseDelimitedText(text: string, delimiter: CsvDelimiter): string[][] {
   }
 
   return rows;
+}
+
+function isSpreadsheetFile(file: File): boolean {
+  const lowerName = file.name.toLowerCase();
+  const mimeType = file.type.trim().toLowerCase();
+  return (
+    lowerName.endsWith('.xlsx') ||
+    lowerName.endsWith('.xls') ||
+    mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    mimeType === 'application/vnd.ms-excel'
+  );
+}
+
+async function parseSpreadsheetFile(file: File): Promise<Record<string, string>[]> {
+  const xlsx = await import('xlsx');
+  const buffer = await file.arrayBuffer();
+  const workbook = xlsx.read(buffer, { type: 'array' });
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) return [];
+
+  const firstSheet = workbook.Sheets[firstSheetName];
+  const matrix = xlsx.utils.sheet_to_json<Array<string | number | boolean | null>>(firstSheet, {
+    header: 1,
+    blankrows: false,
+    defval: '',
+    raw: false,
+  });
+
+  const rows = matrix.map((row) => row.map((cell) => String(cell ?? '').trim()));
+  return mapTabularRowsToObjects(rows);
 }
 
 function isLikelyHeaderRow(row: string[]): boolean {
@@ -250,21 +299,7 @@ function parseCSV(text: string): Record<string, string>[] {
 
   const delimiter = detectCsvDelimiter(normalized);
   const records = parseDelimitedText(normalized, delimiter);
-  if (records.length === 0) return [];
-
-  const firstRow = records[0];
-  const hasHeader = isLikelyHeaderRow(firstRow);
-  const headerRow = hasHeader ? firstRow : FALLBACK_HEADERS;
-  const headers = headerRow.map((h, index) => {
-    const normalizedHeader = normalizeCsvHeader(h);
-    if (normalizedHeader.length > 0) return normalizedHeader;
-    return `column_${index + 1}`;
-  });
-
-  const dataRows = hasHeader ? records.slice(1) : records;
-  return dataRows
-    .filter((row) => row.some((value) => value.trim() !== ''))
-    .map((row) => Object.fromEntries(headers.map((header, index) => [header, (row[index] ?? '').trim()])));
+  return mapTabularRowsToObjects(records);
 }
 
 interface ImportRowsResult {
@@ -508,8 +543,9 @@ export default function UserManagement() {
   };
 
   const readImportRowsFromFile = async (file: File): Promise<ImportRowsResult> => {
-    const text = await decodeImportFile(file);
-    const parsedRows = parseCSV(text);
+    const parsedRows = isSpreadsheetFile(file)
+      ? await parseSpreadsheetFile(file)
+      : parseCSV(await decodeImportFile(file));
     const rows = parsedRows.map(normalizeImportRow);
     if (rows.length === 0) {
       throw new Error('CSV tidak berisi data yang bisa diproses');

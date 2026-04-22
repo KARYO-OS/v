@@ -52,7 +52,7 @@ describe('ImportPersonelModal', () => {
     const file = new File(['hello'], 'personel.pdf', { type: 'application/pdf' });
     fireEvent.change(targetInput as HTMLInputElement, { target: { files: [file] } });
 
-    expect(onError).toHaveBeenCalledWith('Hanya file CSV/TSV/TXT yang diizinkan');
+    expect(onError).toHaveBeenCalledWith('Hanya file CSV/TSV/TXT/XLS/XLSX yang diizinkan');
     expect(onImport).not.toHaveBeenCalled();
   });
 
@@ -72,6 +72,32 @@ describe('ImportPersonelModal', () => {
     expect(fileInput).toBeTruthy();
 
     const file = new File(['NRP\tNama\tSatuan\tRole\n123456\tBudi\tSatuan A\tprajurit'], 'personel.tsv', { type: 'text/tab-separated-values' });
+    fireEvent.change(fileInput as HTMLInputElement, { target: { files: [file] } });
+
+    await user.click(screen.getByRole('button', { name: 'Impor' }));
+
+    await waitFor(() => expect(onImport).toHaveBeenCalledWith(file));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('accepts xlsx files and triggers import', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <ImportPersonelModal
+        isOpen
+        isSaving={false}
+        onImport={onImport}
+        onClose={onClose}
+        onError={onError}
+      />,
+    );
+
+    const fileInput = container.querySelector('input[type="file"]');
+    expect(fileInput).toBeTruthy();
+
+    const file = new File(['dummy-binary'], 'personel.xlsx', {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
     fireEvent.change(fileInput as HTMLInputElement, { target: { files: [file] } });
 
     await user.click(screen.getByRole('button', { name: 'Impor' }));
