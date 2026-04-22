@@ -5,6 +5,7 @@ import Button from '../../components/common/Button';
 import PageHeader from '../../components/ui/PageHeader';
 import { RoleBadge } from '../../components/common/Badge';
 import { TableSkeleton } from '../../components/common/Skeleton';
+import Pagination from '../../components/ui/Pagination';
 import UserDetailModal from '../../components/common/UserDetailModal';
 import UserTableActions from '../../components/admin/UserTableActions';
 import BatchOperationModals from '../../components/admin/BatchOperationModals';
@@ -30,6 +31,7 @@ import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleAdmin, isRoleKoma
 import { validatePin, validateRoleEditForm, getFirstErrorMessage } from '../../lib/validation/personelValidation';
 import type { User, Role, CommandLevel } from '../../types';
 
+const PAGE_SIZE = 50;
 const MAX_IMPORT_ROWS = 5000;
 const IMPORT_CHUNK_SIZE = 50;
 const DEFAULT_IMPORT_PIN = '123456';
@@ -365,17 +367,23 @@ function getErrorMessage(error: unknown, fallback = 'Gagal memproses data import
 }
 
 export default function UserManagement() {
-  const setPage = (_page: number) => undefined;
+  const [currentPage, setCurrentPage] = useState(1);
+  const setPage = (page: number) => setCurrentPage(Math.max(1, page));
+  const [displayMode, setDisplayMode] = useState<'all' | 'paged'>('all');
+  const isPagedMode = displayMode === 'paged';
 
   const [searchRaw, setSearchRaw] = useState('');
   const search = useDebounce(searchRaw, 300);
   const [filterRole, setFilterRole] = useState<Role | ''>('');
   const [filterStatus, setFilterStatus] = useState<'active' | 'inactive' | ''>('');
 
-  const { users, isLoading, error, totalItems, createUser, updateUser, toggleUserActive, deleteUser, resetUserPin, getUserById } = useUsers({
+  const { users, isLoading, error, totalItems, totalPages, createUser, updateUser, toggleUserActive, deleteUser, resetUserPin, getUserById } = useUsers({
     orderBy: 'created_at',
     ascending: false,
-    serverPaginated: false,
+    serverPaginated: isPagedMode,
+    page: currentPage,
+    pageSize: PAGE_SIZE,
+    searchQuery: isPagedMode ? search : '',
     role: filterRole || undefined,
     isActive: filterStatus ? filterStatus === 'active' : undefined,
   });
@@ -415,6 +423,8 @@ export default function UserManagement() {
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
 
   const filteredUsers = useMemo(() => {
+    if (isPagedMode) return users;
+
     const query = search.trim().toLowerCase();
     if (!query) return users;
 
@@ -425,7 +435,7 @@ export default function UserManagement() {
       (u.jabatan?.toLowerCase().includes(query) ?? false) ||
       (u.satuan?.toLowerCase().includes(query) ?? false),
     );
-  }, [users, search]);
+  }, [isPagedMode, users, search]);
 
   const pageStats = useMemo(() => {
     const active = filteredUsers.filter((u) => u.is_active).length;
@@ -446,7 +456,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     setSelectedUserIds(new Set());
-  }, [filteredUsers]);
+  }, [filteredUsers, currentPage]);
 
   const loadRegistrationForms = async () => {
     if (!isRoleAdmin(authUser?.role) || !authUser?.id) {
@@ -1045,7 +1055,7 @@ export default function UserManagement() {
             <>
               <span>{totalItems} personel terdaftar</span>
               <span>{pageStats.pageCount} data tampil</span>
-              <span>Mode tampil: Semua user</span>
+              <span>Mode tampil: {isPagedMode ? `Bertahap (${PAGE_SIZE}/halaman)` : 'Semua user'}</span>
             </>
           }
         />
@@ -1118,13 +1128,13 @@ export default function UserManagement() {
                 type="text"
                 placeholder="Cari nama atau NRP..."
                 value={searchRaw}
-                  onChange={(e) => { setSearchRaw(e.target.value); }}
+                onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
                 className="form-control w-full bg-bg-card pl-9"
               />
             </div>
               <select
                 value={filterRole}
-                onChange={(e) => { setFilterRole(e.target.value as Role | ''); }}
+                onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
                 className="form-control w-full bg-bg-card"
               >
                 <option value="">Semua Role</option>
@@ -1134,7 +1144,7 @@ export default function UserManagement() {
               </select>
               <select
                 value={filterStatus}
-                onChange={(e) => { setFilterStatus(e.target.value as 'active' | 'inactive' | ''); }}
+                onChange={(e) => { setFilterStatus(e.target.value as 'active' | 'inactive' | ''); setPage(1); }}
                 className="form-control w-full bg-bg-card"
               >
                 <option value="">Semua Status</option>
@@ -1143,6 +1153,26 @@ export default function UserManagement() {
               </select>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+              <div className="col-span-2 grid grid-cols-2 gap-1 rounded-lg border border-surface/70 bg-surface/25 p-1 sm:col-span-1 sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => { setDisplayMode('all'); setPage(1); }}
+                  className={`rounded-md px-2 py-1.5 text-xs font-semibold transition-colors ${
+                    !isPagedMode ? 'bg-primary text-white' : 'text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  Semua
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setDisplayMode('paged'); setPage(1); }}
+                  className={`rounded-md px-2 py-1.5 text-xs font-semibold transition-colors ${
+                    isPagedMode ? 'bg-primary text-white' : 'text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  Bertahap
+                </button>
+              </div>
               <Button variant="outline" size="sm" onClick={exportFilteredCSV} className="w-full sm:w-auto">
               <span className="flex items-center gap-1.5">
                 <ICONS.Download className="h-3.5 w-3.5" aria-hidden="true" />
@@ -1164,6 +1194,7 @@ export default function UserManagement() {
                     setSearchRaw('');
                     setFilterRole('');
                     setFilterStatus('');
+                    setPage(1);
                   }}
                   className="w-full sm:w-auto"
                 >
@@ -1439,6 +1470,16 @@ export default function UserManagement() {
             caption="Tabel manajemen personel berdasarkan filter role, status, dan pencarian"
             emptyMessage="Tidak ada personel ditemukan"
           />
+          {isPagedMode && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={PAGE_SIZE}
+              compactOnMobile
+              onPageChange={setPage}
+            />
+          )}
           </>
         )}
       </div>
