@@ -36,7 +36,7 @@ describe('ImportPersonelModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('rejects non-csv files', async () => {
+  it('rejects unsupported files', async () => {
     render(
       <ImportPersonelModal
         isOpen
@@ -49,10 +49,34 @@ describe('ImportPersonelModal', () => {
 
     const targetInput = document.querySelector('input[type="file"]') as HTMLInputElement | null;
     expect(targetInput).toBeTruthy();
-    const file = new File(['hello'], 'personel.txt', { type: 'text/plain' });
+    const file = new File(['hello'], 'personel.pdf', { type: 'application/pdf' });
     fireEvent.change(targetInput as HTMLInputElement, { target: { files: [file] } });
 
-    expect(onError).toHaveBeenCalledWith('Hanya file CSV yang diizinkan');
+    expect(onError).toHaveBeenCalledWith('Hanya file CSV/TSV/TXT yang diizinkan');
     expect(onImport).not.toHaveBeenCalled();
+  });
+
+  it('accepts tsv files and triggers import', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <ImportPersonelModal
+        isOpen
+        isSaving={false}
+        onImport={onImport}
+        onClose={onClose}
+        onError={onError}
+      />,
+    );
+
+    const fileInput = container.querySelector('input[type="file"]');
+    expect(fileInput).toBeTruthy();
+
+    const file = new File(['NRP\tNama\tSatuan\tRole\n123456\tBudi\tSatuan A\tprajurit'], 'personel.tsv', { type: 'text/tab-separated-values' });
+    fireEvent.change(fileInput as HTMLInputElement, { target: { files: [file] } });
+
+    await user.click(screen.getByRole('button', { name: 'Impor' }));
+
+    await waitFor(() => expect(onImport).toHaveBeenCalledWith(file));
+    expect(onClose).toHaveBeenCalled();
   });
 });

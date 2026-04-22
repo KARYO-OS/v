@@ -34,6 +34,10 @@ import type { User, Role, CommandLevel } from '../../types';
 const PAGE_SIZE = 50;
 const MAX_IMPORT_ROWS = 5000;
 const IMPORT_CHUNK_SIZE = 50;
+const DEFAULT_IMPORT_PIN = '123456';
+const FALLBACK_HEADERS = ['nrp', 'nama', 'pangkat', 'satuan', 'role', 'level_komando', 'jabatan', 'pin'];
+
+type CsvDelimiter = ',' | ';' | '\t' | '|';
 
 interface RegistrationFormLink {
   id: string;
@@ -54,7 +58,7 @@ function normalizeImportedRole(value: string | undefined): Role {
     : 'prajurit';
 }
 
-function splitCsvLine(line: string, delimiter: string): string[] {
+function splitCsvLine(line: string, delimiter: CsvDelimiter): string[] {
   const out: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -86,13 +90,21 @@ function splitCsvLine(line: string, delimiter: string): string[] {
   return out;
 }
 
-function detectCsvDelimiter(headerLine: string): ',' | ';' | '\t' {
-  const candidates: Array<',' | ';' | '\t'> = [',', ';', '\t'];
-  let bestDelimiter: ',' | ';' | '\t' = ',';
+function detectCsvDelimiter(text: string): CsvDelimiter {
+  const candidates: CsvDelimiter[] = [',', ';', '\t', '|'];
+  let bestDelimiter: CsvDelimiter = ',';
   let bestCount = -1;
 
+  const sampleLines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .slice(0, 10);
+
+  if (sampleLines.length === 0) return bestDelimiter;
+
   for (const delimiter of candidates) {
-    const count = splitCsvLine(headerLine, delimiter).length;
+    const count = sampleLines.reduce((total, line) => total + Math.max(splitCsvLine(line, delimiter).length - 1, 0), 0);
     if (count > bestCount) {
       bestCount = count;
       bestDelimiter = delimiter;
@@ -111,6 +123,102 @@ function normalizeCsvHeader(value: string): string {
     .replace(/^_+|_+$/g, '');
 }
 
+function parseDelimitedText(text: string, delimiter: CsvDelimiter): string[][] {
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentField = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    const next = text[i + 1];
+
+    if (ch === '"') {
+      if (inQuotes && next === '"') {
+        currentField += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (ch === delimiter && !inQuotes) {
+      currentRow.push(currentField.trim());
+      currentField = '';
+      continue;
+    }
+
+    if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (ch === '\r' && next === '\n') i += 1;
+      currentRow.push(currentField.trim());
+      currentField = '';
+      if (currentRow.some((field) => field !== '')) {
+        rows.push(currentRow);
+      }
+      currentRow = [];
+      continue;
+    }
+
+    currentField += ch;
+  }
+
+  currentRow.push(currentField.trim());
+  if (currentRow.some((field) => field !== '')) {
+    rows.push(currentRow);
+  }
+
+  return rows;
+}
+
+function isLikelyHeaderRow(row: string[]): boolean {
+  const knownHeaderTokens = new Set([
+    'nrp',
+    'nomor_registrasi_personel',
+    'nomor_registrasi',
+    'nomor_induk',
+    'nip',
+    'nama',
+    'nama_lengkap',
+    'satuan',
+    'unit',
+    'role',
+    'jabatan',
+    'pangkat',
+    'level_komando',
+    'tingkat_komando',
+    'pin',
+  ]);
+
+  const normalizedRow = row.map((cell) => normalizeCsvHeader(cell));
+  const knownCount = normalizedRow.filter((cell) => knownHeaderTokens.has(cell)).length;
+  return knownCount >= 2;
+}
+
+async function decodeImportFile(file: File): Promise<string> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (bytes.length === 0) return '';
+
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return new TextDecoder('utf-16le').decode(bytes);
+  }
+
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return new TextDecoder('utf-16be').decode(bytes);
+  }
+
+  if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+
+  const utf8Text = new TextDecoder('utf-8').decode(bytes);
+  if (utf8Text.includes('\uFFFD')) {
+    return new TextDecoder('windows-1252').decode(bytes);
+  }
+
+  return utf8Text;
+}
+
 function pickRowValue(row: Record<string, string>, aliases: string[]): string {
   for (const alias of aliases) {
     const value = row[alias];
@@ -124,14 +232,14 @@ function pickRowValue(row: Record<string, string>, aliases: string[]): string {
 
 function normalizeImportRow(row: Record<string, string>): Record<string, string> {
   return {
-    nrp: pickRowValue(row, ['nrp', 'nomor_registrasi_personel', 'nomor_registrasi', 'nomor_induk', 'nip', 'no_nrp']),
-    nama: pickRowValue(row, ['nama', 'nama_lengkap', 'nama_personel', 'nama_anggota', 'nama_nama_lengkap']),
-    pangkat: pickRowValue(row, ['pangkat']),
-    satuan: pickRowValue(row, ['satuan', 'unit', 'subunit', 'satuan_unit', 'nama_satuan']),
-    role: pickRowValue(row, ['role', 'jabatan_role', 'jenis_role', 'status_role', 'peran']),
-    level_komando: pickRowValue(row, ['level_komando', 'tingkat_komando', 'levelkomando', 'tingkatkomando']),
-    jabatan: pickRowValue(row, ['jabatan']),
-    pin: pickRowValue(row, ['pin', 'pin_awal']),
+    nrp: pickRowValue(row, ['nrp', 'nomor_registrasi_personel', 'nomor_registrasi', 'nomor_induk', 'nip', 'no_nrp', 'id_personel']),
+    nama: pickRowValue(row, ['nama', 'nama_lengkap', 'nama_personel', 'nama_anggota', 'nama_nama_lengkap', 'full_name', 'name']),
+    pangkat: pickRowValue(row, ['pangkat', 'rank']),
+    satuan: pickRowValue(row, ['satuan', 'unit', 'subunit', 'satuan_unit', 'nama_satuan', 'kesatuan', 'satker', 'unit_kerja', 'department']),
+    role: pickRowValue(row, ['role', 'jabatan_role', 'jenis_role', 'status_role', 'peran', 'akses', 'hak_akses']),
+    level_komando: pickRowValue(row, ['level_komando', 'tingkat_komando', 'levelkomando', 'tingkatkomando', 'command_level']),
+    jabatan: pickRowValue(row, ['jabatan', 'posisi', 'position']),
+    pin: pickRowValue(row, ['pin', 'pin_awal', 'default_pin']),
   };
 }
 
@@ -139,14 +247,29 @@ function normalizeImportRow(row: Record<string, string>): Record<string, string>
 function parseCSV(text: string): Record<string, string>[] {
   const normalized = text.replace(/^\uFEFF/, '').trim();
   if (!normalized) return [];
-  const lines = normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
-  if (lines.length < 2) return [];
-  const delimiter = detectCsvDelimiter(lines[0]);
-  const headers = splitCsvLine(lines[0], delimiter).map((h) => normalizeCsvHeader(h));
-  return lines.slice(1).map((line) => {
-    const values = splitCsvLine(line, delimiter).map((v) => v.trim().replace(/^"|"$/g, ''));
-    return Object.fromEntries(headers.map((h, i) => [h, values[i] ?? '']));
+
+  const delimiter = detectCsvDelimiter(normalized);
+  const records = parseDelimitedText(normalized, delimiter);
+  if (records.length === 0) return [];
+
+  const firstRow = records[0];
+  const hasHeader = isLikelyHeaderRow(firstRow);
+  const headerRow = hasHeader ? firstRow : FALLBACK_HEADERS;
+  const headers = headerRow.map((h, index) => {
+    const normalizedHeader = normalizeCsvHeader(h);
+    if (normalizedHeader.length > 0) return normalizedHeader;
+    return `column_${index + 1}`;
   });
+
+  const dataRows = hasHeader ? records.slice(1) : records;
+  return dataRows
+    .filter((row) => row.some((value) => value.trim() !== ''))
+    .map((row) => Object.fromEntries(headers.map((header, index) => [header, (row[index] ?? '').trim()])));
+}
+
+interface ImportRowsResult {
+  rows: Record<string, string>[];
+  skippedRows: number;
 }
 
 export default function UserManagement() {
@@ -384,21 +507,52 @@ export default function UserManagement() {
     }
   };
 
-  const readImportRowsFromFile = async (file: File): Promise<Record<string, string>[]> => {
-    const text = await file.text();
-    const rows = parseCSV(text).map(normalizeImportRow);
+  const readImportRowsFromFile = async (file: File): Promise<ImportRowsResult> => {
+    const text = await decodeImportFile(file);
+    const parsedRows = parseCSV(text);
+    const rows = parsedRows.map(normalizeImportRow);
     if (rows.length === 0) {
       throw new Error('CSV tidak berisi data yang bisa diproses');
     }
 
-    const required = ['nrp', 'nama', 'satuan'];
-    const validRows = rows.filter((row) => required.every((key) => Boolean(row[key]?.trim())));
+    const validRows: Record<string, string>[] = [];
+    let skippedRows = 0;
+    const seenNrp = new Set<string>();
+
+    for (const row of rows) {
+      const normalizedRow = {
+        nrp: (row.nrp ?? '').trim(),
+        nama: (row.nama ?? '').trim(),
+        pangkat: (row.pangkat ?? '').trim(),
+        satuan: (row.satuan ?? '').trim(),
+        role: (row.role ?? '').trim(),
+        level_komando: (row.level_komando ?? '').trim(),
+        jabatan: (row.jabatan ?? '').trim(),
+        pin: (row.pin ?? '').trim(),
+      };
+
+      if (!normalizedRow.nrp || !normalizedRow.nama || !normalizedRow.satuan) {
+        skippedRows += 1;
+        continue;
+      }
+
+      if (seenNrp.has(normalizedRow.nrp)) {
+        skippedRows += 1;
+        continue;
+      }
+
+      seenNrp.add(normalizedRow.nrp);
+      validRows.push(normalizedRow);
+    }
 
     if (validRows.length === 0) {
       throw new Error('Tidak ada baris valid. Pastikan kolom NRP, Nama, dan Satuan terisi. Kolom Role opsional (default prajurit).');
     }
 
-    return validRows;
+    return {
+      rows: validRows,
+      skippedRows,
+    };
   };
 
   const handleImportFile = async (file: File) => {
@@ -406,7 +560,12 @@ export default function UserManagement() {
       throw new Error('Import CSV hanya untuk Super Admin');
     }
 
-    const rows = await readImportRowsFromFile(file);
+    const parsedResult = await readImportRowsFromFile(file);
+    const rows = parsedResult.rows;
+
+    if (parsedResult.skippedRows > 0) {
+      showNotification(`${parsedResult.skippedRows} baris dilewati (data wajib kosong/duplikat NRP).`, 'warning');
+    }
 
     if (rows.length === 0) {
       throw new Error('File CSV kosong atau format tidak valid');
@@ -439,7 +598,7 @@ export default function UserManagement() {
         const batch = batches[batchIndex];
         const payload = batch.map((r) => ({
           nrp: r.nrp ?? '',
-          pin: '123456',
+          pin: DEFAULT_IMPORT_PIN,
           nama: r.nama ?? '',
           role: normalizeImportedRole(r.role),
           satuan: r.satuan ?? '',

@@ -20,12 +20,16 @@ export default function ImportPersonelModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isCsvFile = (file: File): boolean => {
+  const isDelimitedTextFile = (file: File): boolean => {
     const fileName = file.name.trim().toLowerCase();
     const mimeType = file.type.trim().toLowerCase();
     return (
       fileName.endsWith('.csv') ||
+      fileName.endsWith('.tsv') ||
+      fileName.endsWith('.txt') ||
       mimeType === 'text/csv' ||
+      mimeType === 'text/tab-separated-values' ||
+      mimeType === 'text/plain' ||
       mimeType === 'application/csv' ||
       mimeType === 'application/vnd.ms-excel'
     );
@@ -35,8 +39,8 @@ export default function ImportPersonelModal({
     const file = e.target.files?.[0];
     if (file) {
       // Validate file type
-      if (!isCsvFile(file)) {
-        onError('Hanya file CSV yang diizinkan');
+      if (!isDelimitedTextFile(file)) {
+        onError('Hanya file CSV/TSV/TXT yang diizinkan');
         return;
       }
 
@@ -104,12 +108,12 @@ export default function ImportPersonelModal({
         </div>
 
         <div>
-          <label htmlFor="personel-csv-input" className="text-sm font-semibold text-text-primary">File CSV *</label>
+          <label htmlFor="personel-csv-input" className="text-sm font-semibold text-text-primary">File CSV/TSV/TXT *</label>
           <input
             id="personel-csv-input"
             ref={fileInputRef}
             type="file"
-            accept=".csv,.CSV,text/csv"
+            accept=".csv,.CSV,.tsv,.TSV,.txt,.TXT,text/csv,text/tab-separated-values,text/plain"
             onChange={handleFileChange}
             disabled={isSaving}
             className="mt-1 block w-full text-sm text-text-secondary
@@ -130,6 +134,7 @@ export default function ImportPersonelModal({
         <div className="text-xs text-text-secondary space-y-1">
           <p>• Maksimal ukuran file: 5MB</p>
           <p>• NRP, Nama, dan Satuan wajib diisi (Role opsional, default prajurit)</p>
+          <p>• Mendukung pemisah koma, titik koma, tab, dan pipe (|)</p>
           <p>• PIN di CSV diabaikan, sistem memakai PIN default 123456</p>
           <p>• Duplikat NRP akan dilewati</p>
         </div>
