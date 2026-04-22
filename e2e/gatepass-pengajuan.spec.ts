@@ -44,7 +44,7 @@ test.describe('Gate Pass Pengajuan Baru', () => {
 
 		await expect(page.getByText(tujuan)).toBeVisible();
 		const row = page.locator('main .app-card').filter({ hasText: tujuan }).first();
-		await expect(row.getByText(/Disetujui|Menunggu/i)).toBeVisible();
+		await expect(row.getByText(/Disetujui/i)).toBeVisible();
 	});
 
 	test('halaman scan pos jaga tersedia untuk verifikasi keluar dan kembali', async ({ page }) => {
