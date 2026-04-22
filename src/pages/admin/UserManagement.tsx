@@ -29,11 +29,12 @@ import { notifyDataChanged } from '../../lib/dataSync';
 import { ensureSessionContext } from '../../lib/api/sessionContext';
 import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleAdmin, isRoleKomandan, normalizeRole } from '../../lib/rolePermissions';
 import { validatePin, validateRoleEditForm, getFirstErrorMessage } from '../../lib/validation/personelValidation';
+import { bulkImportUsers, invalidateUserStatsCache } from '../../lib/api/optimized600Users';
+import { optimizedRealtimeSubscriber } from '../../lib/api/realtimeOptimized600Users';
 import type { User, Role, CommandLevel } from '../../types';
 
 const PAGE_SIZE = 50;
 const MAX_IMPORT_ROWS = 5000;
-const IMPORT_CHUNK_SIZE = 50;
 const DEFAULT_IMPORT_PIN = '123456';
 const FALLBACK_HEADERS = ['nrp', 'nama', 'pangkat', 'satuan', 'role', 'level_komando', 'jabatan', 'pin'];
 
@@ -348,24 +349,6 @@ interface ImportRowsResult {
   duplicateRows: number;
 }
 
-function getErrorMessage(error: unknown, fallback = 'Gagal memproses data import'): string {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  if (typeof error === 'string' && error.trim()) return error;
-
-  if (error && typeof error === 'object') {
-    const maybeMessage = (error as { message?: unknown }).message;
-    if (typeof maybeMessage === 'string' && maybeMessage.trim()) return maybeMessage;
-
-    const maybeDetails = (error as { details?: unknown }).details;
-    if (typeof maybeDetails === 'string' && maybeDetails.trim()) return maybeDetails;
-
-    const maybeHint = (error as { hint?: unknown }).hint;
-    if (typeof maybeHint === 'string' && maybeHint.trim()) return maybeHint;
-  }
-
-  return fallback;
-}
-
 export default function UserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const setPage = (page: number) => setCurrentPage(Math.max(1, page));
@@ -459,6 +442,13 @@ export default function UserManagement() {
   useEffect(() => {
     void loadRegistrationForms();
   }, [authUser?.id, authUser?.role]);
+
+  // Cleanup realtime subscriptions on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      optimizedRealtimeSubscriber.unsubscribeAll();
+    };
+  }, []);
 
   const createRegistrationFormLink = async () => {
     if (!isRoleAdmin(authUser?.role) || !authUser?.id) {
@@ -688,107 +678,52 @@ export default function UserManagement() {
     }
 
     setIsImporting(true);
+    const startTime = performance.now();
     try {
-      const authUser = useAuthStore.getState().user;
-      if (!authUser) {
+      const authUserContext = useAuthStore.getState().user;
+      if (!authUserContext) {
         throw new Error('Anda harus login terlebih dahulu');
       }
 
-      // Ensure session context is set before RPC call
-      await ensureSessionContext(authUser.id, authUser.role);
+      await ensureSessionContext(authUserContext.id, authUserContext.role);
 
-      const batches = [] as Record<string, string>[][];
-      for (let i = 0; i < rows.length; i += IMPORT_CHUNK_SIZE) {
-        batches.push(rows.slice(i, i + IMPORT_CHUNK_SIZE));
-      }
+      // Use optimized bulk import API
+      const usersForImport = rows.map((r) => ({
+        nrp: r.nrp ?? '',
+        pin: DEFAULT_IMPORT_PIN,
+        nama: r.nama ?? '',
+        role: normalizeImportedRole(r.role),
+        satuan: r.satuan ?? '',
+        pangkat: r.pangkat ?? '',
+        jabatan: r.jabatan ?? '',
+      }));
 
-      let totalSuccess = 0;
-      let totalFailed = 0;
-      const allErrors: { nrp: string; error: string }[] = [];
+      const result = await bulkImportUsers({
+        users: usersForImport,
+        batchSize: 5000,
+      });
 
-      for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
-        const batch = batches[batchIndex];
-        const payload = batch.map((r) => ({
-          nrp: r.nrp ?? '',
-          pin: DEFAULT_IMPORT_PIN,
-          nama: r.nama ?? '',
-          role: normalizeImportedRole(r.role),
-          satuan: r.satuan ?? '',
-          pangkat: r.pangkat ?? '',
-          jabatan: r.jabatan ?? '',
-        }));
+      const duration = (performance.now() - startTime) / 1000;
 
-        try {
-          const { data, error } = await supabase.rpc('import_users_csv', { p_users: payload });
-          if (error) throw error;
-
-          const result = data as { success: number; failed: number; errors: { nrp: string; error: string }[] };
-          totalSuccess += result.success;
-          totalFailed += result.failed;
-          if (result.errors?.length) {
-            allErrors.push(...result.errors);
-          }
-        } catch (batchError) {
-          // Fallback: if one bad row breaks the whole batch, retry per-row so valid rows still import.
-          const batchMessage = getErrorMessage(batchError, 'Gagal memproses batch import');
-          if (import.meta.env.DEV) {
-            console.warn(`[CSV Import] Batch ${batchIndex + 1}/${batches.length} gagal, fallback ke per-baris:`, batchError);
-          }
-
-          for (const row of batch) {
-            const singlePayload = [{
-              nrp: row.nrp ?? '',
-              pin: DEFAULT_IMPORT_PIN,
-              nama: row.nama ?? '',
-              role: normalizeImportedRole(row.role),
-              satuan: row.satuan ?? '',
-              pangkat: row.pangkat ?? '',
-              jabatan: row.jabatan ?? '',
-            }];
-
-            try {
-              const { data, error } = await supabase.rpc('import_users_csv', { p_users: singlePayload });
-              if (error) throw error;
-
-              const singleResult = data as { success: number; failed: number; errors: { nrp: string; error: string }[] };
-              totalSuccess += singleResult.success;
-              totalFailed += singleResult.failed;
-
-              if (singleResult.errors?.length) {
-                allErrors.push(...singleResult.errors);
-              }
-            } catch (rowError) {
-              totalFailed += 1;
-              allErrors.push({
-                nrp: row.nrp ?? '-',
-                error: `Batch ${batchIndex + 1}/${batches.length}: ${getErrorMessage(rowError, batchMessage)}`,
-              });
-            }
-          }
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-
-      const aggregated = { success: totalSuccess, failed: totalFailed, errors: allErrors };
-      if (aggregated.success > 0) {
-        showNotification(`${aggregated.success} personel berhasil diimpor. PIN awal: ${DEFAULT_IMPORT_PIN}`, 'success');
+      if (result.success > 0) {
+        showNotification(
+          `✅ ${result.success} personel berhasil diimpor dalam ${duration.toFixed(1)}s. PIN: ${DEFAULT_IMPORT_PIN}`,
+          'success'
+        );
         setPage(1);
+        invalidateUserStatsCache();
         notifyDataChanged('users');
       }
 
-      if (aggregated.failed > 0 && aggregated.errors.length > 0) {
-        const errorMsgs = aggregated.errors.slice(0, 3).map((e) => `${e.nrp}: ${e.error}`).join('; ');
-        if (aggregated.success > 0) {
-          showNotification(`Gagal: ${errorMsgs}${aggregated.errors.length > 3 ? '...' : ''}`, 'warning');
+      if (result.failed > 0) {
+        const errorMsgs = result.errors.slice(0, 3).map((e) => `${e.nrp}: ${e.error}`).join('; ');
+        if (result.success > 0) {
+          showNotification(
+            `⚠️ ${result.failed} gagal: ${errorMsgs}${result.errors.length > 3 ? '...' : ''}`,
+            'warning'
+          );
         } else {
-          throw new Error(`Import gagal: ${errorMsgs}${aggregated.errors.length > 3 ? '...' : ''}`);
-        }
-      } else if (aggregated.failed > 0) {
-        if (aggregated.success > 0) {
-          showNotification(`${aggregated.failed} data gagal diimpor`, 'warning');
-        } else {
-          throw new Error('Semua data gagal diimpor');
+          throw new Error(`Import gagal: ${errorMsgs}${result.errors.length > 3 ? '...' : ''}`);
         }
       }
     } catch (err) {
