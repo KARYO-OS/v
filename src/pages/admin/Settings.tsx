@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Download, Upload, AlertTriangle, CloudSun } from 'lucide-react';
+import { AlertTriangle, CloudSun, Download, Palette, RefreshCcw, Upload } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -97,6 +97,18 @@ export default function Settings() {
   const [platformNameInput, setPlatformNameInput] = useState(settings.platformName);
   const [platformTaglineInput, setPlatformTaglineInput] = useState(settings.platformTagline);
   const [platformLogoInput, setPlatformLogoInput] = useState(settings.platformLogoUrl ?? '');
+
+  const brandingPreviewName = platformNameInput.trim() || settings.platformName || 'KARYO OS';
+  const brandingPreviewTagline = platformTaglineInput.trim() || 'Command and Battalion Tracking';
+  const brandingPreviewLogo = platformLogoInput.trim();
+
+  const isBrandingDirty = useMemo(() => {
+    return (
+      platformNameInput.trim() !== settings.platformName.trim() ||
+      platformTaglineInput.trim() !== settings.platformTagline.trim() ||
+      brandingPreviewLogo !== (settings.platformLogoUrl ?? '')
+    );
+  }, [platformNameInput, platformTaglineInput, brandingPreviewLogo, settings]);
 
   // ── Weather / API Eksternal ────────────────────────────────────────────────
   const [weatherApiKeyInput, setWeatherApiKeyInput] = useState(weatherSettings.weatherApiKey);
@@ -307,6 +319,13 @@ export default function Settings() {
     }
   };
 
+  const handleBrandingReset = () => {
+    setPlatformNameInput(settings.platformName);
+    setPlatformTaglineInput(settings.platformTagline);
+    setPlatformLogoInput(settings.platformLogoUrl ?? '');
+    if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+  };
+
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -418,93 +437,153 @@ export default function Settings() {
         />
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="app-card p-6">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="text-lg font-bold tracking-tight text-text-primary">Branding Platform</h2>
-              <Button
-                size="sm"
-                onClick={() => { void handleBrandingSave(); }}
-                disabled={isSavingBranding}
-              >
-                {isSavingBranding ? 'Menyimpan...' : 'Simpan Branding'}
-              </Button>
-            </div>
-
-            <div className="space-y-4">
+          <div className="app-card p-6 lg:col-span-1">
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
               <div>
-                <label htmlFor="platform-name" className="text-sm font-semibold text-text-primary">Nama Platform</label>
-                <input
-                  id="platform-name"
-                  type="text"
-                  className="form-control mt-1"
-                  value={platformNameInput}
-                  onChange={(e) => setPlatformNameInput(e.target.value)}
-                  placeholder="Contoh: KARYO OS"
-                  maxLength={60}
-                />
+                <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  <Palette className="h-3.5 w-3.5" aria-hidden="true" />
+                  Branding Platform
+                </div>
+                <h2 className="text-lg font-bold tracking-tight text-text-primary">Identitas visual aplikasi</h2>
+                <p className="mt-1 text-sm text-text-muted">
+                  Ubah nama, tagline, dan logo yang tampil di login, sidebar, serta judul tab browser.
+                </p>
               </div>
-
-              <div>
-                <label htmlFor="platform-tagline" className="text-sm font-semibold text-text-primary">Tagline Platform</label>
-                <input
-                  id="platform-tagline"
-                  type="text"
-                  className="form-control mt-1"
-                  value={platformTaglineInput}
-                  onChange={(e) => setPlatformTaglineInput(e.target.value)}
-                  placeholder="Contoh: Command and Battalion Tracking"
-                  maxLength={120}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="platform-logo-url" className="text-sm font-semibold text-text-primary">URL Logo Platform</label>
-                <input
-                  id="platform-logo-url"
-                  type="url"
-                  className="form-control mt-1"
-                  value={platformLogoInput}
-                  onChange={(e) => setPlatformLogoInput(e.target.value)}
-                  placeholder="https://example.com/logo.png"
-                />
-                <p className="mt-1 text-xs text-text-muted">Bisa pakai URL publik atau unggah file gambar di bawah ini.</p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  ref={logoFileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleLogoFileChange}
-                />
-                <Button size="sm" variant="outline" onClick={() => logoFileInputRef.current?.click()}>
-                  Unggah Logo
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" variant="ghost" onClick={handleBrandingReset} disabled={!isBrandingDirty || isSavingBranding}>
+                  <RefreshCcw className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Reset Draft
                 </Button>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  onClick={() => setPlatformLogoInput('')}
+                  onClick={() => { void handleBrandingSave(); }}
+                  disabled={isSavingBranding || !isBrandingDirty}
                 >
-                  Hapus Logo
+                  {isSavingBranding ? 'Menyimpan...' : 'Simpan Branding'}
                 </Button>
               </div>
+            </div>
 
-              <div className="rounded-xl border border-surface/70 bg-surface/20 p-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">Preview</p>
-                <div className="flex items-center gap-3">
-                  {platformLogoInput.trim() ? (
-                    <img
-                      src={platformLogoInput.trim()}
-                      alt={platformNameInput || 'Platform'}
-                      className="h-12 w-12 rounded-xl border border-primary/20 bg-primary/10 object-cover"
-                    />
-                  ) : (
-                    <span className="grid h-12 w-12 place-items-center rounded-xl border border-primary/20 bg-primary/10 text-lg text-primary">◈</span>
-                  )}
-                  <div>
-                    <p className="text-sm font-bold text-text-primary">{platformNameInput || 'KARYO OS'}</p>
-                    <p className="text-xs uppercase tracking-[0.1em] text-text-muted">{platformTaglineInput || 'Command and Battalion Tracking'}</p>
+            <div className="mb-5 grid gap-2 sm:grid-cols-3">
+              {[
+                'Ditampilkan di login',
+                'Ditampilkan di sidebar',
+                'Dipakai pada favicon & judul tab',
+              ].map((item) => (
+                <div key={item} className="rounded-xl border border-surface/70 bg-surface/20 px-3 py-2 text-xs text-text-muted">
+                  {item}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="platform-name" className="text-sm font-semibold text-text-primary">Nama Platform</label>
+                  <input
+                    id="platform-name"
+                    type="text"
+                    className="form-control mt-1"
+                    value={platformNameInput}
+                    onChange={(e) => setPlatformNameInput(e.target.value)}
+                    placeholder="Contoh: KARYO OS"
+                    maxLength={60}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="platform-tagline" className="text-sm font-semibold text-text-primary">Tagline Platform</label>
+                  <input
+                    id="platform-tagline"
+                    type="text"
+                    className="form-control mt-1"
+                    value={platformTaglineInput}
+                    onChange={(e) => setPlatformTaglineInput(e.target.value)}
+                    placeholder="Contoh: Command and Battalion Tracking"
+                    maxLength={120}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="platform-logo-url" className="text-sm font-semibold text-text-primary">URL Logo Platform</label>
+                  <input
+                    id="platform-logo-url"
+                    type="url"
+                    className="form-control mt-1"
+                    value={platformLogoInput}
+                    onChange={(e) => setPlatformLogoInput(e.target.value)}
+                    placeholder="https://example.com/logo.png"
+                  />
+                  <p className="mt-1 text-xs text-text-muted">Pakai URL publik atau unggah file gambar agar logo tersimpan sebagai data URL.</p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <input
+                    ref={logoFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoFileChange}
+                  />
+                  <Button size="sm" variant="outline" onClick={() => logoFileInputRef.current?.click()}>
+                    Unggah Logo
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setPlatformLogoInput('')}
+                    disabled={!brandingPreviewLogo}
+                  >
+                    Hapus Logo
+                  </Button>
+                </div>
+
+                <div className="rounded-xl border border-dashed border-surface/70 bg-bg-card/80 p-4 text-sm text-text-muted">
+                  <p className="font-semibold text-text-primary">Catatan branding</p>
+                  <p className="mt-1 leading-relaxed">
+                    Logo yang dipilih akan langsung terlihat pada preview di bawah. Setelah disimpan, aplikasi akan memperbarui judul browser dan favicon secara otomatis.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-surface/70 bg-gradient-to-br from-surface/40 to-bg-card p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">Preview Branding</p>
+                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${isBrandingDirty ? 'bg-accent-gold/10 text-accent-gold' : 'bg-primary/10 text-primary'}`}>
+                    {isBrandingDirty ? 'Draft berubah' : 'Sudah sinkron'}
+                  </span>
+                </div>
+
+                <div className="rounded-2xl border border-surface/70 bg-surface/20 p-4">
+                  <div className="flex items-center gap-3">
+                    {brandingPreviewLogo ? (
+                      <img
+                        src={brandingPreviewLogo}
+                        alt={brandingPreviewName}
+                        className="h-14 w-14 rounded-2xl border border-primary/20 bg-primary/10 object-cover shadow-sm"
+                      />
+                    ) : (
+                      <span className="grid h-14 w-14 place-items-center rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/15 to-blue-600/10 text-xl font-bold text-primary shadow-sm">◈</span>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-base font-bold text-text-primary">{brandingPreviewName}</p>
+                      <p className="mt-0.5 text-xs uppercase tracking-[0.12em] text-text-muted">{brandingPreviewTagline}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 text-xs text-text-muted">
+                    <div className="flex items-center justify-between rounded-xl border border-surface/70 bg-bg-card px-3 py-2">
+                      <span>Logo aktif</span>
+                      <span className="font-semibold text-text-primary">{brandingPreviewLogo ? 'Ya' : 'Tidak'}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl border border-surface/70 bg-bg-card px-3 py-2">
+                      <span>Penerapan judul</span>
+                      <span className="font-semibold text-text-primary">Browser tab</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl border border-surface/70 bg-bg-card px-3 py-2">
+                      <span>Penerapan navigasi</span>
+                      <span className="font-semibold text-text-primary">Sidebar & login</span>
+                    </div>
                   </div>
                 </div>
               </div>

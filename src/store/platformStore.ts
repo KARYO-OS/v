@@ -4,6 +4,7 @@ import { getPlatformSettings, updatePlatformSettings } from '../lib/api/platform
 const PLATFORM_SETTINGS_CACHE_KEY = 'karyo_platform_settings';
 const WEATHER_API_KEY_STORE = 'karyo_weather_api_key';
 const WEATHER_CITY_STORE = 'karyo_weather_city';
+const DEFAULT_FAVICON_SELECTOR = "link[rel='icon']";
 
 export interface PlatformBranding {
   platformName: string;
@@ -77,14 +78,30 @@ const loadCachedWeatherSettings = (): WeatherSettings => ({
   weatherCity: safeStorageGet(WEATHER_CITY_STORE) ?? '',
 });
 
+const getDefaultFaviconHref = (): string | null => {
+  if (typeof document === 'undefined') return null;
+
+  const favicon = document.querySelector(DEFAULT_FAVICON_SELECTOR) as HTMLLinkElement | null;
+  return favicon?.getAttribute('href') ?? null;
+};
+
+const defaultFaviconHref = getDefaultFaviconHref();
+
 const applyDocumentBranding = (settings: PlatformBranding) => {
   if (typeof document === 'undefined') return;
 
   document.title = `${settings.platformName} | Sistem Operasional`;
 
-  const favicon = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
-  if (favicon && settings.platformLogoUrl) {
+  const favicon = document.querySelector(DEFAULT_FAVICON_SELECTOR) as HTMLLinkElement | null;
+  if (!favicon) return;
+
+  if (settings.platformLogoUrl) {
     favicon.href = settings.platformLogoUrl;
+    return;
+  }
+
+  if (defaultFaviconHref) {
+    favicon.href = defaultFaviconHref;
   }
 };
 
