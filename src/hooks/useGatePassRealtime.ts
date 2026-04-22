@@ -5,6 +5,10 @@ import { useAuthStore } from '../store/authStore';
 import { useGatePassStore } from '../store/gatePassStore';
 import { debounce } from '../lib/debounce';
 
+interface UseGatePassRealtimeOptions {
+  enabled?: boolean;
+}
+
 /**
  * Subscribes to real-time gate_pass table changes and syncs the store.
  *
@@ -15,13 +19,15 @@ import { debounce } from '../lib/debounce';
  * - Debounced fetch (500ms) to prevent thrashing from multiple rapid updates
  * - Only subscribes to status changes (INSERT, UPDATE on specific columns)
  */
-export function useGatePassRealtime() {
+export function useGatePassRealtime(options: UseGatePassRealtimeOptions = {}) {
+  const { enabled = true } = options;
   const { user } = useAuthStore();
   const fetchGatePasses = useGatePassStore((s) => s.fetchGatePasses);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const channelNonceRef = useRef(`gate-pass-${Math.random().toString(36).slice(2, 10)}`);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
+  const pendingRefreshWhileHiddenRef = useRef(false);
 
   const debouncedFetch = useMemo(
     () => debounce(() => {
@@ -31,6 +37,10 @@ export function useGatePassRealtime() {
   );
 
   useEffect(() => {
+    if (!enabled) {
+      return () => undefined;
+    }
+
     let disposed = false;
 
     const clearReconnectTimer = () => {
@@ -73,6 +83,11 @@ export function useGatePassRealtime() {
             table: 'gate_pass',
           },
           () => {
+            if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+              pendingRefreshWhileHiddenRef.current = true;
+              return;
+            }
+
             // Use debounced fetch to prevent multiple rapid updates
             debouncedFetch();
           },
@@ -104,12 +119,23 @@ export function useGatePassRealtime() {
       };
     }
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!pendingRefreshWhileHiddenRef.current) return;
+
+      pendingRefreshWhileHiddenRef.current = false;
+      debouncedFetch();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     subscribeChannel();
 
     return () => {
       disposed = true;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearReconnectTimer();
       removeCurrentChannel();
     };
-  }, [user, debouncedFetch]);
+  }, [enabled, user, debouncedFetch]);
 }

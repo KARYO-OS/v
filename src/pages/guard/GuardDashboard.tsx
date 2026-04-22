@@ -8,20 +8,24 @@ import Button from '../../components/common/Button';
 import { ICONS } from '../../icons';
 import { useGatePassStore } from '../../store/gatePassStore';
 import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
+import { useVisibilityAwareRefresh } from '../../hooks/useVisibilityAwareRefresh';
 import type { GatePass } from '../../types';
 
 export default function GuardDashboard() {
   const scanGatePass = useGatePassStore(s => s.scanGatePass);
   const gatePasses = useGatePassStore(s => s.gatePasses);
   const fetchGatePasses = useGatePassStore(s => s.fetchGatePasses);
+  const { requestRefresh: requestGatePassRefresh } = useVisibilityAwareRefresh(fetchGatePasses, {
+    intervalMs: 60 * 1000,
+  });
   const [scannerKey, setScannerKey] = useState(0);
   const [result, setResult] = useState<GatePass | null>(null);
   const [error, setError] = useState<string | null>(null);
   useGatePassRealtime();
 
   useEffect(() => {
-    void fetchGatePasses();
-  }, [fetchGatePasses]);
+    requestGatePassRefresh();
+  }, [requestGatePassRefresh]);
 
   const scanStats = useMemo(() => {
     return gatePasses.reduce(

@@ -10,6 +10,7 @@ import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
 import { useGatePassStore } from '../../store/gatePassStore';
 import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
+import { useVisibilityAwareRefresh } from '../../hooks/useVisibilityAwareRefresh';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -31,15 +32,19 @@ export default function PrajuritDashboard() {
   const { announcements, isLoading: annLoading } = useAnnouncements();
   const { unreadCount } = useMessages({ includeSent: false, enableDirectRealtime: false, subscribeToDataChanges: false });
   const { gatePasses, fetchGatePasses } = useGatePassStore();
+  const canOpenGatePass = isPathEnabled('/prajurit/gatepass', flags);
+  const { requestRefresh: requestGatePassRefresh } = useVisibilityAwareRefresh(fetchGatePasses, {
+    enabled: canOpenGatePass,
+    intervalMs: 2 * 60 * 1000,
+  });
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
-  useGatePassRealtime();
+  useGatePassRealtime({ enabled: canOpenGatePass });
 
   const activeTasks = useMemo(() => tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress'), [tasks]);
   const doneTasks = useMemo(() => tasks.filter((t) => t.status === 'done' || t.status === 'approved'), [tasks]);
   const rejectedTasks = useMemo(() => tasks.filter((t) => t.status === 'rejected'), [tasks]);
 
-  const canOpenGatePass = isPathEnabled('/prajurit/gatepass', flags);
   // Active gate pass: sudah scan keluar (checked_in) atau overdue
   const activeGatePass = useMemo(
     () => (canOpenGatePass ? gatePasses.find((gp) => gp.status === 'checked_in' || gp.status === 'overdue') : undefined),
@@ -47,8 +52,8 @@ export default function PrajuritDashboard() {
   );
 
   useEffect(() => {
-    if (canOpenGatePass) void fetchGatePasses();
-  }, [canOpenGatePass, fetchGatePasses]);
+    requestGatePassRefresh();
+  }, [requestGatePassRefresh]);
 
   // Recent announcements: pinned first, limit 3
   const recentAnnouncements = useMemo(
