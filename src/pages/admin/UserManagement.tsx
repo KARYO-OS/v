@@ -310,6 +310,24 @@ interface ImportRowsResult {
   duplicateRows: number;
 }
 
+function getErrorMessage(error: unknown, fallback = 'Gagal memproses data import'): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  if (typeof error === 'string' && error.trim()) return error;
+
+  if (error && typeof error === 'object') {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === 'string' && maybeMessage.trim()) return maybeMessage;
+
+    const maybeDetails = (error as { details?: unknown }).details;
+    if (typeof maybeDetails === 'string' && maybeDetails.trim()) return maybeDetails;
+
+    const maybeHint = (error as { hint?: unknown }).hint;
+    if (typeof maybeHint === 'string' && maybeHint.trim()) return maybeHint;
+  }
+
+  return fallback;
+}
+
 export default function UserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const setPage = (page: number) => setCurrentPage(Math.max(1, page));
@@ -673,12 +691,42 @@ export default function UserManagement() {
             allErrors.push(...result.errors);
           }
         } catch (batchError) {
-          totalFailed += batch.length;
-          const message = batchError instanceof Error ? batchError.message : 'Gagal memproses batch import';
-          allErrors.push({
-            nrp: batch[0]?.nrp ?? '-',
-            error: `Batch ${batchIndex + 1}/${batches.length}: ${message}`,
-          });
+          // Fallback: if one bad row breaks the whole batch, retry per-row so valid rows still import.
+          const batchMessage = getErrorMessage(batchError, 'Gagal memproses batch import');
+          if (import.meta.env.DEV) {
+            console.warn(`[CSV Import] Batch ${batchIndex + 1}/${batches.length} gagal, fallback ke per-baris:`, batchError);
+          }
+
+          for (const row of batch) {
+            const singlePayload = [{
+              nrp: row.nrp ?? '',
+              pin: DEFAULT_IMPORT_PIN,
+              nama: row.nama ?? '',
+              role: normalizeImportedRole(row.role),
+              satuan: row.satuan ?? '',
+              pangkat: row.pangkat ?? '',
+              jabatan: row.jabatan ?? '',
+            }];
+
+            try {
+              const { data, error } = await supabase.rpc('import_users_csv', { p_users: singlePayload });
+              if (error) throw error;
+
+              const singleResult = data as { success: number; failed: number; errors: { nrp: string; error: string }[] };
+              totalSuccess += singleResult.success;
+              totalFailed += singleResult.failed;
+
+              if (singleResult.errors?.length) {
+                allErrors.push(...singleResult.errors);
+              }
+            } catch (rowError) {
+              totalFailed += 1;
+              allErrors.push({
+                nrp: row.nrp ?? '-',
+                error: `Batch ${batchIndex + 1}/${batches.length}: ${getErrorMessage(rowError, batchMessage)}`,
+              });
+            }
+          }
         }
 
         await new Promise((resolve) => setTimeout(resolve, 0));

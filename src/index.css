@@ -20,6 +20,7 @@
   --ui-focus-ring-width: 2px;
   --ui-focus-ring-offset: 2px;
   --font-family-mono: 'JetBrains Mono', monospace;
+  color-scheme: light;
   --ui-shadow-app-panel: 0 4px 16px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.04);
   --ui-shadow-app-card: 0 2px 12px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.03);
   --ui-shadow-app-card-hover: 0 8px 24px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
@@ -37,6 +38,7 @@
   --color-surface: #1e293b;
   --color-text-primary: #f1f5f9;
   --color-text-muted: #94a3b8;
+  color-scheme: dark;
   --ui-shadow-app-panel: 0 8px 24px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.25);
   --ui-shadow-app-card: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.2);
   --ui-shadow-app-card-hover: 0 8px 28px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.25);
@@ -129,10 +131,22 @@ code,
 
 /* Glass morphism utility */
 .glass {
+  background: rgba(255, 255, 255, 0.72);
   background: color-mix(in srgb, var(--color-bg-card) 72%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid color-mix(in srgb, var(--color-surface) 70%, transparent);
+}
+
+[data-theme="dark"] .glass {
+  background: rgba(15, 23, 42, 0.72);
+}
+
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 /* Gradient text */
@@ -189,6 +203,11 @@ code,
   outline: none;
   border-color: color-mix(in srgb, var(--color-primary) 74%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+/* Avoid double focus indicators: inputs already use custom border + ring above */
+.form-control:focus-visible {
+  outline: none;
 }
 
 /* Scrollbar */
@@ -450,6 +469,7 @@ kbd {
   transition: transform var(--ui-transition-fast), box-shadow var(--ui-transition-fast), border-color var(--ui-transition-fast);
   user-select: none;
   -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
 .interactive:hover {
@@ -458,6 +478,11 @@ kbd {
 
 .interactive:active {
   transform: translateY(0) scale(0.98);
+}
+
+.interactive:focus-visible {
+  outline: var(--ui-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--ui-focus-ring-offset);
 }
 
 /* ── Status dot ───────────────────────────────────────────── */
@@ -547,11 +572,23 @@ kbd {
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  background: rgba(255, 255, 255, 0.7);
   background: color-mix(in srgb, var(--color-bg-card) 70%, transparent);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   z-index: 10;
   animation: fade-in 0.15s ease-out;
+}
+
+[data-theme="dark"] .loading-overlay::after {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .loading-overlay::after {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 /* ── Form select ─────────────────────────────────────────── */
@@ -670,6 +707,7 @@ textarea.form-control {
   padding: 0;
   cursor: pointer;
   flex-shrink: 0;
+  touch-action: manipulation;
   transition: background-color var(--ui-transition-base);
 }
 
@@ -731,6 +769,7 @@ textarea.form-control {
   background: transparent;
   border: none;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background-color var(--ui-transition-fast), color var(--ui-transition-fast), box-shadow var(--ui-transition-fast);
   white-space: nowrap;
 }
@@ -803,6 +842,7 @@ textarea.form-control {
   color: var(--color-text-muted);
   flex-shrink: 0;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background-color var(--ui-transition-fast), border-color var(--ui-transition-fast), color var(--ui-transition-fast), transform var(--ui-transition-fast);
 }
 
