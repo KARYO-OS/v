@@ -990,7 +990,8 @@ export default function UserManagement() {
             <>
               <span>{totalItems} personel terdaftar</span>
               <span>Halaman {currentPage} dari {totalPages}</span>
-              <span>{pageStats.pageCount} data tampil</span>
+              <span>{pageStats.pageCount} data tampil (pageSize: {pageSize})</span>
+              {isLoading && <span className="animate-pulse">⏳ Memuat...</span>}
             </>
           }
         />
@@ -1130,7 +1131,7 @@ export default function UserManagement() {
             </div>
           </div>
 
-          {/* Filter summary tags */}
+          {/* Filter summary tags with performance info */}
           <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
             {searchNrpRaw && (
               <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
@@ -1151,6 +1152,14 @@ export default function UserManagement() {
             {filterSatuan && (
               <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
                 Satuan: {filterSatuan}
+              </span>
+            )}
+            
+            {/* Performance indicator */}
+            {(searchNrpRaw || searchNamaRaw) && (
+              <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/5 px-2.5 py-1 text-success">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-success"></span>
+                {totalItems} hasil ditemukan
               </span>
             )}
           </div>
