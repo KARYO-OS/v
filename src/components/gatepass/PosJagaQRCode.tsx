@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react';
 import Button from '../common/Button';
-import { Printer } from 'lucide-react';
+import { Download, Printer } from 'lucide-react';
 import { useUIStore } from '../../store/uiStore';
 
 interface Props {
@@ -14,7 +14,7 @@ type QRCodeLikeProps = {
 
 /**
  * Menampilkan QR statis pos jaga lengkap dengan nama pos.
- * Tombol cetak tersedia untuk admin mencetak dan menempelnya di pos jaga.
+ * Mendukung cetak dan unduh PNG/JPG agar mudah dipasang di pos jaga.
  */
 export default function PosJagaQRCode({ posJaga }: Props) {
   const printRef = useRef<HTMLDivElement>(null);
@@ -37,6 +37,125 @@ export default function PosJagaQRCode({ posJaga }: Props) {
       disposed = true;
     };
   }, []);
+
+  const buildFilename = (ext: 'png' | 'jpg') => {
+    const base = posJaga.nama
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'pos-jaga';
+    return `qr-pos-jaga-${base}.${ext}`;
+  };
+
+  const drawWrappedText = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    lineHeight: number,
+  ) => {
+    const words = text.split(' ');
+    let line = '';
+    let lineY = y;
+
+    words.forEach((word) => {
+      const testLine = `${line}${word} `;
+      const testWidth = ctx.measureText(testLine).width;
+      if (testWidth > maxWidth && line) {
+        ctx.fillText(line.trim(), x, lineY);
+        line = `${word} `;
+        lineY += lineHeight;
+      } else {
+        line = testLine;
+      }
+    });
+
+    if (line) {
+      ctx.fillText(line.trim(), x, lineY);
+      lineY += lineHeight;
+    }
+
+    return lineY;
+  };
+
+  const handleDownloadImage = async (format: 'png' | 'jpeg') => {
+    const wrapper = printRef.current;
+    const svg = wrapper?.querySelector('svg');
+
+    if (!wrapper || !svg) {
+      showNotification('QR tidak ditemukan untuk diunduh', 'error');
+      return;
+    }
+
+    try {
+      const svgString = new XMLSerializer().serializeToString(svg);
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Gagal membaca QR'));
+        img.src = svgUrl;
+      });
+
+      const canvas = document.createElement('canvas');
+      const canvasWidth = 800;
+      const canvasHeight = 980;
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(svgUrl);
+        throw new Error('Browser tidak mendukung export gambar');
+      }
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      ctx.strokeStyle = '#d1d5db';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(40, 40, canvasWidth - 80, canvasHeight - 80);
+
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#111827';
+      ctx.font = 'bold 44px Arial';
+      const titleBottom = drawWrappedText(ctx, posJaga.nama, canvasWidth / 2, 120, canvasWidth - 120, 52);
+
+      const qrSize = 420;
+      const qrX = (canvasWidth - qrSize) / 2;
+      const qrY = Math.max(220, titleBottom + 24);
+      ctx.drawImage(image, qrX, qrY, qrSize, qrSize);
+
+      ctx.fillStyle = '#4b5563';
+      ctx.font = '24px Arial';
+      drawWrappedText(
+        ctx,
+        'Pindai QR ini menggunakan aplikasi KARYO OS untuk mencatat waktu keluar / kembali',
+        canvasWidth / 2,
+        qrY + qrSize + 60,
+        canvasWidth - 140,
+        34,
+      );
+
+      const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+      const quality = format === 'png' ? undefined : 0.95;
+      const dataUrl = canvas.toDataURL(mimeType, quality);
+
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = buildFilename(format === 'png' ? 'png' : 'jpg');
+      link.click();
+
+      URL.revokeObjectURL(svgUrl);
+      showNotification(`QR berhasil diunduh (${format === 'png' ? 'PNG' : 'JPG'})`, 'success');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Gagal mengunduh QR';
+      showNotification(message, 'error');
+    }
+  };
 
   const handlePrint = () => {
     if (!QRCodeComponent) {
@@ -145,6 +264,24 @@ export default function PosJagaQRCode({ posJaga }: Props) {
       >
         Cetak QR
       </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon={<Download className="w-4 h-4" />}
+          onClick={() => void handleDownloadImage('png')}
+        >
+          Unduh PNG
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon={<Download className="w-4 h-4" />}
+          onClick={() => void handleDownloadImage('jpeg')}
+        >
+          Unduh JPG
+        </Button>
+      </div>
     </div>
   );
 }
