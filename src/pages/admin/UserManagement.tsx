@@ -112,11 +112,11 @@ function pickRowValue(row: Record<string, string>, aliases: string[]): string {
 
 function normalizeImportRow(row: Record<string, string>): Record<string, string> {
   return {
-    nrp: pickRowValue(row, ['nrp', 'nomor_registrasi_personel', 'nomor_registrasi', 'nomor_induk', 'nip']),
-    nama: pickRowValue(row, ['nama', 'nama_lengkap', 'nama_personel', 'nama_anggota']),
+    nrp: pickRowValue(row, ['nrp', 'nomor_registrasi_personel', 'nomor_registrasi', 'nomor_induk', 'nip', 'no_nrp']),
+    nama: pickRowValue(row, ['nama', 'nama_lengkap', 'nama_personel', 'nama_anggota', 'nama_nama_lengkap']),
     pangkat: pickRowValue(row, ['pangkat']),
-    satuan: pickRowValue(row, ['satuan', 'unit', 'subunit']),
-    role: pickRowValue(row, ['role', 'jabatan_role', 'jenis_role', 'status_role']),
+    satuan: pickRowValue(row, ['satuan', 'unit', 'subunit', 'satuan_unit', 'nama_satuan']),
+    role: pickRowValue(row, ['role', 'jabatan_role', 'jenis_role', 'status_role', 'peran']),
     level_komando: pickRowValue(row, ['level_komando', 'tingkat_komando', 'levelkomando', 'tingkatkomando']),
     jabatan: pickRowValue(row, ['jabatan']),
     pin: pickRowValue(row, ['pin', 'pin_awal']),
@@ -272,14 +272,14 @@ export default function UserManagement() {
       throw new Error('CSV tidak berisi data yang bisa diproses');
     }
 
-    const first = rows[0] ?? {};
-    const required = ['nrp', 'nama', 'role', 'satuan'];
-    const missing = required.filter((key) => !(first[key]?.trim()));
-    if (missing.length > 0) {
-      throw new Error(`Kolom wajib belum lengkap: ${missing.join(', ')}`);
+    const required = ['nrp', 'nama', 'satuan'];
+    const validRows = rows.filter((row) => required.every((key) => Boolean(row[key]?.trim())));
+
+    if (validRows.length === 0) {
+      throw new Error('Tidak ada baris valid. Pastikan kolom NRP, Nama, dan Satuan terisi. Kolom Role opsional (default prajurit).');
     }
 
-    return rows;
+    return validRows;
   };
 
   const handleImportFile = async (file: File) => {

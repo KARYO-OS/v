@@ -129,7 +129,7 @@ export default function ImportPersonelModal({
 
         <div className="text-xs text-text-secondary space-y-1">
           <p>• Maksimal ukuran file: 5MB</p>
-          <p>• NRP, Nama, dan Satuan wajib diisi</p>
+          <p>• NRP, Nama, dan Satuan wajib diisi (Role opsional, default prajurit)</p>
           <p>• PIN di CSV diabaikan, sistem memakai PIN default 123456</p>
           <p>• Duplikat NRP akan dilewati</p>
         </div>
