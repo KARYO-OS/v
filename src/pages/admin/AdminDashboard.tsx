@@ -255,7 +255,7 @@ export default function AdminDashboard() {
                   <p className="panel-heading__desc">Akses langsung ke modul yang paling sering dipakai admin.</p>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2.5 md:grid-cols-3">
+              <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3">
                 {enabledQuickLinks.map((item) => {
                   const Icon = ICONS[item.icon];
                   return (

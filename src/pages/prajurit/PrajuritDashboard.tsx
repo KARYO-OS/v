@@ -136,19 +136,19 @@ export default function PrajuritDashboard() {
             to="/prajurit/scan-pos"
             className="group relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-bg-card to-primary/5 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/35 hover:shadow-md"
           >
-            <div className="absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-emerald-500/10 to-transparent" aria-hidden="true" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-28 bg-gradient-to-l from-emerald-500/10 to-transparent sm:block" aria-hidden="true" />
             <div className="relative flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
               <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl bg-emerald-500/15 text-success shadow-sm transition-transform duration-200 group-hover:scale-105">
                 {ICONS.ScanLine ? <ICONS.ScanLine className="h-5 w-5" aria-hidden="true" /> : null}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-success/80">Akses Cepat Scan</p>
+                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-success/80 sm:tracking-[0.28em]">Akses Cepat Scan</p>
                 <p className="mt-0.5 text-base font-semibold text-text-primary">Scan Pos Jaga</p>
                 <p className="mt-1 text-sm text-text-muted">
                   Buka kamera untuk scan QR pos jaga dan lanjutkan validasi NRP/PIN dalam satu alur.
                 </p>
               </div>
-              <span className="inline-flex items-center rounded-full border border-success/20 bg-success/10 px-3 py-1.5 text-xs font-semibold text-success transition-colors group-hover:bg-success/15">
+              <span className="inline-flex self-start whitespace-nowrap rounded-full border border-success/20 bg-success/10 px-3 py-1.5 text-xs font-semibold text-success transition-colors group-hover:bg-success/15 sm:self-auto">
                 Mulai Scan
               </span>
             </div>
@@ -221,7 +221,7 @@ export default function PrajuritDashboard() {
               <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-transform group-hover:scale-105">
                 {ICONS.ClipboardCheck ? <ICONS.ClipboardCheck className="h-4 w-4" aria-hidden="true" /> : null}
               </span>
-              Gate Pass
+              <span className="min-w-0 leading-snug">Gate Pass</span>
             </Link>
           )}
           {canOpenScanPos && (
@@ -229,7 +229,7 @@ export default function PrajuritDashboard() {
               <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-emerald-500/10 text-success transition-transform group-hover:scale-105">
                 {ICONS.ScanLine ? <ICONS.ScanLine className="h-4 w-4" aria-hidden="true" /> : null}
               </span>
-              Scan Pos
+              <span className="min-w-0 leading-snug">Scan Pos</span>
             </Link>
           )}
           {canOpenTasks && (
@@ -237,7 +237,7 @@ export default function PrajuritDashboard() {
               <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-amber-500/10 text-accent-gold transition-transform group-hover:scale-105">
                 {ICONS.CheckSquare ? <ICONS.CheckSquare className="h-4 w-4" aria-hidden="true" /> : null}
               </span>
-              Tugas Saya
+              <span className="min-w-0 leading-snug">Tugas Saya</span>
             </Link>
           )}
           {canOpenMessages && (
@@ -245,7 +245,7 @@ export default function PrajuritDashboard() {
               <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 transition-transform group-hover:scale-105">
                 {ICONS.Megaphone ? <ICONS.Megaphone className="h-4 w-4" aria-hidden="true" /> : null}
               </span>
-              Pesan
+              <span className="min-w-0 leading-snug">Pesan</span>
             </Link>
           )}
           {canOpenLeave && (
@@ -253,7 +253,7 @@ export default function PrajuritDashboard() {
               <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-rose-500/10 text-accent-red transition-transform group-hover:scale-105">
                 {ICONS.UserCheck ? <ICONS.UserCheck className="h-4 w-4" aria-hidden="true" /> : null}
               </span>
-              Ajukan Izin
+              <span className="min-w-0 leading-snug">Ajukan Izin</span>
             </Link>
           )}
         </div>

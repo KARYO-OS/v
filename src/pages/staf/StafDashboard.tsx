@@ -215,7 +215,7 @@ export default function StafDashboard() {
             <div className="panel-heading mb-3">
               <h3 className="panel-heading__title">Modul Akses Cepat</h3>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {modules.map((mod) => (
                 <Link
                   key={mod.path}

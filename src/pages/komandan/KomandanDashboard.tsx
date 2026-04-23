@@ -228,7 +228,7 @@ export default function KomandanDashboard() {
                       </span>
                       <p className="text-sm font-semibold text-text-primary">{announcement.judul}</p>
                     </div>
-                    <p className="ml-7 text-xs text-text-muted line-clamp-2">{announcement.isi}</p>
+                    <p className="mt-1 text-xs text-text-muted line-clamp-2 sm:ml-7 sm:mt-0">{announcement.isi}</p>
                   </div>
                 ))}
               </div>
@@ -301,7 +301,7 @@ export default function KomandanDashboard() {
         {/* Recent tasks */}
         {canOpenTasks && (
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="flex items-center gap-2 font-bold text-text-primary">
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-amber-500/10 text-accent-gold">
                   <ICONS.CheckSquare className="h-4 w-4" aria-hidden="true" />
