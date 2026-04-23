@@ -1073,6 +1073,7 @@ textarea.form-control {
   width: 100%;
   align-items: center;
   gap: 0.625rem;
+  flex-wrap: nowrap;
   border-radius: 1rem;
   border: 1px solid color-mix(in srgb, var(--color-surface) 72%, transparent);
   background: color-mix(in srgb, var(--color-bg-card) 92%, transparent);
@@ -1088,6 +1089,27 @@ textarea.form-control {
   color: var(--color-primary);
   border-color: color-mix(in srgb, var(--color-primary) 38%, transparent);
   box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.dashboard-quick-link > :last-child {
+  min-width: 0;
+  flex: 1;
+  white-space: normal;
+  word-break: break-word;
+}
+
+@media (max-width: 480px) {
+  .dashboard-quick-strip {
+    display: grid;
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .dashboard-quick-link {
+    width: 100%;
+  }
 }
 
 @media (min-width: 768px) {
