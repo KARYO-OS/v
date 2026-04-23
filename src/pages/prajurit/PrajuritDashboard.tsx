@@ -131,6 +131,30 @@ export default function PrajuritDashboard() {
           }
         />
 
+        {canOpenScanPos && (
+          <Link
+            to="/prajurit/scan-pos"
+            className="group relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-bg-card to-primary/5 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/35 hover:shadow-md"
+          >
+            <div className="absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-emerald-500/10 to-transparent" aria-hidden="true" />
+            <div className="relative flex items-center gap-4">
+              <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl bg-emerald-500/15 text-success shadow-sm transition-transform duration-200 group-hover:scale-105">
+                {ICONS.ScanLine ? <ICONS.ScanLine className="h-5 w-5" aria-hidden="true" /> : null}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-success/80">Akses Cepat Scan</p>
+                <p className="mt-0.5 text-base font-semibold text-text-primary">Scan Pos Jaga</p>
+                <p className="mt-1 text-sm text-text-muted">
+                  Buka kamera untuk scan QR pos jaga dan lanjutkan validasi NRP/PIN dalam satu alur.
+                </p>
+              </div>
+              <span className="inline-flex items-center rounded-full border border-success/20 bg-success/10 px-3 py-1.5 text-xs font-semibold text-success transition-colors group-hover:bg-success/15">
+                Mulai Scan
+              </span>
+            </div>
+          </Link>
+        )}
+
         {/* Alert: gate pass sedang aktif (checked_in / overdue) */}
         {activeGatePass && (
           <div className={`flex items-start gap-3 rounded-2xl border p-4 shadow-sm ${activeGatePass.status === 'overdue' ? 'border-accent-red/30 bg-gradient-to-r from-accent-red/10 to-rose-500/5' : 'border-primary/30 bg-gradient-to-r from-primary/8 to-emerald-500/5'}`}>
