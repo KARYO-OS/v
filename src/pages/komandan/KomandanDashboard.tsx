@@ -20,7 +20,8 @@ import { useKomandanDashboardStore } from '../../store/komandanDashboardStore';
 import { subscribeDataChanges } from '../../lib/dataSync';
 import { useVisibilityAwareRefresh } from '../../hooks/useVisibilityAwareRefresh';
 import { isPathEnabled } from '../../lib/featureFlags';
-import { getKomandanScopeLabel } from '../../lib/rolePermissions';
+import { getKomandanScopeLabel, normalizeRole } from '../../lib/rolePermissions';
+import { supabase } from '../../lib/supabase';
 import type { User } from '../../types';
 
 export default function KomandanDashboard() {
@@ -49,6 +50,8 @@ export default function KomandanDashboard() {
   const [personnelFilter, setPersonnelFilter] = useState<'all' | 'online' | 'offline'>('all');
   const [selectedPersonnel, setSelectedPersonnel] = useState<User | null>(null);
   const [showPersonnelDetail, setShowPersonnelDetail] = useState(false);
+  const [fallbackPersonnel, setFallbackPersonnel] = useState<User[]>([]);
+  const [isFallbackPersonnelLoading, setIsFallbackPersonnelLoading] = useState(false);
   const refreshStatsOnly = useCallback(async () => {
     await fetchStats(user?.satuan);
   }, [fetchStats, user?.satuan]);
@@ -81,16 +84,69 @@ export default function KomandanDashboard() {
     }, { debounceMs: 500 });
   }, [requestStatsRefresh, requestTaskRefresh]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchFallbackPersonnel = async () => {
+      if (!user?.satuan) {
+        if (mounted) setFallbackPersonnel([]);
+        return;
+      }
+
+      // Fallback only when primary source returns empty result.
+      if (isPersonnelLoading || personnelUsers.length > 0) {
+        if (mounted) setFallbackPersonnel([]);
+        return;
+      }
+
+      setIsFallbackPersonnelLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id,nrp,nama,role,pangkat,jabatan,satuan,satuan_id,foto_url,is_active,is_online,login_attempts,locked_until,last_login,created_at,updated_at')
+          .eq('is_active', true)
+          .eq('satuan', user.satuan)
+          .order('nama', { ascending: true })
+          .limit(24);
+
+        if (error) throw error;
+        if (!mounted) return;
+
+        const normalized = ((data as User[] | null) ?? []).map((row) => ({
+          ...row,
+          role: (normalizeRole(row.role) ?? row.role) as User['role'],
+        }));
+        setFallbackPersonnel(normalized);
+      } catch {
+        if (mounted) setFallbackPersonnel([]);
+      } finally {
+        if (mounted) setIsFallbackPersonnelLoading(false);
+      }
+    };
+
+    void fetchFallbackPersonnel();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isPersonnelLoading, personnelUsers.length, user?.satuan]);
+
   const pendingTasks = useMemo(() => tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress'), [tasks]);
   const doneTasks = useMemo(() => tasks.filter((t) => t.status === 'done'), [tasks]);
   const approvedTasks = useMemo(() => tasks.filter((t) => t.status === 'approved'), [tasks]);
   const pinnedAnnouncements = useMemo(() => announcements.filter((a) => a.is_pinned), [announcements]);
+  const activePersonnel = useMemo(() => (
+    personnelUsers.length > 0 ? personnelUsers : fallbackPersonnel
+  ), [personnelUsers, fallbackPersonnel]);
+
   const filteredPersonnel = useMemo(() => {
-    if (personnelFilter === 'online') return personnelUsers.filter((u) => u.is_online);
-    if (personnelFilter === 'offline') return personnelUsers.filter((u) => !u.is_online);
-    return personnelUsers;
-  }, [personnelFilter, personnelUsers]);
-  const panelOnlineCount = useMemo(() => personnelUsers.filter((u) => u.is_online).length, [personnelUsers]);
+    if (personnelFilter === 'online') return activePersonnel.filter((u) => u.is_online);
+    if (personnelFilter === 'offline') return activePersonnel.filter((u) => !u.is_online);
+    return activePersonnel;
+  }, [activePersonnel, personnelFilter]);
+
+  const panelOnlineCount = useMemo(() => activePersonnel.filter((u) => u.is_online).length, [activePersonnel]);
+  const isPersonnelPanelLoading = isPersonnelLoading || isFallbackPersonnelLoading;
 
   const handleOpenPersonnelDetail = useCallback(async (target: User) => {
     try {
@@ -248,7 +304,7 @@ export default function KomandanDashboard() {
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-surface/70 bg-surface/20 px-2.5 py-1 text-xs text-text-muted">
-                {panelOnlineCount}/{personnelUsers.length} online
+                {panelOnlineCount}/{activePersonnel.length} online
               </span>
               {(['all', 'online', 'offline'] as const).map((option) => (
                 <button
@@ -267,7 +323,7 @@ export default function KomandanDashboard() {
             </div>
 
             <div className="mt-4 space-y-2">
-              {isPersonnelLoading ? (
+              {isPersonnelPanelLoading ? (
                 <p className="text-sm text-text-muted">Memuat personel...</p>
               ) : filteredPersonnel.length === 0 ? (
                 <EmptyState
