@@ -10,8 +10,8 @@ import {
 import { CheckCircle } from 'lucide-react';
 
 /**
- * Generate otomatis waktu_keluar (30 menit dari sekarang)
- * dan waktu_kembali (4 jam dari sekarang)
+ * Generate otomatis waktu_keluar dan waktu_kembali.
+ * Nilai ini dihitung saat submit scan keluar dan akan disesuaikan lagi saat scan kembali.
  */
 function getAutoTimes(): { keluar: string; kembali: string } {
   const now = new Date();
@@ -121,7 +121,7 @@ export default function GatePassForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-text-primary">
-        Isi keperluan dan tujuan izin keluar. Waktu keluar dan kembali akan diatur otomatis (keluar dalam 30 menit, kembali dalam 4 jam).
+        Isi keperluan dan tujuan izin keluar. Waktu keluar akan dihitung saat mulai scan keluar, dan waktu kembali akan dihitung lagi saat scan kembali.
       </div>
 
       {errors.form && (
