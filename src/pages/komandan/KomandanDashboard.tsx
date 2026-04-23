@@ -162,12 +162,12 @@ export default function KomandanDashboard() {
 
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="app-card p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-start justify-between gap-3 sm:items-center">
+              <div className="flex min-w-0 items-center gap-2.5">
                 <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
                   <ICONS.LayoutDashboard className="h-4 w-4" aria-hidden="true" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <h3 className="text-base font-bold text-text-primary">Ringkasan Operasi</h3>
                   <p className="text-xs text-text-muted">Situasi cepat untuk pengambilan keputusan harian.</p>
                 </div>
@@ -277,12 +277,12 @@ export default function KomandanDashboard() {
                 />
               ) : (
                 filteredPersonnel.slice(0, 6).map((personel) => (
-                  <div key={personel.id} className="flex items-center justify-between gap-3 rounded-2xl border border-surface/60 bg-surface/15 px-3 py-2.5">
+                  <div key={personel.id} className="flex flex-col gap-3 rounded-2xl border border-surface/60 bg-surface/15 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-text-primary">{personel.nama}</p>
                       <p className="text-xs text-text-muted">NRP {personel.nrp} · {personel.pangkat ?? '—'} {personel.jabatan ? `· ${personel.jabatan}` : ''}</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                       <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${personel.is_online ? 'bg-success/10 text-success' : 'bg-surface/40 text-text-muted'}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${personel.is_online ? 'bg-success' : 'bg-text-muted/50'}`} aria-hidden="true" />
                         {personel.is_online ? 'Online' : 'Offline'}

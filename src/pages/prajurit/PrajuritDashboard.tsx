@@ -113,7 +113,7 @@ export default function PrajuritDashboard() {
                 attnLoading ? (
                   <LoadingSpinner size="sm" />
                 ) : todayAttendance ? (
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <AttendanceBadge status={todayAttendance.status} />
                     {todayAttendance.check_in && !todayAttendance.check_out && (
                       <Button size="sm" variant="secondary" onClick={handleCheckOut} isLoading={checkingOut}>
@@ -137,7 +137,7 @@ export default function PrajuritDashboard() {
             className="group relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-bg-card to-primary/5 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/35 hover:shadow-md"
           >
             <div className="absolute inset-y-0 right-0 w-28 bg-gradient-to-l from-emerald-500/10 to-transparent" aria-hidden="true" />
-            <div className="relative flex items-center gap-4">
+            <div className="relative flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
               <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl bg-emerald-500/15 text-success shadow-sm transition-transform duration-200 group-hover:scale-105">
                 {ICONS.ScanLine ? <ICONS.ScanLine className="h-5 w-5" aria-hidden="true" /> : null}
               </span>
@@ -328,7 +328,7 @@ export default function PrajuritDashboard() {
               {recentAnnouncements.map((ann) => (
                 <div
                   key={ann.id}
-                  className={`group app-card flex items-start gap-3 px-4 py-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${ann.is_pinned ? 'border-accent-gold/40 bg-gradient-to-r from-amber-50/80 to-transparent dark:from-amber-900/10' : ''}`}
+                  className={`group app-card flex flex-col gap-2.5 px-4 py-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:flex-row sm:items-start sm:gap-3 ${ann.is_pinned ? 'border-accent-gold/40 bg-gradient-to-r from-amber-50/80 to-transparent dark:from-amber-900/10' : ''}`}
                 >
                   {ann.is_pinned ? (
                     <span className="mt-0.5 grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-accent-gold/15 text-accent-gold">
@@ -343,7 +343,7 @@ export default function PrajuritDashboard() {
                     <p className="text-sm font-semibold text-text-primary">{ann.judul}</p>
                     <p className="text-xs text-text-muted mt-0.5 line-clamp-2">{ann.isi}</p>
                   </div>
-                  <span className="flex-shrink-0 text-[11px] text-text-muted/70 mt-0.5">
+                  <span className="self-start text-[11px] text-text-muted/70 sm:mt-0.5 sm:self-auto">
                     {new Date(ann.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                   </span>
                 </div>

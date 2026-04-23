@@ -214,7 +214,7 @@ export default function AdminDashboard() {
                   <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-transform group-hover:scale-105">
                     <Icon className="h-4 w-4" aria-hidden="true" />
                   </span>
-                  <span className="truncate">{item.title}</span>
+                  <span className="min-w-0 break-words leading-snug">{item.title}</span>
                 </Link>
               );
             })}
@@ -264,11 +264,11 @@ export default function AdminDashboard() {
                     to={item.href}
                     className="group rounded-2xl border border-surface/70 bg-bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg dark:hover:bg-surface/30"
                   >
-                    <div className="mb-2 flex items-center gap-2.5">
+                    <div className="mb-2 flex items-start gap-2.5">
                       <span className="grid h-9 w-9 place-items-center rounded-xl border border-surface/60 bg-gradient-to-br from-primary/12 to-primary/4 text-primary transition-transform duration-200 group-hover:scale-110 shadow-sm">
                         <Icon className="h-4 w-4" aria-hidden="true" />
                       </span>
-                      <h3 className="font-semibold text-text-primary text-sm">
+                      <h3 className="min-w-0 break-words text-sm font-semibold leading-snug text-text-primary">
                         {item.title}
                       </h3>
                     </div>
@@ -302,7 +302,7 @@ export default function AdminDashboard() {
               </div>
 
               <div className="mt-4 rounded-2xl border border-surface/70 bg-bg-card p-4">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <h4 className="font-semibold text-text-primary flex items-center gap-2">
                     <span className="grid h-6 w-6 place-items-center rounded-lg bg-accent-red/10 text-accent-red">
                       <ICONS.AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
@@ -320,12 +320,12 @@ export default function AdminDashboard() {
                 ) : (
                   <div className="mt-3 space-y-2">
                     {lowStockItems.slice(0, 4).map((item) => (
-                      <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-surface/70 px-3 py-2">
+                      <div key={item.id} className="flex flex-col gap-2 rounded-lg border border-surface/70 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-text-primary">{item.nama_item}</p>
                           <p className="text-xs text-text-muted">{item.kategori ?? 'Umum'}{item.lokasi ? ` · ${item.lokasi}` : ''}</p>
                         </div>
-                        <span className={`text-sm font-semibold ${item.jumlah <= 3 || item.kondisi === 'rusak_berat' ? 'text-accent-red' : 'text-accent-gold'}`}>
+                        <span className={`self-start text-sm font-semibold sm:self-auto ${item.jumlah <= 3 || item.kondisi === 'rusak_berat' ? 'text-accent-red' : 'text-accent-gold'}`}>
                           {item.jumlah} {item.satuan_item ?? 'unit'}
                         </span>
                       </div>
@@ -356,7 +356,7 @@ export default function AdminDashboard() {
                     />
                   ) : (
                     latestUsers.slice(0, 6).map((member) => (
-                      <div key={member.id} className="flex items-center justify-between gap-3 rounded-2xl border border-surface/60 bg-surface/15 px-3 py-2.5 transition-colors hover:border-surface/80">
+                      <div key={member.id} className="flex flex-col gap-3 rounded-2xl border border-surface/60 bg-surface/15 px-3 py-2.5 transition-colors hover:border-surface/80 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/20 to-blue-600/10 text-sm font-bold text-primary">
                             {member.nama.charAt(0).toUpperCase()}
@@ -372,7 +372,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end">
                           <Button
                             size="sm"
                             variant="secondary"
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="app-card overflow-hidden p-0">
-            <div className="px-5 py-4 border-b border-surface/60 flex items-center justify-between bg-surface/10">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-surface/60 bg-surface/10 px-5 py-4 sm:items-center">
               <div className="flex items-center gap-2">
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
                   <ICONS.ScrollText className="h-4 w-4" aria-hidden="true" />
@@ -432,12 +432,12 @@ export default function AdminDashboard() {
                 />
               ) : (
                 recentLogs.map((log) => (
-                  <div key={log.id} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface/10">
+                  <div key={log.id} className="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-surface/10">
                     <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/20 to-blue-600/10 text-primary text-xs font-bold">
                       {(log.user?.nama ?? '?').charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-text-primary">
+                      <p className="break-words text-sm leading-relaxed text-text-primary">
                         <span className="font-semibold">{log.user?.nama ?? '—'}</span>
                         {' '}
                         <span className="text-text-muted">{actionLabels[log.action] ?? log.action}</span>

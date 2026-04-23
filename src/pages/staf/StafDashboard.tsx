@@ -223,7 +223,7 @@ export default function StafDashboard() {
                   className={`dashboard-module-tile ${mod.color}`}
                 >
                   <span className="text-2xl">{mod.icon}</span>
-                  <span className="text-xs leading-snug">{mod.label}</span>
+                  <span className="break-words text-center text-xs leading-snug">{mod.label}</span>
                 </Link>
               ))}
             </div>
