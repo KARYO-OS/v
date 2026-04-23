@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { CalendarDays, List } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
@@ -21,6 +21,13 @@ const SHIFT_COLORS: Record<string, { bg: string; text: string; label: string }> 
   jaga:  { bg: 'bg-accent-red/20',   text: 'text-accent-red',   label: 'Jaga'   },
 };
 
+const SHIFT_PRESET_TIME: Record<'pagi' | 'siang' | 'malam' | 'jaga', { start: string; end: string } | null> = {
+  pagi: { start: '07:00', end: '15:00' },
+  siang: { start: '15:00', end: '23:00' },
+  malam: { start: '23:00', end: '07:00' },
+  jaga: null,
+};
+
 /** Zero-pad a number to 2 digits */
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -29,6 +36,37 @@ const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.
 
 /** Day-of-week header labels (Mon-Sun) */
 const DAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+const timeToMinutes = (timeValue: string): number => {
+  const [hh = '0', mm = '0'] = timeValue.split(':');
+  return Number(hh) * 60 + Number(mm);
+};
+
+const splitTimeRange = (start: string, end: string): Array<[number, number]> => {
+  const startMin = timeToMinutes(start);
+  const endMin = timeToMinutes(end);
+  if (startMin === endMin) return [];
+  if (endMin > startMin) return [[startMin, endMin]];
+  return [[startMin, 1440], [0, endMin]];
+};
+
+const hasTimeOverlap = (
+  startA: string,
+  endA: string,
+  startB: string,
+  endB: string,
+): boolean => {
+  const rangesA = splitTimeRange(startA, endA);
+  const rangesB = splitTimeRange(startB, endB);
+
+  for (const [aStart, aEnd] of rangesA) {
+    for (const [bStart, bEnd] of rangesB) {
+      if (aStart < bEnd && bStart < aEnd) return true;
+    }
+  }
+
+  return false;
+};
 
 export default function ShiftSchedule() {
   const { showNotification } = useUIStore();
@@ -120,10 +158,43 @@ export default function ShiftSchedule() {
     return acc;
   }, {});
 
+  const scheduleSourceByDate = useMemo(() => {
+    if (viewMode === 'calendar') return monthSchedulesByDay;
+    return { [selectedDate]: schedules };
+  }, [monthSchedulesByDay, schedules, selectedDate, viewMode]);
+
+  const formDateSchedules = scheduleSourceByDate[form.tanggal] ?? [];
+  const userShiftOnFormDate = formDateSchedules.filter((schedule) => schedule.user_id === form.user_id);
+
   // ── Actions ───────────────────────────────────────────────────────────────
   const handleCreate = async () => {
     if (!form.user_id) { showNotification('Pilih personel', 'error'); return; }
+    if (!form.tanggal) { showNotification('Tanggal wajib diisi', 'error'); return; }
+    if (form.shift_mulai === form.shift_selesai) {
+      showNotification('Jam mulai dan selesai tidak boleh sama', 'error');
+      return;
+    }
     if (!user?.id || !user.role) { showNotification('Sesi tidak valid', 'error'); return; }
+
+    // Validasi bentrok jadwal untuk personel pada tanggal yang sama.
+    const { data: daySchedulesData, error: daySchedulesError } = await supabase.rpc('api_get_shift_schedules', {
+      p_date: form.tanggal,
+    });
+    if (daySchedulesError) {
+      showNotification('Gagal memvalidasi jadwal pada tanggal terpilih', 'error');
+      return;
+    }
+
+    const daySchedules = (daySchedulesData as ShiftSchedule[]) ?? [];
+    const hasConflict = daySchedules
+      .filter((schedule) => schedule.user_id === form.user_id)
+      .some((schedule) => hasTimeOverlap(form.shift_mulai, form.shift_selesai, schedule.shift_mulai, schedule.shift_selesai));
+
+    if (hasConflict) {
+      showNotification('Personel sudah memiliki shift yang bentrok pada tanggal tersebut', 'error');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const { error } = await supabase.rpc('api_insert_shift_schedule', {
@@ -182,6 +253,21 @@ export default function ShiftSchedule() {
   };
 
   const monthLabel = new Date(`${calendarMonth}-15`).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+  const handleShiftTypeChange = (jenisShift: 'pagi' | 'siang' | 'malam' | 'jaga') => {
+    const preset = SHIFT_PRESET_TIME[jenisShift];
+    if (!preset) {
+      setForm({ ...form, jenis_shift: jenisShift });
+      return;
+    }
+
+    setForm({
+      ...form,
+      jenis_shift: jenisShift,
+      shift_mulai: preset.start,
+      shift_selesai: preset.end,
+    });
+  };
 
   return (
     <DashboardLayout title="Jadwal Shift">
@@ -338,9 +424,23 @@ export default function ShiftSchedule() {
                   return (
                     <div
                       key={dateStr}
-                      className={`min-h-[90px] p-1.5 transition-colors hover:bg-surface/30 ${
+                      className={`min-h-[90px] cursor-pointer p-1.5 transition-colors hover:bg-surface/30 ${
                         isToday ? 'bg-primary/5' : ''
                       }`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        setSelectedDate(dateStr);
+                        setViewMode('list');
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setSelectedDate(dateStr);
+                          setViewMode('list');
+                        }
+                      }}
+                      aria-label={`Lihat jadwal tanggal ${new Date(`${dateStr}T12:00:00`).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`}
                     >
                       {/* Date number */}
                       <div className={`mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
@@ -441,14 +541,23 @@ export default function ShiftSchedule() {
             <select
               className="form-control mt-1"
               value={form.jenis_shift}
-              onChange={(e) => setForm({ ...form, jenis_shift: e.target.value as typeof form.jenis_shift })}
+              onChange={(e) => handleShiftTypeChange(e.target.value as typeof form.jenis_shift)}
             >
               <option value="pagi">Pagi (07:00–15:00)</option>
               <option value="siang">Siang (15:00–23:00)</option>
               <option value="malam">Malam (23:00–07:00)</option>
               <option value="jaga">Jaga / Piket</option>
             </select>
+            <p className="mt-1 text-xs text-text-muted">
+              Memilih jenis shift akan mengisi jam otomatis (kecuali shift jaga/piket).
+            </p>
           </div>
+
+          {form.user_id && userShiftOnFormDate.length > 0 && (
+            <div className="rounded-xl border border-accent-red/20 bg-accent-red/5 px-3 py-2 text-xs text-accent-red">
+              Personel ini sudah memiliki {userShiftOnFormDate.length} jadwal pada tanggal yang sama. Pastikan jam tidak bentrok.
+            </div>
+          )}
         </div>
       </Modal>
 

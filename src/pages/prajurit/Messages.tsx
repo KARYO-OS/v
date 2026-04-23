@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pencil, Inbox, Send } from 'lucide-react';
+import { Inbox, Pencil, Send, Users, Clock3 } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -19,19 +19,45 @@ type Tab = 'inbox' | 'sent';
 export default function Messages() {
   const { user } = useAuthStore();
   const { showNotification } = useUIStore();
-  const { inbox, sent, unreadCount, isLoading, sendMessage, markAsRead, markAllAsRead } = useMessages();
+  const { inbox, sent, unreadCount, isLoading, error, sendMessage, markAsRead, markAllAsRead } = useMessages();
 
   const [tab, setTab] = useState<Tab>('inbox');
   const [selectedMsg, setSelectedMsg] = useState<Message | null>(null);
   const [showCompose, setShowCompose] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isReplying, setIsReplying] = useState(false);
   const [searchRaw, setSearchRaw] = useState('');
   const [composeForm, setComposeForm] = useState({ to_user: '', isi: '' });
+  const [replyText, setReplyText] = useState('');
+
+  const openComposeForUser = (toUserId: string, isi = '') => {
+    setComposeForm({ to_user: toUserId, isi });
+    setShowCompose(true);
+  };
 
   const handleOpenMessage = async (msg: Message) => {
     setSelectedMsg(msg);
+    setReplyText('');
     if (!msg.is_read && tab === 'inbox') {
       await markAsRead(msg.id);
+    }
+  };
+
+  const handleQuickReply = async () => {
+    if (!selectedMsg?.from_user || !replyText.trim()) {
+      showNotification('Tulis balasan terlebih dahulu', 'error');
+      return;
+    }
+
+    setIsReplying(true);
+    try {
+      await sendMessage(selectedMsg.from_user, replyText);
+      showNotification('Balasan terkirim', 'success');
+      setReplyText('');
+    } catch {
+      showNotification('Gagal mengirim balasan', 'error');
+    } finally {
+      setIsReplying(false);
     }
   };
 
@@ -66,8 +92,36 @@ export default function Messages() {
     });
   }, [messages, searchRaw, tab]);
 
+  const recentContacts = useMemo(() => {
+    const seen = new Map<string, { id: string; nama: string; nrp?: string; pangkat?: string; created_at: string; snippet: string }>();
+
+    [...inbox, ...sent].forEach((msg) => {
+      const contact = msg.from_user === user?.id ? msg.receiver : msg.sender;
+      if (!contact?.id) return;
+
+      const prev = seen.get(contact.id);
+      if (!prev || new Date(msg.created_at).getTime() > new Date(prev.created_at).getTime()) {
+        seen.set(contact.id, {
+          id: contact.id,
+          nama: contact.nama,
+          nrp: contact.nrp,
+          pangkat: contact.pangkat,
+          created_at: msg.created_at,
+          snippet: msg.isi,
+        });
+      }
+    });
+
+    return [...seen.values()].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 6);
+  }, [inbox, sent, user?.id]);
+
   const inboxCount = inbox.length;
   const sentCount = sent.length;
+  const selectedDirection = selectedMsg
+    ? selectedMsg.from_user === user?.id
+      ? 'sent'
+      : 'inbox'
+    : tab;
 
   return (
     <DashboardLayout title="Pesan">
@@ -93,6 +147,30 @@ export default function Messages() {
             </>
           }
         />
+
+        {error && (
+          <div className="rounded-2xl border border-accent-red/30 bg-accent-red/5 px-4 py-3 text-sm text-accent-red">
+            {error}
+          </div>
+        )}
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="app-card p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Belum dibaca</p>
+            <p className="mt-1 text-2xl font-bold text-primary">{unreadCount}</p>
+            <p className="mt-1 text-xs text-text-muted">Pesan masuk yang perlu perhatian.</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Kotak masuk</p>
+            <p className="mt-1 text-2xl font-bold text-text-primary">{inboxCount}</p>
+            <p className="mt-1 text-xs text-text-muted">Riwayat pesan yang diterima.</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Terkirim</p>
+            <p className="mt-1 text-2xl font-bold text-text-primary">{sentCount}</p>
+            <p className="mt-1 text-xs text-text-muted">Pesan yang sudah Anda kirim.</p>
+          </div>
+        </div>
 
         {/* Tab bar + actions */}
         <div className="app-card flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
@@ -124,6 +202,39 @@ export default function Messages() {
             className="sm:max-w-sm"
           />
         </div>
+
+        {recentContacts.length > 0 && (
+          <div className="app-card p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-text-primary">Kontak terbaru</p>
+                <p className="text-xs text-text-muted">Mulai pesan baru ke personel yang baru saja berinteraksi dengan Anda.</p>
+              </div>
+              <Users className="h-4 w-4 text-text-muted" aria-hidden="true" />
+            </div>
+            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              {recentContacts.map((contact) => (
+                <button
+                  key={contact.id}
+                  type="button"
+                  onClick={() => openComposeForUser(contact.id)}
+                  className="flex min-w-[14rem] items-start gap-3 rounded-2xl border border-surface/70 bg-bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
+                >
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                    {(contact.nama ?? '?').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-text-primary">
+                      {contact.pangkat ? `${contact.pangkat} ` : ''}{contact.nama}
+                    </p>
+                    <p className="truncate text-xs text-text-muted">{contact.nrp ?? 'NRP tidak tersedia'}</p>
+                    <p className="mt-1 truncate text-xs text-text-muted">{contact.snippet}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Message list */}
         {isLoading ? (
@@ -185,7 +296,7 @@ export default function Messages() {
       <Modal
         isOpen={!!selectedMsg}
         onClose={() => setSelectedMsg(null)}
-        title={tab === 'inbox' ? `Pesan dari ${selectedMsg?.sender?.nama ?? '—'}` : `Pesan ke ${selectedMsg?.receiver?.nama ?? '—'}`}
+        title={selectedDirection === 'inbox' ? `Pesan dari ${selectedMsg?.sender?.nama ?? '—'}` : `Pesan ke ${selectedMsg?.receiver?.nama ?? '—'}`}
         size="md"
         footer={
           <Button variant="ghost" onClick={() => setSelectedMsg(null)}>Tutup</Button>
@@ -193,22 +304,45 @@ export default function Messages() {
       >
         {selectedMsg && (
           <div className="space-y-4">
-            <div className="flex justify-between text-sm text-text-muted">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-text-muted">
               <span>{new Date(selectedMsg.created_at).toLocaleString('id-ID')}</span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-surface/70 bg-surface/30 px-2.5 py-1 text-xs">
+                <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                {selectedDirection === 'inbox' ? (selectedMsg.is_read ? 'Sudah dibaca' : 'Belum dibaca') : 'Pesan terkirim'}
+              </span>
             </div>
             <div className="bg-surface/30 rounded-lg p-4 text-text-primary whitespace-pre-line">
               {selectedMsg.isi}
             </div>
-            {tab === 'inbox' && (
-              <Button
-                onClick={() => {
-                  setSelectedMsg(null);
-                  setComposeForm({ to_user: selectedMsg.from_user ?? '', isi: '' });
-                  setShowCompose(true);
-                }}
-              >
-                Balas
-              </Button>
+            {selectedDirection === 'inbox' && selectedMsg.from_user && (
+              <div className="space-y-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">Balas cepat</p>
+                  <p className="text-xs text-text-muted">Kirim balasan langsung tanpa menutup pesan ini.</p>
+                </div>
+                <textarea
+                  className="form-control min-h-24"
+                  rows={4}
+                  placeholder="Tulis balasan singkat..."
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={handleQuickReply}
+                    isLoading={isReplying}
+                    leftIcon={<Send className="h-4 w-4" />}
+                  >
+                    Kirim Balasan
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => openComposeForUser(selectedMsg.from_user ?? '', '')}
+                  >
+                    Buka Editor Lengkap
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         )}

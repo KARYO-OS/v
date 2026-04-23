@@ -42,18 +42,18 @@ export default function PageHeader({ title, subtitle, actions, meta, breadcrumbs
           </ol>
         </nav>
       )}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="text-xl font-bold tracking-tight text-text-primary sm:text-2xl lg:text-[1.65rem]">{title}</h2>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <h2 className="break-words text-xl font-bold tracking-tight text-text-primary sm:text-2xl lg:text-[1.65rem]">{title}</h2>
           {subtitle && <p className="mt-1.5 text-sm text-text-muted leading-relaxed">{subtitle}</p>}
           {meta && (
-            <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted [&>span]:inline-flex [&>span]:items-center [&>span]:rounded-full [&>span]:border [&>span]:border-surface/60 [&>span]:bg-surface/20 [&>span]:px-2.5 [&>span]:py-0.5">
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-muted [&>span]:inline-flex [&>span]:max-w-full [&>span]:items-center [&>span]:rounded-full [&>span]:border [&>span]:border-surface/60 [&>span]:bg-surface/20 [&>span]:px-2.5 [&>span]:py-0.5 [&>span]:whitespace-normal">
               {meta}
             </div>
           )}
         </div>
         {actions && (
-          <div className="flex w-full flex-wrap items-stretch gap-2 sm:w-auto sm:flex-nowrap sm:justify-end [&>*]:min-h-[44px] [&>*]:justify-center">
+          <div className="flex w-full flex-wrap items-stretch gap-2 lg:w-auto lg:justify-end [&>*]:min-h-[44px] [&>*]:justify-center">
             {actions}
           </div>
         )}
