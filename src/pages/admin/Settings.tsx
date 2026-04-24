@@ -84,6 +84,7 @@ export default function Settings() {
   const [restorePreview, setRestorePreview] = useState<BackupData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const loginBackgroundFileInputRef = useRef<HTMLInputElement>(null);
   const { settings, updatePlatformBranding, isSaving: isSavingBranding, weatherSettings, updateWeatherSettings } = usePlatformStore();
   const {
     flags,
@@ -97,18 +98,21 @@ export default function Settings() {
   const [platformNameInput, setPlatformNameInput] = useState(settings.platformName);
   const [platformTaglineInput, setPlatformTaglineInput] = useState(settings.platformTagline);
   const [platformLogoInput, setPlatformLogoInput] = useState(settings.platformLogoUrl ?? '');
+  const [platformLoginBackgroundInput, setPlatformLoginBackgroundInput] = useState(settings.platformLoginBackgroundUrl ?? '');
 
   const brandingPreviewName = platformNameInput.trim() || settings.platformName || 'KARYO OS';
   const brandingPreviewTagline = platformTaglineInput.trim() || 'Command and Battalion Tracking';
   const brandingPreviewLogo = platformLogoInput.trim();
+  const brandingPreviewLoginBackground = platformLoginBackgroundInput.trim();
 
   const isBrandingDirty = useMemo(() => {
     return (
       platformNameInput.trim() !== settings.platformName.trim() ||
       platformTaglineInput.trim() !== settings.platformTagline.trim() ||
-      brandingPreviewLogo !== (settings.platformLogoUrl ?? '')
+      brandingPreviewLogo !== (settings.platformLogoUrl ?? '') ||
+      brandingPreviewLoginBackground !== (settings.platformLoginBackgroundUrl ?? '')
     );
-  }, [platformNameInput, platformTaglineInput, brandingPreviewLogo, settings]);
+  }, [platformNameInput, platformTaglineInput, brandingPreviewLogo, brandingPreviewLoginBackground, settings]);
 
   // ── Weather / API Eksternal ────────────────────────────────────────────────
   const [weatherApiKeyInput, setWeatherApiKeyInput] = useState(weatherSettings.weatherApiKey);
@@ -201,6 +205,7 @@ export default function Settings() {
     setPlatformNameInput(settings.platformName);
     setPlatformTaglineInput(settings.platformTagline);
     setPlatformLogoInput(settings.platformLogoUrl ?? '');
+    setPlatformLoginBackgroundInput(settings.platformLoginBackgroundUrl ?? '');
   }, [settings]);
 
   const featureStats = useMemo(() => {
@@ -312,6 +317,7 @@ export default function Settings() {
         platformName: normalizedName,
         platformTagline: platformTaglineInput.trim() || 'Command and Battalion Tracking',
         platformLogoUrl: platformLogoInput.trim() || null,
+        platformLoginBackgroundUrl: platformLoginBackgroundInput.trim() || null,
       });
       showNotification('Branding platform berhasil diperbarui', 'success');
     } catch (error) {
@@ -323,7 +329,9 @@ export default function Settings() {
     setPlatformNameInput(settings.platformName);
     setPlatformTaglineInput(settings.platformTagline);
     setPlatformLogoInput(settings.platformLogoUrl ?? '');
+    setPlatformLoginBackgroundInput(settings.platformLoginBackgroundUrl ?? '');
     if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+    if (loginBackgroundFileInputRef.current) loginBackgroundFileInputRef.current.value = '';
   };
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -353,6 +361,35 @@ export default function Settings() {
     reader.readAsDataURL(file);
 
     if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+  };
+
+  const handleLoginBackgroundFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      showNotification('Background login harus berformat JPG atau PNG', 'error');
+      return;
+    }
+
+    if (file.size > 4 * 1024 * 1024) {
+      showNotification('Ukuran background login maksimal 4MB', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = String(ev.target?.result ?? '');
+      if (!dataUrl.startsWith('data:image/jpeg') && !dataUrl.startsWith('data:image/png')) {
+        showNotification('Format file background login tidak valid', 'error');
+        return;
+      }
+      setPlatformLoginBackgroundInput(dataUrl);
+      showNotification('Background login berhasil dipilih, klik Simpan Branding untuk menerapkan', 'info');
+    };
+    reader.readAsDataURL(file);
+
+    if (loginBackgroundFileInputRef.current) loginBackgroundFileInputRef.current.value = '';
   };
 
   const handleFeatureToggle = async (featureKey: FeatureKey, nextValue: boolean) => {
@@ -517,6 +554,19 @@ export default function Settings() {
                   <p className="mt-1 text-xs text-text-muted">Pakai URL publik atau unggah file gambar agar logo tersimpan sebagai data URL.</p>
                 </div>
 
+                <div>
+                  <label htmlFor="platform-login-background-url" className="text-sm font-semibold text-text-primary">URL Background Login</label>
+                  <input
+                    id="platform-login-background-url"
+                    type="url"
+                    className="form-control mt-1"
+                    value={platformLoginBackgroundInput}
+                    onChange={(e) => setPlatformLoginBackgroundInput(e.target.value)}
+                    placeholder="https://example.com/login-background.jpg"
+                  />
+                  <p className="mt-1 text-xs text-text-muted">Pakai URL publik atau unggah file JPG/PNG agar background login tersimpan sebagai data URL.</p>
+                </div>
+
                 <div className="flex flex-wrap items-center gap-3">
                   <input
                     ref={logoFileInputRef}
@@ -528,6 +578,16 @@ export default function Settings() {
                   <Button size="sm" variant="outline" onClick={() => logoFileInputRef.current?.click()}>
                     Unggah Logo
                   </Button>
+                  <input
+                    ref={loginBackgroundFileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    className="hidden"
+                    onChange={handleLoginBackgroundFileChange}
+                  />
+                  <Button size="sm" variant="outline" onClick={() => loginBackgroundFileInputRef.current?.click()}>
+                    Unggah Background Login
+                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -535,6 +595,14 @@ export default function Settings() {
                     disabled={!brandingPreviewLogo}
                   >
                     Hapus Logo
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setPlatformLoginBackgroundInput('')}
+                    disabled={!brandingPreviewLoginBackground}
+                  >
+                    Hapus Background
                   </Button>
                 </div>
 
@@ -555,6 +623,20 @@ export default function Settings() {
                 </div>
 
                 <div className="rounded-2xl border border-surface/70 bg-surface/20 p-4">
+                  <div className="mb-4 overflow-hidden rounded-xl border border-surface/70 bg-bg-card/80">
+                    {brandingPreviewLoginBackground ? (
+                      <img
+                        src={brandingPreviewLoginBackground}
+                        alt="Preview background login"
+                        className="h-28 w-full object-cover"
+                      />
+                    ) : (
+                      <div className="grid h-28 w-full place-items-center bg-gradient-to-r from-primary/15 via-blue-500/10 to-indigo-500/15 text-xs font-semibold uppercase tracking-[0.12em] text-text-muted">
+                        Belum ada background login
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex items-center gap-3">
                     {brandingPreviewLogo ? (
                       <img
@@ -583,6 +665,10 @@ export default function Settings() {
                     <div className="flex items-center justify-between rounded-xl border border-surface/70 bg-bg-card px-3 py-2">
                       <span>Penerapan navigasi</span>
                       <span className="font-semibold text-text-primary">Sidebar & login</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl border border-surface/70 bg-bg-card px-3 py-2">
+                      <span>Background login</span>
+                      <span className="font-semibold text-text-primary">{brandingPreviewLoginBackground ? 'Aktif' : 'Tidak aktif'}</span>
                     </div>
                   </div>
                 </div>

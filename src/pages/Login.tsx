@@ -77,9 +77,19 @@ export default function Login() {
   }
 
   return (
-    <div className="desktop-shell min-h-screen bg-military-dark p-4 sm:p-6">
+    <div className="desktop-shell relative min-h-screen overflow-hidden bg-military-dark p-4 sm:p-6">
+      {settings.platformLoginBackgroundUrl && (
+        <>
+          <img
+            src={settings.platformLoginBackgroundUrl}
+            alt="Background login"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-military-dark/75 backdrop-blur-[1px]" />
+        </>
+      )}
       <Notification />
-      <div className="mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="relative mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         {/* Hero — desktop only */}
         <section className="hidden lg:block">
           <div className="space-y-6">

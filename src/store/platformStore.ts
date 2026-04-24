@@ -10,6 +10,7 @@ export interface PlatformBranding {
   platformName: string;
   platformTagline: string;
   platformLogoUrl: string | null;
+  platformLoginBackgroundUrl: string | null;
 }
 
 export interface WeatherSettings {
@@ -21,6 +22,7 @@ const DEFAULT_PLATFORM_BRANDING: PlatformBranding = {
   platformName: 'KARYO OS',
   platformTagline: 'Command and Battalion Tracking',
   platformLogoUrl: null,
+  platformLoginBackgroundUrl: null,
 };
 
 interface PlatformStore {
@@ -54,11 +56,15 @@ const normalizeBranding = (raw: unknown): PlatformBranding => {
   const platformName = String(data.platform_name ?? data.platformName ?? '').trim() || DEFAULT_PLATFORM_BRANDING.platformName;
   const platformTagline = String(data.platform_tagline ?? data.platformTagline ?? '').trim() || DEFAULT_PLATFORM_BRANDING.platformTagline;
   const rawLogoUrl = String(data.platform_logo_url ?? data.platformLogoUrl ?? '').trim();
+  const rawLoginBackgroundUrl = String(
+    data.platform_login_background_url ?? data.platformLoginBackgroundUrl ?? '',
+  ).trim();
 
   return {
     platformName,
     platformTagline,
     platformLogoUrl: rawLogoUrl || null,
+    platformLoginBackgroundUrl: rawLoginBackgroundUrl || null,
   };
 };
 
@@ -142,6 +148,7 @@ export const usePlatformStore = create<PlatformStore>((set, get) => ({
         platformName: normalizedInput.platformName,
         platformTagline: normalizedInput.platformTagline,
         platformLogoUrl: normalizedInput.platformLogoUrl,
+        platformLoginBackgroundUrl: normalizedInput.platformLoginBackgroundUrl,
       });
 
       const normalized = normalizeBranding(data ?? normalizedInput);

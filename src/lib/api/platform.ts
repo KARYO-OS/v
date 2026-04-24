@@ -6,6 +6,7 @@ export interface PlatformSettings {
   platform_name: string;
   platform_tagline: string;
   platform_logo_url: string | null;
+  platform_login_background_url: string | null;
 }
 
 const PLATFORM_SETTINGS_CACHE_KEY = 'platform_settings';
@@ -19,6 +20,8 @@ function normalizePlatformSettings(data: unknown): PlatformSettings | null {
     platform_name: String(raw.platform_name ?? raw.platformName ?? '').trim(),
     platform_tagline: String(raw.platform_tagline ?? raw.platformTagline ?? '').trim(),
     platform_logo_url: raw.platform_logo_url == null ? null : String(raw.platform_logo_url),
+    platform_login_background_url:
+      raw.platform_login_background_url == null ? null : String(raw.platform_login_background_url),
   };
 }
 
@@ -40,10 +43,12 @@ export async function updatePlatformSettings(settings: {
   platformName: string;
   platformTagline: string;
   platformLogoUrl: string | null;
+  platformLoginBackgroundUrl: string | null;
 }): Promise<PlatformSettings> {
   const { data, error } = await supabase.rpc('update_platform_settings', {
     p_platform_name: settings.platformName,
     p_platform_logo_url: settings.platformLogoUrl,
+    p_platform_login_background_url: settings.platformLoginBackgroundUrl,
     p_platform_tagline: settings.platformTagline,
   });
   if (error) throw error;
@@ -54,5 +59,6 @@ export async function updatePlatformSettings(settings: {
     platform_name: settings.platformName,
     platform_tagline: settings.platformTagline,
     platform_logo_url: settings.platformLogoUrl,
+    platform_login_background_url: settings.platformLoginBackgroundUrl,
   };
 }
