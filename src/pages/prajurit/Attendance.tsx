@@ -9,6 +9,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { Skeleton, CardListSkeleton } from '../../components/common/Skeleton';
 import PageHeader from '../../components/ui/PageHeader';
 import { useState } from 'react';
+import { getCurrentGeoCoordinates } from '../../lib/geolocation';
 
 export default function Attendance() {
   const { user } = useAuthStore();
@@ -20,7 +21,8 @@ export default function Attendance() {
   const handleCheckIn = async () => {
     setCheckingIn(true);
     try {
-      await checkIn();
+      const gps = await getCurrentGeoCoordinates();
+      await checkIn(gps);
       showNotification('Absen masuk berhasil!', 'success');
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Gagal absen masuk', 'error');
@@ -32,7 +34,8 @@ export default function Attendance() {
   const handleCheckOut = async () => {
     setCheckingOut(true);
     try {
-      await checkOut();
+      const gps = await getCurrentGeoCoordinates();
+      await checkOut(gps);
       showNotification('Absen pulang berhasil!', 'success');
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Gagal absen pulang', 'error');
@@ -58,6 +61,7 @@ export default function Attendance() {
         <div className="app-card p-6">
           <h2 className="font-semibold text-text-primary mb-1">Hari Ini</h2>
           <p className="text-sm text-text-muted mb-5">{today}</p>
+          <p className="text-xs text-text-muted mb-4">Lokasi GPS akan dicatat otomatis saat absen masuk dan absen pulang.</p>
 
           {isLoading ? (
             <div className="space-y-2">

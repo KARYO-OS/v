@@ -5,6 +5,7 @@ import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
 import { SimpleCache } from '../lib/cache';
 import type { Attendance } from '../types';
 import { useAuthStore } from '../store/authStore';
+import type { GeoCoordinates } from '../lib/geolocation';
 
 /** Module-level cache: data absensi di-cache 5 menit per user */
 const attendanceCache = new SimpleCache<Attendance[]>();
@@ -122,20 +123,20 @@ export function useAttendance(userId?: string) {
     fetchAttendanceRef.current = fetchAttendance;
   }, [fetchAttendance]);
 
-  const checkIn = async () => {
+  const checkIn = async (gps?: GeoCoordinates | null) => {
     if (!targetUserId) throw new Error('User tidak ditemukan');
     if (todayAttendance?.check_in) throw new Error('Sudah check-in hari ini');
-    await rpcCheckIn(targetUserId);
+    await rpcCheckIn(targetUserId, gps);
     attendanceCache.invalidate(cacheKey);
     notifyDataChanged('attendance');
     await fetchAttendance(true);
   };
 
-  const checkOut = async () => {
+  const checkOut = async (gps?: GeoCoordinates | null) => {
     if (!targetUserId) throw new Error('User tidak ditemukan');
     if (!todayAttendance?.check_in) throw new Error('Belum check-in hari ini');
     if (todayAttendance.check_out) throw new Error('Sudah check-out hari ini');
-    await rpcCheckOut(targetUserId);
+    await rpcCheckOut(targetUserId, gps);
     attendanceCache.invalidate(cacheKey);
     notifyDataChanged('attendance');
     await fetchAttendance(true);

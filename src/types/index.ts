@@ -27,6 +27,9 @@ export interface GatePass {
   actual_kembali?: string;
   status: GatePassStatus;
   approved_by?: string;
+  submit_latitude?: number;
+  submit_longitude?: number;
+  submit_accuracy?: number;
   qr_token: string;
   created_at: string;
   // Joined field (populated when fetched with user join)
@@ -136,6 +139,12 @@ export interface Attendance {
   tanggal: string;
   check_in?: string;
   check_out?: string;
+  check_in_latitude?: number;
+  check_in_longitude?: number;
+  check_in_accuracy?: number;
+  check_out_latitude?: number;
+  check_out_longitude?: number;
+  check_out_accuracy?: number;
   status: AttendanceStatus;
   keterangan?: string;
   created_at: string;

@@ -8,6 +8,7 @@ import {
   validateTujuan,
 } from '../../lib/validation/gatePassValidation';
 import { CheckCircle } from 'lucide-react';
+import { getCurrentGeoCoordinates } from '../../lib/geolocation';
 
 /**
  * Generate otomatis waktu_keluar dan waktu_kembali.
@@ -84,12 +85,16 @@ export default function GatePassForm() {
     try {
       // Generate otomatis waktu keluar dan kembali
       const { keluar, kembali } = getAutoTimes();
+      const gps = await getCurrentGeoCoordinates();
 
       const result = await createGatePass({
         keperluan,
         tujuan,
         waktu_keluar: keluar,
         waktu_kembali: kembali,
+        submit_latitude: gps?.latitude,
+        submit_longitude: gps?.longitude,
+        submit_accuracy: gps?.accuracy ?? undefined,
       });
 
       // Reset form
@@ -123,6 +128,7 @@ export default function GatePassForm() {
       <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-text-primary">
         Isi keperluan dan tujuan izin keluar. Waktu keluar akan dihitung saat mulai scan keluar, dan waktu kembali akan dihitung lagi saat scan kembali.
       </div>
+      <p className="text-xs text-text-muted">Lokasi GPS pengajuan akan dicatat otomatis saat izin dikirim.</p>
 
       {errors.form && (
         <div role="alert" className="rounded-2xl border border-accent-red/20 bg-accent-red/10 px-4 py-3 text-sm text-accent-red">
