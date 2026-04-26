@@ -39,17 +39,17 @@ interface QuickLink {
 }
 
 const quickLinks: QuickLink[] = [
-  { href: '/admin/users', icon: 'UsersRound', title: 'Personel', desc: 'CRUD user & reset PIN' },
-  { href: '/admin/analytics', icon: 'TrendingUp', title: 'Analitik', desc: 'Tren tugas, absensi & personel' },
-  { href: '/admin/logistics', icon: 'Package', title: 'Logistik', desc: 'Inventaris perlengkapan' },
-  { href: '/admin/gatepass-monitor', icon: 'ClipboardCheck', title: 'Gate Pass', desc: 'Monitoring keluar/masuk batalion' },
-  { href: '/admin/pos-jaga', icon: 'MapPin', title: 'Pos Jaga', desc: 'Kelola pos jaga & QR statis' },
-  { href: '/admin/documents', icon: 'FileText', title: 'Dokumen', desc: 'Arsip & unduh dokumen' },
-  { href: '/admin/announcements', icon: 'Megaphone', title: 'Pengumuman', desc: 'Broadcast & pin' },
-  { href: '/admin/schedule', icon: 'CalendarDays', title: 'Jadwal Shift', desc: 'Atur shift personel' },
-  { href: '/admin/attendance', icon: 'BadgeCheck', title: 'Rekap Absensi', desc: 'Laporan & export CSV' },
-  { href: '/admin/audit', icon: 'ScrollText', title: 'Audit Log', desc: 'Riwayat aktivitas' },
-  { href: '/admin/settings', icon: 'Settings', title: 'Pengaturan', desc: 'Konfigurasi sistem' },
+  { href: '/admin/users', icon: 'UsersRound', title: 'Personel', desc: 'Tambah, ubah, dan reset akses anggota' },
+  { href: '/admin/gatepass-monitor', icon: 'ClipboardCheck', title: 'Gate Pass', desc: 'Pantau keluar masuk personel aktif' },
+  { href: '/admin/logistics', icon: 'Package', title: 'Logistik', desc: 'Pantau stok dan kondisi perlengkapan' },
+  { href: '/admin/analytics', icon: 'TrendingUp', title: 'Analitik', desc: 'Ringkasan tren tugas dan kedisiplinan' },
+  { href: '/admin/pos-jaga', icon: 'MapPin', title: 'Pos Jaga', desc: 'Kelola titik jaga dan QR statis' },
+  { href: '/admin/documents', icon: 'FileText', title: 'Dokumen', desc: 'Arsipkan dan unduh dokumen dinas' },
+  { href: '/admin/announcements', icon: 'Megaphone', title: 'Pengumuman', desc: 'Siarkan info penting dan pin berita' },
+  { href: '/admin/schedule', icon: 'CalendarDays', title: 'Jadwal Shift', desc: 'Atur rotasi personel per regu' },
+  { href: '/admin/attendance', icon: 'BadgeCheck', title: 'Rekap Absensi', desc: 'Tinjau laporan kehadiran harian' },
+  { href: '/admin/audit', icon: 'ScrollText', title: 'Audit Log', desc: 'Lacak aktivitas dan perubahan data' },
+  { href: '/admin/settings', icon: 'Settings', title: 'Pengaturan', desc: 'Atur konfigurasi platform dan integrasi' },
 ];
 
 export default function AdminDashboard() {
@@ -175,17 +175,54 @@ export default function AdminDashboard() {
   const operationalHighlights = useMemo(() => {
     if (!stats) return [];
     return [
-      { label: 'Absensi hari ini', value: `${stats.absensiMasuk}/${stats.absensiHariIni}`, hint: `${attendanceRate}% hadir` },
-      { label: 'Izin pending', value: String(stats.pendingIzin), hint: 'Menunggu persetujuan' },
-      { label: 'Gate Pass checked-in', value: String(gatePassStats.checkedIn), hint: 'Sudah scan keluar' },
-      { label: 'Gate Pass completed', value: String(gatePassStats.completed), hint: 'Sudah scan kembali' },
-      { label: 'Gate Pass overdue', value: String(gatePassStats.overdue), hint: 'Terlambat kembali' },
-      { label: 'Pengumuman pin', value: String(stats.pinnedPengumuman), hint: 'Tersemat di feed' },
-      { label: 'Stok rendah', value: String(lowStockItems.length), hint: 'Perlu pengecekan' },
+      {
+        label: 'Absensi hari ini',
+        value: `${stats.absensiMasuk}/${stats.absensiHariIni}`,
+        hint: `${attendanceRate}% hadir`,
+        tone: attendanceRate >= 80 ? 'good' : attendanceRate >= 50 ? 'warn' : 'danger',
+      },
+      {
+        label: 'Izin pending',
+        value: String(stats.pendingIzin),
+        hint: 'Menunggu persetujuan',
+        tone: stats.pendingIzin > 0 ? 'warn' : 'good',
+      },
+      {
+        label: 'Gate Pass Keluar',
+        value: String(gatePassStats.checkedIn),
+        hint: 'Sudah scan keluar',
+        tone: 'normal',
+      },
+      {
+        label: 'Gate Pass Kembali',
+        value: String(gatePassStats.completed),
+        hint: 'Sudah scan kembali',
+        tone: 'good',
+      },
+      {
+        label: 'Gate Pass Terlambat',
+        value: String(gatePassStats.overdue),
+        hint: 'Terlambat kembali',
+        tone: gatePassStats.overdue > 0 ? 'danger' : 'good',
+      },
+      {
+        label: 'Pengumuman pin',
+        value: String(stats.pinnedPengumuman),
+        hint: 'Tersemat di feed',
+        tone: 'normal',
+      },
+      {
+        label: 'Stok rendah',
+        value: String(lowStockItems.length),
+        hint: 'Perlu pengecekan',
+        tone: lowStockItems.length > 0 ? 'warn' : 'good',
+      },
     ];
   }, [attendanceRate, gatePassStats.completed, gatePassStats.checkedIn, gatePassStats.overdue, lowStockItems.length, stats]);
 
   const enabledQuickLinks = useMemo(() => quickLinks.filter((item) => isPathEnabled(item.href, flags)), [flags]);
+  const primaryQuickLinks = useMemo(() => enabledQuickLinks.slice(0, 4), [enabledQuickLinks]);
+  const secondaryQuickLinks = useMemo(() => enabledQuickLinks.slice(4), [enabledQuickLinks]);
   const isUserManagementEnabled = flags.user_management !== false;
 
   return (
@@ -203,40 +240,12 @@ export default function AdminDashboard() {
           actions={<Button variant="outline" onClick={() => void handleRefresh()} isLoading={isLoading || isRefreshing}>Muat Ulang</Button>}
         />
 
-        {enabledQuickLinks.length > 0 && (
-          <div className="dashboard-quick-strip">
-            {enabledQuickLinks.slice(0, 3).map((item) => {
-              const Icon = ICONS[item.icon];
-              return (
-                <Link
-                  key={`primary-${item.href}`}
-                  to={item.href}
-                  className="dashboard-quick-link group"
-                >
-                  <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-transform group-hover:scale-105">
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <span className="min-w-0 break-words leading-snug">{item.title}</span>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-
         {error && (
           <div className="rounded-xl border border-accent-red/40 bg-accent-red/10 p-4 text-sm text-accent-red">
             {error}
           </div>
         )}
 
-        {/* Weather Widget */}
-        <WeatherWidget
-          apiKey={weatherSettings.weatherApiKey || null}
-          city={weatherSettings.weatherCity || null}
-          onConfigureClick={() => navigate('/admin/settings')}
-        />
-
-        {/* Stats */}
         {isLoading ? (
           <StatCardsSkeleton />
         ) : (
@@ -253,37 +262,62 @@ export default function AdminDashboard() {
             <div className="app-card p-5">
               <div className="panel-heading">
                 <div>
-                  <h3 className="panel-heading__title">Pusat Tindakan Cepat</h3>
-                  <p className="panel-heading__desc">Akses langsung ke modul yang paling sering dipakai admin.</p>
+                  <h3 className="panel-heading__title">Aksi Prioritas</h3>
+                  <p className="panel-heading__desc">Gunakan modul inti terlebih dulu untuk respon operasional yang lebih cepat.</p>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-3">
-                {enabledQuickLinks.map((item) => {
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {primaryQuickLinks.map((item) => {
                   const Icon = ICONS[item.icon];
                   return (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    className="group rounded-2xl border border-surface/70 bg-bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg dark:hover:bg-surface/30"
-                  >
-                    <div className="mb-2 flex items-start gap-2.5">
-                      <span className="grid h-9 w-9 place-items-center rounded-xl border border-surface/60 bg-gradient-to-br from-primary/12 to-primary/4 text-primary transition-transform duration-200 group-hover:scale-110 shadow-sm">
-                        <Icon className="h-4 w-4" aria-hidden="true" />
-                      </span>
-                      <h3 className="min-w-0 break-words text-sm font-semibold leading-snug text-text-primary">
-                        {item.title}
-                      </h3>
-                    </div>
-                    <p className="text-xs text-text-muted">{item.desc}</p>
-                  </Link>
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      className="group rounded-2xl border border-surface/70 bg-bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg dark:hover:bg-surface/30"
+                    >
+                      <div className="mb-2 flex items-start gap-2.5">
+                        <span className="grid h-9 w-9 place-items-center rounded-xl border border-surface/60 bg-gradient-to-br from-primary/12 to-primary/4 text-primary transition-transform duration-200 group-hover:scale-110 shadow-sm">
+                          <Icon className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <h3 className="min-w-0 break-words text-sm font-semibold leading-snug text-text-primary">{item.title}</h3>
+                      </div>
+                      <p className="text-xs text-text-muted">{item.desc}</p>
+                      <div className="mt-2 inline-flex rounded-full border border-primary/25 bg-primary/8 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        Modul prioritas
+                      </div>
+                    </Link>
                   );
                 })}
-                {enabledQuickLinks.length === 0 && (
-                  <div className="col-span-full rounded-xl border border-surface/80 bg-surface/20 p-4 text-sm text-text-muted">
-                    Semua modul tindakan cepat sedang dinonaktifkan oleh admin.
-                  </div>
-                )}
               </div>
+
+              {secondaryQuickLinks.length > 0 && (
+                <div className="mt-4 rounded-2xl border border-surface/70 bg-surface/15 p-3.5">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">Modul Lainnya</p>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {secondaryQuickLinks.map((item) => {
+                      const Icon = ICONS[item.icon];
+                      return (
+                        <Link
+                          key={`secondary-${item.href}`}
+                          to={item.href}
+                          className="group flex items-center gap-2 rounded-xl border border-surface/70 bg-bg-card px-3 py-2.5 text-sm font-medium text-text-primary transition-colors hover:border-primary/30 hover:text-primary"
+                        >
+                          <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                            <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                          </span>
+                          <span className="min-w-0 truncate">{item.title}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {enabledQuickLinks.length === 0 && (
+                <div className="mt-4 rounded-xl border border-surface/80 bg-surface/20 p-4 text-sm text-text-muted">
+                  Semua modul tindakan cepat sedang dinonaktifkan oleh admin.
+                </div>
+              )}
             </div>
 
             <div className="app-card p-5">
@@ -295,8 +329,40 @@ export default function AdminDashboard() {
               </div>
               <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
                 {operationalHighlights.map((item) => (
-                  <div key={item.label} className="group rounded-2xl border border-surface/70 bg-surface/15 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-surface/20 hover:shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-text-muted">{item.label}</p>
+                  <div
+                    key={item.label}
+                    className={`group rounded-2xl border bg-surface/15 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${
+                      item.tone === 'danger'
+                        ? 'border-accent-red/35 hover:border-accent-red/45'
+                        : item.tone === 'warn'
+                          ? 'border-accent-gold/40 hover:border-accent-gold/55'
+                          : item.tone === 'good'
+                            ? 'border-success/35 hover:border-success/50'
+                            : 'border-surface/70 hover:border-primary/20 hover:bg-surface/20'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-text-muted">{item.label}</p>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] ${
+                          item.tone === 'danger'
+                            ? 'bg-accent-red/10 text-accent-red'
+                            : item.tone === 'warn'
+                              ? 'bg-accent-gold/15 text-accent-gold'
+                              : item.tone === 'good'
+                                ? 'bg-success/10 text-success'
+                                : 'bg-surface/60 text-text-muted'
+                        }`}
+                      >
+                        {item.tone === 'danger'
+                          ? 'Kritis'
+                          : item.tone === 'warn'
+                            ? 'Perhatian'
+                            : item.tone === 'good'
+                              ? 'Aman'
+                              : 'Normal'}
+                      </span>
+                    </div>
                     <p className="mt-1 text-2xl font-extrabold tracking-tight text-text-primary">{item.value}</p>
                     <p className="mt-1 text-xs text-text-muted">{item.hint}</p>
                   </div>
@@ -305,7 +371,7 @@ export default function AdminDashboard() {
 
               <div className="mt-4 rounded-2xl border border-surface/70 bg-bg-card p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <h4 className="font-semibold text-text-primary flex items-center gap-2">
+                  <h4 className="flex items-center gap-2 font-semibold text-text-primary">
                     <span className="grid h-6 w-6 place-items-center rounded-lg bg-accent-red/10 text-accent-red">
                       <ICONS.AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
                     </span>
@@ -342,7 +408,7 @@ export default function AdminDashboard() {
                 <div className="panel-heading">
                   <div>
                     <h3 className="panel-heading__title">Hapus Anggota Cepat</h3>
-                    <p className="panel-heading__desc">Kelola anggota terbaru langsung dari dashboard admin.</p>
+                    <p className="panel-heading__desc">Aktifkan, nonaktifkan, atau hapus anggota terbaru tanpa pindah halaman.</p>
                   </div>
                   <Link to="/admin/users" className="text-xs text-primary hover:underline">Kelola lengkap →</Link>
                 </div>
@@ -359,7 +425,7 @@ export default function AdminDashboard() {
                   ) : (
                     latestUsers.slice(0, 6).map((member) => (
                       <div key={member.id} className="flex flex-col gap-3 rounded-2xl border border-surface/60 bg-surface/15 px-3 py-2.5 transition-colors hover:border-surface/80 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex min-w-0 items-center gap-3">
                           <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/20 to-blue-600/10 text-sm font-bold text-primary">
                             {member.nama.charAt(0).toUpperCase()}
                           </div>
@@ -402,99 +468,104 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          <div className="app-card overflow-hidden p-0">
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-surface/60 bg-surface/10 px-5 py-4 sm:items-center">
-              <div className="flex items-center gap-2">
-                <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
-                  <ICONS.ScrollText className="h-4 w-4" aria-hidden="true" />
-                </span>
-                <div>
-                  <h3 className="font-bold text-text-primary text-sm">Aktivitas Terbaru</h3>
-                  <p className="text-xs text-text-muted">Audit log terakhir dari sistem.</p>
+          <div className="space-y-4">
+            <WeatherWidget
+              apiKey={weatherSettings.weatherApiKey || null}
+              city={weatherSettings.weatherCity || null}
+              onConfigureClick={() => navigate('/admin/settings')}
+            />
+
+            <div className="app-card overflow-hidden p-0">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-surface/60 bg-surface/10 px-5 py-4 sm:items-center">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
+                    <ICONS.ScrollText className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-text-primary">Aktivitas Terbaru</h3>
+                    <p className="text-xs text-text-muted">Audit log terakhir dari sistem.</p>
+                  </div>
                 </div>
+                <Link to="/admin/audit" className="text-xs font-medium text-primary hover:underline">Lihat semua →</Link>
               </div>
-              <Link to="/admin/audit" className="text-xs font-medium text-primary hover:underline">Lihat semua →</Link>
+              <div className="divide-y divide-surface/40">
+                {isLoading ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 px-5 py-3">
+                      <div className="h-9 w-9 flex-shrink-0 rounded-full bg-surface/70 animate-pulse" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3 w-3/4 rounded bg-surface/70 animate-pulse" />
+                        <div className="h-3 w-1/2 rounded bg-surface/70 animate-pulse" />
+                      </div>
+                    </div>
+                  ))
+                ) : recentLogs.length === 0 ? (
+                  <EmptyState
+                    title="Belum ada aktivitas tercatat"
+                    description="Audit log akan muncul otomatis saat ada interaksi di sistem."
+                    className="border-0 bg-transparent px-0 py-8"
+                  />
+                ) : (
+                  recentLogs.map((log) => (
+                    <div key={log.id} className="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-surface/10">
+                      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/20 to-blue-600/10 text-xs font-bold text-primary">
+                        {(log.user?.nama ?? '?').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words text-sm leading-relaxed text-text-primary">
+                          <span className="font-semibold">{log.user?.nama ?? '—'}</span>
+                          {' '}
+                          <span className="text-text-muted">{actionLabels[log.action] ?? log.action}</span>
+                          {log.resource && <span className="text-text-muted"> · {log.resource}</span>}
+                        </p>
+                        <p className="text-xs text-text-muted">
+                          {new Date(log.created_at).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-            <div className="divide-y divide-surface/40">
-              {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 px-5 py-3">
-                    <div className="h-9 w-9 rounded-full animate-pulse bg-surface/70 flex-shrink-0" />
-                    <div className="flex-1 space-y-1.5">
-                      <div className="h-3 animate-pulse bg-surface/70 rounded w-3/4" />
-                      <div className="h-3 animate-pulse bg-surface/70 rounded w-1/2" />
-                    </div>
+
+            <div className="app-card p-5">
+              <div className="mb-1 flex items-center gap-2">
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-success/10 text-success">
+                  <ICONS.BarChart2 className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <h3 className="text-base font-bold text-text-primary">Metrik Sistem</h3>
+              </div>
+              <p className="text-sm text-text-muted">Ringkasan status operasional saat ini.</p>
+              <div className="mt-4 space-y-2.5">
+                {[
+                  { label: 'Kepatuhan absensi', value: `${attendanceRate}%`, accent: attendanceRate >= 80 ? 'text-success' : attendanceRate >= 50 ? 'text-accent-gold' : 'text-accent-red' },
+                  { label: 'Task throughput', value: `${stats?.tugasAktif ?? 0}/${stats?.totalTugas ?? 0}`, accent: 'text-primary' },
+                  { label: 'Online coverage', value: `${stats?.totalOnline ?? 0}/${stats?.totalPersonel ?? 0}`, accent: 'text-primary' },
+                ].map((metric) => (
+                  <div key={metric.label} className="metric-row">
+                    <p className="text-sm text-text-muted">{metric.label}</p>
+                    <p className={`text-xl font-bold ${metric.accent}`}>{metric.value}</p>
                   </div>
-                ))
-              ) : recentLogs.length === 0 ? (
-                <EmptyState
-                  title="Belum ada aktivitas tercatat"
-                  description="Audit log akan muncul otomatis saat ada interaksi di sistem."
-                  className="border-0 bg-transparent px-0 py-8"
-                />
-              ) : (
-                recentLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-surface/10">
-                    <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/20 to-blue-600/10 text-primary text-xs font-bold">
-                      {(log.user?.nama ?? '?').charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="break-words text-sm leading-relaxed text-text-primary">
-                        <span className="font-semibold">{log.user?.nama ?? '—'}</span>
-                        {' '}
-                        <span className="text-text-muted">{actionLabels[log.action] ?? log.action}</span>
-                        {log.resource && <span className="text-text-muted"> · {log.resource}</span>}
-                      </p>
-                      <p className="text-xs text-text-muted">
-                        {new Date(log.created_at).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[1.25fr_0.75fr]">
-          <div className="app-card p-5">
-            <h3 className="text-lg font-bold text-text-primary">Statistik Kehadiran</h3>
-            <p className="text-sm text-text-muted">Visualisasi 30 hari terakhir untuk monitoring tren disiplin kehadiran.</p>
-            <div className="mt-4">
-              <AttendanceHeatmap attendances={heatmapAttendances} />
-            </div>
-          </div>
-          <div className="app-card p-5">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="grid h-7 w-7 place-items-center rounded-lg bg-success/10 text-success">
-                <ICONS.BarChart2 className="h-4 w-4" aria-hidden="true" />
-              </span>
-              <h3 className="text-base font-bold text-text-primary">Metrik Sistem</h3>
-            </div>
-            <p className="text-sm text-text-muted">Ringkasan status operasional saat ini.</p>
-            <div className="mt-4 space-y-2.5">
-              {[
-                { label: 'Kepatuhan absensi', value: `${attendanceRate}%`, accent: attendanceRate >= 80 ? 'text-success' : attendanceRate >= 50 ? 'text-accent-gold' : 'text-accent-red' },
-                { label: 'Task throughput', value: `${stats?.tugasAktif ?? 0}/${stats?.totalTugas ?? 0}`, accent: 'text-primary' },
-                { label: 'Online coverage', value: `${stats?.totalOnline ?? 0}/${stats?.totalPersonel ?? 0}`, accent: 'text-primary' },
-              ].map((metric) => (
-                <div key={metric.label} className="metric-row">
-                  <p className="text-sm text-text-muted">{metric.label}</p>
-                  <p className={`text-xl font-bold ${metric.accent}`}>{metric.value}</p>
-                </div>
-              ))}
-            </div>
+        <div className="app-card p-5">
+          <h3 className="text-lg font-bold text-text-primary">Statistik Kehadiran</h3>
+          <p className="text-sm text-text-muted">Visualisasi 30 hari terakhir untuk monitoring tren disiplin kehadiran.</p>
+          <div className="mt-4">
+            <AttendanceHeatmap attendances={heatmapAttendances} />
           </div>
         </div>
 
-        {/* Monitoring & Tracking */}
         <div className="grid gap-5 xl:grid-cols-2">
           <GPSTrackingHistory limit={15} />
           <MigrationHistoryPanel />
         </div>
       </div>
 
-      {/* Confirm Delete Member Modal */}
       <ConfirmModal
         isOpen={confirmMember !== null}
         onClose={() => setConfirmMember(null)}
