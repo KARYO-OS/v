@@ -122,11 +122,17 @@ code,
   background: color-mix(in srgb, var(--color-bg-card) 99%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-surface) 88%, transparent);
   box-shadow: var(--ui-shadow-app-card);
-  transition: box-shadow var(--ui-transition-base), border-color var(--ui-transition-base), transform var(--ui-transition-base);
+  transition: box-shadow var(--ui-transition-base), 
+              border-color var(--ui-transition-base), 
+              transform var(--ui-transition-base),
+              background var(--ui-transition-base);
 }
 
 .app-card:hover {
   box-shadow: var(--ui-shadow-app-card-hover);
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  background: color-mix(in srgb, var(--color-bg-card) 100%, var(--color-primary) 1%);
 }
 
 .app-card:focus-within {
@@ -165,10 +171,83 @@ code,
 .btn-primary-glow {
   background: linear-gradient(135deg, var(--color-primary) 0%, #1d4ed8 100%);
   box-shadow: 0 4px 15px color-mix(in srgb, var(--color-primary) 40%, transparent);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .btn-primary-glow:hover {
-  box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary) 50%, transparent);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary) 50%, transparent),
+              0 0 30px color-mix(in srgb, var(--color-primary) 30%, transparent);
+  transform: translateY(-2px);
+}
+
+.btn-primary-glow:hover::before {
+  opacity: 1;
+}
+
+.btn-primary-glow:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+/* Secondary button styling */
+.btn-secondary {
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  color: var(--color-text-primary);
+  border: 1px solid color-mix(in srgb, var(--color-surface) 70%, transparent);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-secondary:hover {
+  background: color-mix(in srgb, var(--color-surface) 100%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
+}
+
+/* Icon button */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-icon:hover {
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  color: var(--color-text-primary);
+}
+
+.btn-icon:active {
+  transform: scale(0.95);
 }
 
 .form-control {
@@ -181,7 +260,7 @@ code,
   /* 16px prevents Android Chrome auto-zoom on focus */
   font-size: 1rem;
   min-height: 44px;
-  transition: border-color var(--ui-transition-base), box-shadow var(--ui-transition-base);
+  transition: border-color var(--ui-transition-base), box-shadow var(--ui-transition-base), background var(--ui-transition-base), transform var(--ui-transition-fast);
 }
 
 [data-density="compact"] .form-control {
@@ -201,12 +280,19 @@ code,
 
 .form-control::placeholder {
   color: color-mix(in srgb, var(--color-text-muted) 90%, transparent);
+  transition: color var(--ui-transition-base);
 }
 
 .form-control:focus {
   outline: none;
   border-color: color-mix(in srgb, var(--color-primary) 74%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 22%, transparent);
+  background: color-mix(in srgb, var(--color-bg-card) 100%, var(--color-primary) 2%);
+  transform: translateY(-1px);
+}
+
+.form-control:focus::placeholder {
+  color: color-mix(in srgb, var(--color-text-muted) 70%, transparent);
 }
 
 /* Avoid double focus indicators: inputs already use custom border + ring above */
@@ -318,6 +404,258 @@ code,
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* ── Modern Animations ──────────────────────────────────────── */
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  60% {
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.38s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes swing-in {
+  0% {
+    opacity: 0;
+    transform: rotateX(100deg) rotateY(0deg);
+    transform-origin: center;
+  }
+  100% {
+    opacity: 1;
+    transform: rotateX(0deg) rotateY(0deg);
+  }
+}
+
+.animate-swing-in {
+  animation: swing-in 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.3s ease-in-out;
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-float-up {
+  animation: float-up 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes stagger-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-stagger-1 {
+  animation: stagger-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both;
+}
+
+.animate-stagger-2 {
+  animation: stagger-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+.animate-stagger-3 {
+  animation: stagger-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+
+.animate-stagger-4 {
+  animation: stagger-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+}
+
+.animate-stagger-5 {
+  animation: stagger-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both;
+}
+
+@keyframes flip-in {
+  0% {
+    opacity: 0;
+    transform: perspective(400px) rotateY(-90deg);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(400px) rotateY(0deg);
+  }
+}
+
+.animate-flip-in {
+  animation: flip-in 0.44s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Smooth Transitions ────────────────────────────────────── */
+.transition-smooth {
+  transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-fast {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-slow {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Enhanced Button States ────────────────────────────────– */
+.btn-modern {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-modern::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s cubic-bezier(0.3, 0, 0.66, 1), 
+              height 0.6s cubic-bezier(0.3, 0, 0.66, 1);
+}
+
+.btn-modern:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Enhanced hover effect for interactive elements */
+.interactive-hover {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.interactive-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .interactive-hover:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Form Input Enhancements ───────────────────────────────── */
+.input-modern {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: color-mix(in srgb, var(--color-surface) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.input-modern:focus-within {
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.input-modern::placeholder {
+  color: var(--color-text-muted);
+  transition: color 0.2s ease;
+}
+
+/* ── Card Elevation ────────────────────────────────────────– */
+.card-elevated {
+  background: var(--color-bg-card);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 
+              0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-elevated:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12),
+              0 16px 32px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .card-elevated {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 
+              0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .card-elevated:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4),
+              0 16px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Gradient Text ────────────────────────────────────────── */
+.gradient-text-modern {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    color-mix(in srgb, var(--color-primary) 80%, var(--color-accent-gold)) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: float-up 0.6s ease-out;
+}
+
+/* ── Loading Skeleton Modern ───────────────────────────────– */
+.skeleton-modern {
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-surface) 60%, transparent) 25%,
+    color-mix(in srgb, var(--color-surface) 100%, transparent) 50%,
+    color-mix(in srgb, var(--color-surface) 60%, transparent) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.skeleton-modern .rounded-md {
+  border-radius: 6px;
 }
 
 /* Respect user preference for reduced motion */

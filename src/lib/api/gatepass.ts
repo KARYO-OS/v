@@ -62,11 +62,19 @@ export async function insertGatePass(
   payload: Partial<GatePass> & { user_id: string; qr_token: string }
 ): Promise<InsertGatePassResponse> {
   await ensureSessionContext(callerId, callerRole);
+
+  // Backend RPC currently requires planned times. Keep UX simple by
+  // auto-generating a sane default window when the form does not ask for it.
+  const plannedOutAt = new Date();
+  const plannedReturnAt = new Date(plannedOutAt.getTime() + (8 * 60 * 60 * 1000));
+
   const { data, error } = await supabase.rpc('api_insert_gate_pass', {
     p_user_id: payload.user_id,
     p_caller_role: callerRole,
     p_keperluan: payload.keperluan ?? '',
     p_tujuan: payload.tujuan ?? '',
+    p_waktu_keluar: plannedOutAt.toISOString(),
+    p_waktu_kembali: plannedReturnAt.toISOString(),
     p_qr_token: payload.qr_token,
     p_submit_latitude: payload.submit_latitude ?? null,
     p_submit_longitude: payload.submit_longitude ?? null,
