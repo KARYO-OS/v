@@ -124,6 +124,16 @@ describe('gatepass API', () => {
       expect(mockSupabase.rpc).toHaveBeenCalledWith('api_update_gate_pass_status', expect.objectContaining({ p_id: 'gp1', p_status: 'approved', p_approved_by: 'u2' }));
     });
 
+    it('passes approval reason for cancelled status', async () => {
+      mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
+      await patchGatePassStatus(CALLER_ID, CALLER_ROLE, 'gp1', 'cancelled', undefined, 'Dibatalkan oleh pemohon');
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_update_gate_pass_status', expect.objectContaining({
+        p_id: 'gp1',
+        p_status: 'cancelled',
+        p_approval_reason: 'Dibatalkan oleh pemohon',
+      }));
+    });
+
     it('throws when rpc fails', async () => {
       mockSupabase.rpc.mockResolvedValue({ data: null, error: new Error('update failed') });
       await expect(patchGatePassStatus(CALLER_ID, CALLER_ROLE, 'gp1', 'rejected')).rejects.toThrow('update failed');

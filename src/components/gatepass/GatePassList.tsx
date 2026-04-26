@@ -4,13 +4,16 @@ import GatePassStatusBadge from './GatePassStatusBadge';
 import EmptyState from '../common/EmptyState';
 import { ClipboardList, CheckCircle2, Clock } from 'lucide-react';
 import { formatTimeOnly } from '../../utils/timeFormatter';
+import Button from '../common/Button';
 
 interface Props {
   gatePasses: GatePass[];
   guard?: string;
+  onCancel?: (gatePass: GatePass) => void | Promise<void>;
+  cancellingId?: string | null;
 }
 
-const GatePassList: React.FC<Props> = ({ gatePasses, guard }) => {
+const GatePassList: React.FC<Props> = ({ gatePasses, guard, onCancel, cancellingId = null }) => {
   if (gatePasses.length === 0) {
     return (
       <EmptyState
@@ -24,6 +27,9 @@ const GatePassList: React.FC<Props> = ({ gatePasses, guard }) => {
   return (
     <div className="space-y-3">
       {gatePasses.map((gp) => (
+        // Prajurit dapat membatalkan pengajuan sebelum benar-benar keluar (belum scan keluar).
+        // Status approved juga tetap bisa dibatalkan selama actual_keluar masih kosong.
+        // Ini menghindari gate pass aktif "menggantung" ketika batal berangkat.
         <div
           key={gp.id}
           className="app-card group flex flex-col gap-3 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
@@ -71,6 +77,25 @@ const GatePassList: React.FC<Props> = ({ gatePasses, guard }) => {
                 <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
                 <span className="font-mono">{formatTimeOnly(gp.actual_kembali)}</span>
               </div>
+            </div>
+          )}
+
+          {onCancel
+            && (gp.status === 'pending' || gp.status === 'approved')
+            && !gp.actual_keluar && (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="border-accent-red/30 text-accent-red hover:border-accent-red/50 hover:bg-accent-red/10"
+                onClick={() => void onCancel(gp)}
+                isLoading={cancellingId === gp.id}
+                disabled={Boolean(cancellingId) && cancellingId !== gp.id}
+                data-testid={`gatepass-cancel-${gp.id}`}
+              >
+                Batalkan Gate Pass
+              </Button>
             </div>
           )}
         </div>

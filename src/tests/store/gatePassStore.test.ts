@@ -53,7 +53,7 @@ describe('gatePassStore', () => {
     mockSupabase.channel.mockReturnValue({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() });
   });
 
-  it('fetches gate passes and updates overdue status for prajurit', async () => {
+  it('fetches gate passes for prajurit tanpa normalisasi status di frontend store', async () => {
     // fetchGatePassesByUser uses rpc('api_get_gate_passes')
     mockSupabase.rpc.mockResolvedValue({ data: [gatePassCheckedIn], error: null });
 
@@ -61,7 +61,7 @@ describe('gatePassStore', () => {
     await store.fetchGatePasses();
 
     expect(mockSupabase.rpc).toHaveBeenCalledWith('api_get_gate_passes', expect.objectContaining({ p_target_user_id: 'u1' }));
-    expect(useGatePassStore.getState().gatePasses[0].status).toBe('overdue');
+    expect(useGatePassStore.getState().gatePasses[0].status).toBe('checked_in');
   });
 
   it('creates a gate pass via rpc and refreshes list', async () => {
@@ -84,6 +84,31 @@ describe('gatePassStore', () => {
     expect(mockSupabase.rpc).toHaveBeenCalledWith('api_update_gate_pass_status',
       expect.objectContaining({ p_id: 'gp2', p_status: 'approved', p_approved_by: 'u1' })
     );
+  });
+
+  it('cancels a gate pass via rpc', async () => {
+    mockSupabase.rpc.mockResolvedValue({ data: [approvedGatePass], error: null });
+
+    const store = useGatePassStore.getState();
+    await store.cancelGatePass('gp2');
+
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('api_update_gate_pass_status',
+      expect.objectContaining({
+        p_id: 'gp2',
+        p_status: 'cancelled',
+        p_approval_reason: 'Dibatalkan oleh pemohon',
+      })
+    );
+  });
+
+  it('rejects cancel gate pass for non-prajurit role', async () => {
+    useAuthStore.setState({
+      user: { id: 'u3', nrp: '33333', nama: 'Admin A', role: 'admin', satuan: 'Mabes', is_active: true, is_online: true, login_attempts: 0, created_at: now.toISOString(), updated_at: now.toISOString() },
+      isAuthenticated: true, isLoading: false, isInitialized: true, error: null,
+    });
+
+    const store = useGatePassStore.getState();
+    await expect(store.cancelGatePass('gp2')).rejects.toThrow('Hanya prajurit yang dapat membatalkan gate pass miliknya');
   });
 
   it('scans gate pass and returns the updated GatePass object', async () => {

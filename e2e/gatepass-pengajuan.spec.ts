@@ -57,4 +57,28 @@ test.describe('Gate Pass Pengajuan Baru', () => {
 		await expect(page.getByText(/izin keluar\/kembali/i)).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Mulai Scan' })).toBeVisible();
 	});
+
+	test('prajurit dapat membatalkan gate pass yang belum scan keluar', async ({ page }) => {
+		await loginAsPrajurit(page);
+
+		await page.goto('./#/prajurit/gatepass');
+
+		const suffix = `${Date.now()}`;
+		const tujuan = `Tes Batal ${suffix}`;
+
+		await page.getByLabel('Keperluan').fill('Membatalkan izin karena rencana berubah');
+		await page.getByLabel('Tujuan').fill(tujuan);
+		await page.getByRole('button', { name: /Ajukan (Gate Pass|Izin Keluar)/i }).click();
+
+		const row = page.locator('main .app-card').filter({ hasText: tujuan }).first();
+		await expect(row).toBeVisible();
+
+		page.once('dialog', async (dialog) => {
+			await dialog.accept();
+		});
+		await row.getByRole('button', { name: 'Batalkan Gate Pass' }).click();
+
+		await expect(row.getByText(/Dibatalkan/i)).toBeVisible();
+		await expect(row.getByRole('button', { name: 'Batalkan Gate Pass' })).toHaveCount(0);
+	});
 });

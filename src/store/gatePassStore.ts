@@ -10,6 +10,7 @@ interface GatePassState {
   gatePasses: GatePass[];
   fetchGatePasses: () => Promise<void>;
   createGatePass: (payload: Partial<GatePass>) => Promise<InsertGatePassResponse>;
+  cancelGatePass: (id: string) => Promise<void>;
   approveGatePass: (id: string, approved: boolean) => Promise<void>;
   approvePendingGatePasses: (ids: string[]) => Promise<{ approved: number; failed: number }>;
   /**
@@ -50,6 +51,29 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     await get().fetchGatePasses();
     notifyDataChanged('gate_pass');
     return response;
+  },
+
+  async cancelGatePass(id) {
+    const user = useAuthStore.getState().user;
+    if (!user) throw new Error('User tidak ditemukan');
+    if (!isRolePrajurit(user.role)) {
+      throw new Error('Hanya prajurit yang dapat membatalkan gate pass miliknya');
+    }
+
+    const targetGatePass = get().gatePasses.find((item) => item.id === id);
+    if (targetGatePass) {
+      const canCancel =
+        (targetGatePass.status === 'pending' || targetGatePass.status === 'approved')
+        && !targetGatePass.actual_keluar;
+
+      if (!canCancel) {
+        throw new Error('Gate pass ini tidak dapat dibatalkan');
+      }
+    }
+
+    await patchGatePassStatus(user.id, user.role, id, 'cancelled', undefined, 'Dibatalkan oleh pemohon');
+    await get().fetchGatePasses();
+    notifyDataChanged('gate_pass');
   },
 
   async approveGatePass(id, approved) {

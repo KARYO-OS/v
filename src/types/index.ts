@@ -9,6 +9,7 @@
 export type GatePassStatus =
   | 'pending'
   | 'approved'
+  | 'cancelled'
   | 'rejected'
   | 'checked_in'
   | 'completed'

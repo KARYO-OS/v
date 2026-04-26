@@ -57,6 +57,7 @@ function getStatusLabel(status: GatePassStatus | 'all') {
     all: 'Semua status',
     pending: 'Menunggu',
     approved: 'Siap Scan Keluar',
+    cancelled: 'Dibatalkan',
     rejected: 'Ditolak',
     checked_in: 'Sedang Keluar',
     completed: 'Sudah Kembali',
@@ -83,6 +84,7 @@ function compareMonitorPriority(a: MonitorGatePass, b: MonitorGatePass) {
     out: 1,
     returned: 3,
     rejected: 5,
+    cancelled: 6,
   };
 
   const statusDelta = rank[a.effectiveStatus] - rank[b.effectiveStatus];
@@ -113,6 +115,16 @@ function csvEscape(value: string | number | undefined) {
   if (value === undefined) return '""';
   const text = String(value).replace(/"/g, '""');
   return `"${text}"`;
+}
+
+function escapeHtml(value: string | number | undefined | null) {
+  if (value === undefined || value === null) return '-';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function toDateInputValue(date: Date) {
@@ -430,21 +442,50 @@ export default function GatePassMonitorPage() {
   const handlePrintReport = () => {
     if (filteredRows.length === 0) return;
 
+    const reportTime = new Date().toLocaleString('id-ID');
+    const activeFilters: string[] = [];
+    if (debouncedQuery.trim()) activeFilters.push(`Pencarian: ${debouncedQuery.trim()}`);
+    if (statusFilter !== 'all') activeFilters.push(`Status: ${getStatusLabel(statusFilter)}`);
+    if (unitFilter !== 'all') activeFilters.push(`Satuan: ${unitFilter}`);
+    if (startDate || endDate) {
+      const from = startDate || '-';
+      const to = endDate || '-';
+      activeFilters.push(`Periode: ${from} s.d. ${to}`);
+    }
+    if (overdueBucket !== 'all') activeFilters.push(`Bucket overdue: ${overdueBucket}`);
+    if (criticalMode) activeFilters.push('Mode kritis aktif');
+    activeFilters.push(`Urutan: ${sortMode === 'latest' ? 'Terbaru' : 'Prioritas status'}`);
+
     const rows = filteredRows
-      .map((gp) => {
-        const nama = gp.user?.nama ?? '-';
-        const nrp = gp.user?.nrp ?? '-';
-        const satuan = gp.user?.satuan ?? '-';
+      .map((gp, index) => {
+        const nama = escapeHtml(gp.user?.nama ?? '-');
+        const nrp = escapeHtml(gp.user?.nrp ?? '-');
+        const pangkat = escapeHtml(gp.user?.pangkat ?? '-');
+        const satuan = escapeHtml(gp.user?.satuan ?? '-');
+        const status = escapeHtml(getStatusLabel(gp.effectiveStatus));
+        const tujuan = escapeHtml(gp.tujuan);
+        const keperluan = escapeHtml(gp.keperluan);
+        const scanKeluar = escapeHtml(formatDateTime(gp.actual_keluar));
+        const scanKembali = escapeHtml(formatDateTime(gp.actual_kembali));
         return `
           <tr>
+            <td class="col-no">${index + 1}</td>
             <td>${nama}</td>
             <td>${nrp}</td>
+            <td>${pangkat}</td>
             <td>${satuan}</td>
-            <td>${getStatusLabel(gp.effectiveStatus)}</td>
-            <td>${gp.tujuan}</td>
+            <td>${status}</td>
+            <td>${tujuan}</td>
+            <td>${keperluan}</td>
+            <td>${scanKeluar}</td>
+            <td>${scanKembali}</td>
           </tr>
         `;
       })
+      .join('');
+
+    const filterTags = activeFilters
+      .map((filter) => `<span class="tag">${escapeHtml(filter)}</span>`)
       .join('');
 
     const popup = window.open('', '_blank', 'width=1200,height=800');
@@ -457,29 +498,162 @@ export default function GatePassMonitorPage() {
         <meta charset="utf-8" />
         <title>Laporan Monitoring Gate Pass</title>
         <style>
-          body { font-family: Arial, sans-serif; padding: 24px; }
-          h1 { margin: 0 0 8px 0; }
-          p { margin: 0 0 16px 0; color: #4b5563; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #d1d5db; padding: 8px; font-size: 12px; text-align: left; }
-          th { background: #f3f4f6; }
+          @page { size: A4 landscape; margin: 10mm; }
+          * { box-sizing: border-box; }
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            color: #111827;
+            font-size: 12px;
+          }
+          .header {
+            border-bottom: 2px solid #1f2937;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+          }
+          h1 {
+            margin: 0;
+            font-size: 20px;
+          }
+          .meta {
+            margin-top: 4px;
+            color: #4b5563;
+            font-size: 11px;
+          }
+          .stats {
+            margin: 10px 0;
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 6px;
+          }
+          .stat {
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 6px 8px;
+            background: #f9fafb;
+          }
+          .stat-label {
+            color: #4b5563;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+          }
+          .stat-value {
+            margin-top: 2px;
+            font-size: 16px;
+            font-weight: 700;
+          }
+          .filters {
+            margin: 10px 0 12px;
+          }
+          .filters-title {
+            margin: 0 0 4px;
+            font-size: 11px;
+            font-weight: 700;
+          }
+          .tag-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+          }
+          .tag {
+            border: 1px solid #cbd5e1;
+            border-radius: 999px;
+            padding: 3px 8px;
+            background: #f8fafc;
+            font-size: 10px;
+            color: #334155;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+          }
+          th, td {
+            border: 1px solid #d1d5db;
+            padding: 6px;
+            font-size: 11px;
+            text-align: left;
+            vertical-align: top;
+            word-break: break-word;
+          }
+          th {
+            background: #e5e7eb;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+          }
+          .col-no {
+            width: 36px;
+            text-align: center;
+          }
+          tbody tr:nth-child(odd) {
+            background: #fcfcfd;
+          }
+          .footer {
+            margin-top: 8px;
+            color: #6b7280;
+            font-size: 10px;
+            text-align: right;
+          }
+          tr {
+            page-break-inside: avoid;
+          }
         </style>
       </head>
       <body>
-        <h1>Laporan Monitoring Gate Pass</h1>
-        <p>Dicetak: ${new Date().toLocaleString('id-ID')} | Total data: ${filteredRows.length}</p>
+        <div class="header">
+          <h1>Laporan Monitoring Gate Pass</h1>
+          <div class="meta">Dicetak: ${escapeHtml(reportTime)} | Total data terfilter: ${filteredRows.length}</div>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">Siap Scan Keluar</div>
+            <div class="stat-value">${approved}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Sedang Keluar</div>
+            <div class="stat-value">${keluar}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Terlambat</div>
+            <div class="stat-value">${overdue}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Sudah Kembali</div>
+            <div class="stat-value">${completed}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Personil di Luar</div>
+            <div class="stat-value">${personilDiLuar}</div>
+          </div>
+        </div>
+
+        <div class="filters">
+          <p class="filters-title">Filter Aktif</p>
+          <div class="tag-wrap">${filterTags}</div>
+        </div>
+
         <table>
           <thead>
             <tr>
+              <th>No</th>
               <th>Nama</th>
               <th>NRP</th>
+              <th>Pangkat</th>
               <th>Satuan</th>
               <th>Status</th>
               <th>Tujuan</th>
+              <th>Keperluan</th>
+              <th>Scan Keluar</th>
+              <th>Scan Kembali</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
+
+        <div class="footer">Dokumen ini dihasilkan otomatis oleh sistem Monitoring Gate Pass.</div>
       </body>
       </html>
     `);
@@ -720,6 +894,7 @@ export default function GatePassMonitorPage() {
             >
               <option value="all">{getStatusLabel('all')}</option>
               <option value="approved">{getStatusLabel('approved')}</option>
+              <option value="cancelled">{getStatusLabel('cancelled')}</option>
               <option value="checked_in">{getStatusLabel('checked_in')}</option>
               <option value="overdue">{getStatusLabel('overdue')}</option>
               <option value="completed">{getStatusLabel('completed')}</option>

@@ -9,6 +9,7 @@ interface Props {
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Menunggu',
   approved: 'Disetujui',
+  cancelled: 'Dibatalkan',
   rejected: 'Ditolak',
   checked_in: 'Sudah Keluar',
   completed: 'Sudah Kembali',
@@ -20,6 +21,7 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_CLASS: Record<string, string> = {
   pending: 'bg-accent-gold/15 text-accent-gold border-accent-gold/30',
   approved: 'bg-primary/15 text-primary border-primary/30',
+  cancelled: 'bg-slate-200/70 text-slate-700 border-slate-300 dark:bg-slate-700/30 dark:text-slate-200 dark:border-slate-600',
   rejected: 'bg-accent-red/15 text-accent-red border-accent-red/30',
   checked_in: 'bg-orange-500/15 text-orange-600 border-orange-400/30 dark:text-orange-400',
   completed: 'bg-success/15 text-success border-success/30',
