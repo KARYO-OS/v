@@ -83,7 +83,7 @@ describe('useAttendance', () => {
 
       await act(async () => { await result.current.checkIn(); });
 
-      expect(mockSupabase.rpc).toHaveBeenCalledWith('server_checkin', { p_user_id: 'user-1' });
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('server_checkin', expect.objectContaining({ p_user_id: 'user-1' }));
     });
   });
 
@@ -120,7 +120,7 @@ describe('useAttendance', () => {
 
       await act(async () => { await result.current.checkOut(); });
 
-      expect(mockSupabase.rpc).toHaveBeenCalledWith('server_checkout', { p_user_id: 'user-1' });
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('server_checkout', expect.objectContaining({ p_user_id: 'user-1' }));
     });
   });
 

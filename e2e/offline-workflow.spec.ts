@@ -1,9 +1,12 @@
 import { expect, test } from '@playwright/test';
 
+const ADMIN_NRP = process.env.E2E_ADMIN_NRP;
+const ADMIN_PIN = process.env.E2E_ADMIN_PIN;
+
 async function loginAsAdmin(page: import('@playwright/test').Page) {
   await page.goto('./#/login');
-  await page.locator('#nrp').fill(process.env.E2E_ADMIN_NRP ?? '1000001');
-  await page.locator('#pin').fill(process.env.E2E_ADMIN_PIN ?? '123456');
+  await page.locator('#nrp').fill(ADMIN_NRP ?? '');
+  await page.locator('#pin').fill(ADMIN_PIN ?? '');
   await page.getByRole('button', { name: 'Masuk' }).click();
   await expect(page).toHaveURL(/\/admin\/dashboard/);
 }
@@ -57,6 +60,7 @@ async function seedQueueOperation(page: import('@playwright/test').Page, status:
 
 test.describe('Offline workflow', () => {
   test('menampilkan status offline dan antrean sinkronisasi', async ({ page }) => {
+    test.skip(!ADMIN_NRP || !ADMIN_PIN, 'Set E2E_ADMIN_NRP dan E2E_ADMIN_PIN untuk menjalankan test ini.');
     await loginAsAdmin(page);
 
     const statusBadge = page.locator('header').locator('span').filter({ hasText: /Online|Sinkronisasi|Offline/ }).first();
@@ -110,6 +114,7 @@ test.describe('Offline workflow', () => {
   });
 
   test('menampilkan badge gagal sinkronisasi dan tombol retry', async ({ page }) => {
+    test.skip(!ADMIN_NRP || !ADMIN_PIN, 'Set E2E_ADMIN_NRP dan E2E_ADMIN_PIN untuk menjalankan test ini.');
     await loginAsAdmin(page);
 
     await seedQueueOperation(page, 'failed');

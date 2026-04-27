@@ -54,6 +54,7 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
   ],
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const getBottomTabPaths = (role: Role): string[] =>
   (BOTTOM_TABS[role] ?? []).map((tab) => tab.path);
 

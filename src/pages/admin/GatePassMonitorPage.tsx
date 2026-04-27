@@ -54,7 +54,7 @@ function formatDateTime(value?: string) {
 }
 
 function getStatusLabel(status: GatePassStatus | 'all') {
-  const labels: Record<GatePassStatus | 'all', string> = {
+  const labels = {
     all: 'Semua status',
     pending: 'Menunggu',
     approved: 'Siap Scan Keluar',
@@ -65,7 +65,7 @@ function getStatusLabel(status: GatePassStatus | 'all') {
     out: 'Sedang Keluar',
     returned: 'Sudah Kembali',
     overdue: 'Terlambat',
-  };
+  } as const;
   return labels[status];
 }
 
@@ -694,7 +694,7 @@ export default function GatePassMonitorPage() {
 
   return (
     <DashboardLayout title="Monitoring Gate Pass">
-      <div className="mx-auto max-w-7xl py-6 space-y-6 lg:space-y-8">
+      <div className="w-full max-w-7xl py-6 space-y-6 lg:space-y-8">
         <PageHeader
           title="Monitoring Gate Pass"
           subtitle="Pantau alur terbaru: submit auto-approved, scan keluar, dan scan kembali. Statistik diprioritaskan agar personil yang keluar lebih mudah dipantau."

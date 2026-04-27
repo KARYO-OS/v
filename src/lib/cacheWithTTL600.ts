@@ -3,11 +3,15 @@
  * Useful for 600+ user management to reduce API calls
  */
 
+import type { User } from '../types';
+
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
   ttl: number;
 }
+
+type UserSearchCacheValue = { users: User[]; total: number };
 
 export class CacheWithTTL<T = unknown> {
   private cache = new Map<string, CacheEntry<T>>();
@@ -106,12 +110,12 @@ export class CacheWithTTL<T = unknown> {
 /**
  * Global search cache for users (2 minutes TTL)
  */
-export const userSearchCache = new CacheWithTTL<{ users: any[]; total: number }>(2 * 60 * 1000);
+export const userSearchCache = new CacheWithTTL<UserSearchCacheValue>(2 * 60 * 1000);
 
 /**
  * Global filter options cache (10 minutes TTL, filters change less frequently)
  */
-export const filterOptionsCache = new CacheWithTTL<any[]>(10 * 60 * 1000);
+export const filterOptionsCache = new CacheWithTTL<unknown[]>(10 * 60 * 1000);
 
 /**
  * Create cache key for user search

@@ -3,9 +3,9 @@
  * Verify virtual scrolling, caching, and request coalescing work correctly
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RequestCoalescer, globalRequestCoalescer, createRequestKey } from '../../lib/requestCoalescer600';
-import { CacheWithTTL, userSearchCache, filterOptionsCache, createUserSearchCacheKey } from '../../lib/cacheWithTTL600';
+import { CacheWithTTL, createUserSearchCacheKey } from '../../lib/cacheWithTTL600';
 
 describe('RequestCoalescer - 600+ User Optimization', () => {
   let coalescer: RequestCoalescer;

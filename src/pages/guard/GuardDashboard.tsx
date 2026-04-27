@@ -54,7 +54,7 @@ export default function GuardDashboard() {
 
   return (
     <DashboardLayout title="Scan Gate Pass">
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="w-full max-w-5xl space-y-6">
         <PageHeader
           title="Pos Pemeriksaan Gate Pass"
           subtitle="Validasi QR personel untuk proses keluar dan masuk batalion"

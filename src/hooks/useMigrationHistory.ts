@@ -10,6 +10,21 @@ export interface MigrationRecord {
   executionTimeMs?: number;
 }
 
+interface SchemaMigrationRow {
+  version?: string | number;
+  installed_on?: string;
+}
+
+interface AppliedMigrationRow {
+  id?: string;
+  version?: string | number;
+  name?: string;
+  appliedAt?: string;
+  installed_on?: string;
+  status?: 'applied' | 'pending';
+  executionTimeMs?: number;
+}
+
 /**
  * Hook untuk fetch riwayat migrasi dari database Supabase.
  * Mencoba mengambil dari tabel schema_migrations, atau fallback ke info sistem.
@@ -37,11 +52,11 @@ export function useMigrationHistory() {
           .limit(100);
 
         if (!tableError && schemaMigrations) {
-          const records = (schemaMigrations as any[]).map((m, idx) => ({
-            id: m.version || idx.toString(),
+          const records = (schemaMigrations as SchemaMigrationRow[]).map((m, idx) => ({
+            id: String(m.version ?? idx),
             name: m.version ? `v${m.version}` : `Migration ${idx}`,
             appliedAt: m.installed_on || new Date().toISOString(),
-            version: m.version || idx,
+            version: typeof m.version === 'number' ? m.version : Number(m.version ?? idx),
             status: 'applied' as const,
           }));
           setMigrations(records);
@@ -77,11 +92,11 @@ export function useMigrationHistory() {
       }
 
       if (data) {
-        const records = (data as any[]).map((m: any, idx: number) => ({
-          id: m.id || m.version || idx.toString(),
+        const records = (data as AppliedMigrationRow[]).map((m, idx: number) => ({
+          id: String(m.id ?? m.version ?? idx),
           name: m.name || `Migration ${m.version || idx}`,
           appliedAt: m.appliedAt || m.installed_on || new Date().toISOString(),
-          version: m.version || idx,
+          version: typeof m.version === 'number' ? m.version : Number(m.version ?? idx),
           status: (m.status || 'applied') as 'applied' | 'pending',
           executionTimeMs: m.executionTimeMs,
         }));

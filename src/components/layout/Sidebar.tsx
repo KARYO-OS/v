@@ -96,6 +96,7 @@ const NAV_ITEMS: Record<Role, NavItem[]> = {
   ],
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const getSidebarNavPaths = (role: Role): string[] =>
   (NAV_ITEMS[role] ?? []).map((item) => item.path);
 

@@ -18,7 +18,7 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run src/tests",
     "test:watch": "vitest",
-    "test:unit": "vitest run src/tests/**/*.{test,spec}.{ts,tsx}",
+    "test:unit": "vitest run src/tests",
     "test:e2e": "vitest run src/tests/pages/**/*.test.tsx",
     "test:offline:e2e": "playwright test e2e/offline-workflow.spec.ts --project=chromium --reporter=line",
     "test:smoke:prod": "E2E_USE_WEBSERVER=false playwright test smoke-prod.spec.ts --project=chromium --reporter=line",

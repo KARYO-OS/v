@@ -18,7 +18,7 @@ describe('ScanResultCard', () => {
     );
 
     expect(screen.getByText('Prajurit B')).toBeInTheDocument();
-    expect(screen.getByText('✓ Sudah Keluar')).toBeInTheDocument();
+    expect(screen.getByText('Sudah Keluar')).toBeInTheDocument();
     expect(screen.getByText('Scan kembali untuk masuk')).toBeInTheDocument();
   });
 
@@ -55,6 +55,6 @@ describe('ScanResultCard', () => {
     );
 
     expect(screen.getByText('Prajurit A')).toBeInTheDocument();
-    expect(screen.getByText('✓✓ Sudah Kembali')).toBeInTheDocument();
+    expect(screen.getByText('Sudah Kembali')).toBeInTheDocument();
   });
 });

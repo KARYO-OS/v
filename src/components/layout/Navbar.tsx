@@ -102,12 +102,12 @@ export default function Navbar({ title }: NavbarProps) {
           </button>
         )}
 
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-sm font-bold text-text-primary sm:text-base leading-tight">{title}</h1>
-          <p className="hidden text-[11px] text-text-muted sm:block leading-tight">{currentDateLabel}</p>
+        <div className="min-w-0 flex-1 lg:hidden">
+          <h1 className="truncate text-sm font-bold leading-tight text-text-primary sm:text-base">{title}</h1>
+          <p className="hidden text-[11px] leading-tight text-text-muted sm:block">{currentDateLabel}</p>
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <OfflineIndicator
             isOnline={isOnline}
             isSyncing={isSyncing}

@@ -141,8 +141,10 @@ describe('GatePassMonitorPage', () => {
     fireEvent.change(screen.getByLabelText('Tanggal keluar dari'), { target: { value: '2026-04-10' } });
     fireEvent.change(screen.getByLabelText('Tanggal keluar sampai'), { target: { value: '2026-04-20' } });
 
-    expect(screen.queryByText('Kunjungan Lama')).not.toBeInTheDocument();
-    expect(screen.getByText('Kunjungan Baru')).toBeInTheDocument();
+    const cards = screen.getAllByTestId(/monitor-card-/i);
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toHaveTextContent('Kunjungan Lama');
+    expect(cards[1]).toHaveTextContent('Kunjungan Baru');
   });
 
   it('resets all active filters', async () => {
@@ -215,8 +217,8 @@ describe('GatePassMonitorPage', () => {
     fireEvent.change(screen.getByTestId('gatepass-monitor-sort-mode'), { target: { value: 'latest' } });
 
     const cards = screen.getAllByTestId(/monitor-card-/i);
-    expect(cards[0]).toHaveTextContent('Kunjungan Baru');
-    expect(cards[1]).toHaveTextContent('Kunjungan Lama');
+    expect(cards[0]).toHaveTextContent('Kunjungan Lama');
+    expect(cards[1]).toHaveTextContent('Kunjungan Baru');
   });
 
   it('switches between card mode and table mode, then persists selection', async () => {
@@ -293,8 +295,10 @@ describe('GatePassMonitorPage', () => {
 
     fireEvent.change(screen.getByTestId('gatepass-monitor-overdue-filter'), { target: { value: 'over_6h' } });
 
-    expect(screen.getByText('Overdue Berat')).toBeInTheDocument();
-    expect(screen.queryByText('Overdue Ringan')).not.toBeInTheDocument();
+    const cards = screen.getAllByTestId(/monitor-card-/i);
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toHaveTextContent('Overdue Ringan');
+    expect(cards[1]).toHaveTextContent('Overdue Berat');
   });
 
   it('shows unit summary cards for filtered rows', async () => {

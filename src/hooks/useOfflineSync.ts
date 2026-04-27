@@ -272,7 +272,6 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}) {
     return () => {
       if (cleanup) cleanup();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoSync, checkOnlineStatus, handleSyncComplete, requestSync, setOnlineStable, updateSyncStats]);
 
   useEffect(() => {

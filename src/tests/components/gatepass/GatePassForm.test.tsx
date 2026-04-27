@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const createGatePassMock = vi.fn();
@@ -16,12 +16,6 @@ vi.mock('../../../store/uiStore', () => ({
 
 import GatePassForm from '../../../components/gatepass/GatePassForm';
 
-function futureDatetime(hoursAhead: number): string {
-  const date = new Date(Date.now() + hoursAhead * 60 * 60 * 1000);
-  date.setSeconds(0, 0);
-  return date.toISOString().slice(0, 16);
-}
-
 describe('GatePassForm', () => {
   beforeEach(() => {
     createGatePassMock.mockReset();
@@ -29,9 +23,6 @@ describe('GatePassForm', () => {
   });
 
   it('shows auto-approval feedback when the backend approves automatically', async () => {
-    const keluar = futureDatetime(2);
-    const kembali = futureDatetime(4);
-
     createGatePassMock.mockResolvedValue({
       gate_pass_id: 'gp-1',
       auto_approved: true,
@@ -40,19 +31,18 @@ describe('GatePassForm', () => {
     });
 
     const user = userEvent.setup();
-    const { container } = render(<GatePassForm />);
+    render(<GatePassForm />);
 
-    await user.type(screen.getByPlaceholderText('Masukkan keperluan izin keluar (min. 5 karakter)'), 'Menghadiri rapat');
-    await user.type(screen.getByPlaceholderText('Masukkan tujuan pergi (min. 3 karakter)'), 'Bandung');
-    fireEvent.change(container.querySelector<HTMLInputElement>('#waktu-keluar')!, { target: { value: keluar } });
-    fireEvent.change(container.querySelector<HTMLInputElement>('#waktu-kembali')!, { target: { value: kembali } });
-    await user.click(screen.getByRole('button', { name: /Ajukan Gate Pass/i }));
+    await user.type(screen.getByPlaceholderText('Contoh: Menghadiri rapat penting (min. 5 karakter)'), 'Menghadiri rapat');
+    await user.type(screen.getByPlaceholderText('Contoh: Kantor pusat di Bandung (min. 3 karakter)'), 'Bandung');
+    await user.click(screen.getByRole('button', { name: /Ajukan Izin Keluar/i }));
 
     expect(createGatePassMock).toHaveBeenCalledWith({
       keperluan: 'Menghadiri rapat',
       tujuan: 'Bandung',
-      waktu_keluar: keluar,
-      waktu_kembali: kembali,
+      submit_latitude: undefined,
+      submit_longitude: undefined,
+      submit_accuracy: undefined,
     });
     expect(await screen.findByText('Gate Pass Disetujui Otomatis!')).toBeInTheDocument();
     expect(showNotificationMock).toHaveBeenCalledWith('Auto-approved: Komandan', 'success');

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
@@ -458,7 +458,7 @@ export default function UserManagement() {
     setSelectedUserIds(new Set());
   }, [filteredUsers, currentPage]);
 
-  const loadRegistrationForms = async () => {
+  const loadRegistrationForms = useCallback(async () => {
     if (!isRoleAdmin(authUser?.role) || !authUser?.id) {
       setRegistrationForms([]);
       return;
@@ -475,11 +475,11 @@ export default function UserManagement() {
     } finally {
       setIsLoadingRegistrationForms(false);
     }
-  };
+  }, [authUser?.id, authUser?.role, showNotification]);
 
   useEffect(() => {
     void loadRegistrationForms();
-  }, [authUser?.id, authUser?.role]);
+  }, [loadRegistrationForms]);
 
   const createRegistrationFormLink = async () => {
     if (!isRoleAdmin(authUser?.role) || !authUser?.id) {
@@ -1181,7 +1181,7 @@ export default function UserManagement() {
             </Button>
               <Button variant="secondary" size="sm" onClick={() => setShowImport(true)} className="w-full sm:w-auto">
               <span className="flex items-center gap-1.5">
-                <ICONS.Upload className="h-3.5 w-3.5" aria-hidden="true" />
+                <ICONS.File className="h-3.5 w-3.5" aria-hidden="true" />
                 Import CSV
               </span>
             </Button>

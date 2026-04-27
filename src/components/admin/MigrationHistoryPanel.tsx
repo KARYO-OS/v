@@ -1,5 +1,6 @@
 import { useMigrationHistory } from '../../hooks/useMigrationHistory';
 import { CardListSkeleton } from '../common/Skeleton';
+import type { MigrationRecord } from '../../hooks/useMigrationHistory';
 
 export default function MigrationHistoryPanel() {
   const { migrations, isLoading, error } = useMigrationHistory();
@@ -31,7 +32,7 @@ export default function MigrationHistoryPanel() {
         <p className="text-xs text-text-muted mt-1">Daftar migrasi yang telah diterapkan</p>
       </div>
       <div className="divide-y divide-surface/30 max-h-96 overflow-y-auto">
-        {migrations.slice(0, 20).map((m: any) => (
+        {migrations.slice(0, 20).map((m: MigrationRecord) => (
           <div key={m.id} className="p-4 sm:p-5 flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="font-mono text-xs bg-surface/40 px-2 py-1 rounded w-fit mb-2">

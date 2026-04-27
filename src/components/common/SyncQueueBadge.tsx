@@ -17,6 +17,14 @@ export default function SyncQueueBadge({
 }: SyncQueueBadgeProps) {
   const [visibleCounts, setVisibleCounts] = useState({ pending: 0, failed: 0 });
   const [isVisible, setIsVisible] = useState(false);
+  const hasFailed = visibleCounts.failed > 0;
+  const pendingLabel = hasFailed ? visibleCounts.failed : visibleCounts.pending;
+  const title = useMemo(
+    () => (hasFailed
+      ? `${visibleCounts.failed} operasi gagal. Klik untuk coba sinkron ulang.`
+      : `${visibleCounts.pending} operasi menunggu sinkronisasi. Klik untuk sinkron sekarang.`),
+    [hasFailed, visibleCounts.failed, visibleCounts.pending],
+  );
 
   useEffect(() => {
     const hasItems = pending > 0 || failed > 0;
@@ -38,15 +46,6 @@ export default function SyncQueueBadge({
   }, [pending, failed]);
 
   if (!isVisible) return null;
-
-  const hasFailed = visibleCounts.failed > 0;
-  const pendingLabel = hasFailed ? visibleCounts.failed : visibleCounts.pending;
-  const title = useMemo(
-    () => (hasFailed
-      ? `${visibleCounts.failed} operasi gagal. Klik untuk coba sinkron ulang.`
-      : `${visibleCounts.pending} operasi menunggu sinkronisasi. Klik untuk sinkron sekarang.`),
-    [hasFailed, visibleCounts.failed, visibleCounts.pending],
-  );
 
   return (
     <button
