@@ -29,7 +29,7 @@ export default function KomandanDashboard() {
   const { user } = useAuthStore();
   const { flags } = useFeatureStore();
   const { weatherSettings } = usePlatformStore();
-  const { tasks, isLoading: tasksLoading, refetch: refetchTasks } = useTasks({ assignedBy: user?.id });
+  const { tasks, isLoading: tasksLoading, refetch: refetchTasks } = useTasks({ satuan: user?.satuan });
   const {
     users: personnelUsers,
     isLoading: isPersonnelLoading,
