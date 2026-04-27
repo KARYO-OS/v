@@ -215,7 +215,7 @@ describe('End-to-end dashboard rendering', () => {
 
     await waitFor(() => expect(screen.getByText(/Selamat datang, Admin One/i)).toBeInTheDocument());
     expect(screen.getByText(/Muat Ulang/i)).toBeInTheDocument();
-    expect(screen.getByText(/Gate Pass checked-in/i)).toBeInTheDocument();
+    expect(screen.getByText(/Gate Pass Keluar/i)).toBeInTheDocument();
     expect(
       screen
         .getAllByRole('link', { name: /Pos Jaga/i })

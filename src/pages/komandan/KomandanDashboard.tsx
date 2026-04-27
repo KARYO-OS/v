@@ -56,6 +56,9 @@ export default function KomandanDashboard() {
   const { requestRefresh: requestStatsRefresh } = useVisibilityAwareRefresh(refreshStatsOnly, {
     intervalMs: user?.satuan ? 60 * 1000 : undefined,
   });
+  const { requestRefresh: requestPersonnelRefresh } = useVisibilityAwareRefresh(refetchPersonnel, {
+    intervalMs: user?.satuan ? 60 * 1000 : undefined,
+  });
   const { requestRefresh: requestTaskRefresh } = useVisibilityAwareRefresh(refetchTasks);
 
   const refresh = async () => {
@@ -73,14 +76,18 @@ export default function KomandanDashboard() {
 
   useEffect(() => {
     return subscribeDataChanges(['users', 'tasks', 'announcements'], (changed) => {
-      if (changed.includes('users') || changed.includes('announcements')) {
+      if (changed.includes('users')) {
+        requestStatsRefresh();
+        requestPersonnelRefresh();
+      }
+      if (changed.includes('announcements')) {
         requestStatsRefresh();
       }
       if (changed.includes('tasks')) {
         requestTaskRefresh();
       }
     }, { debounceMs: 500 });
-  }, [requestStatsRefresh, requestTaskRefresh]);
+  }, [requestPersonnelRefresh, requestStatsRefresh, requestTaskRefresh]);
 
   useEffect(() => {
     let mounted = true;
