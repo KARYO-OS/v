@@ -409,30 +409,47 @@ Gate Pass
 │  ├─ Tujuan (Destination): 3-255 chars
 │  ├─ Waktu Keluar: Date + time
 │  ├─ Waktu Kembali: Date + time (> keluar, ≤ 7 hari)
+│  ├─ GPS Location: Optional latitude/longitude saat submit (untuk tracking)
 │  ├─ Auto-approval: Auto-approved jika eligible
 │  │   └─ Kriteria: Good history, known destination, ≤ 24h, working hours
-│  └─ Submit
+│  ├─ Submit
+│  └─ Instant cancel: Can cancel anytime before checkout (status = 'cancelled')
 ├─ Approval Status
 │  ├─ Auto-Approved: Langsung bisa berangkat
 │  ├─ Pending: Tunggu approval komandan
 │  ├─ Rejected: Reason ditampilkan
-│  └─ Timeline: Submitted → Approved → Keluar → Kembali
+│  ├─ Cancelled: User membatalkan sebelum keluar
+│  └─ Timeline: Submitted → Approved → Checkout → Checkin → Completed
 ├─ At Guard Post
-│  ├─ Guard scan QR code (exit validation)
-│  ├─ System records: Waktu keluar actual
-│  ├─ When returning: Guard scan lagi
-│  ├─ System records: Waktu kembali actual
-│  └─ Status: Completed atau Overdue if > expected return
+│  ├─ Guard scan QR code
+│  ├─ CHECKOUT (first scan):
+│  │  ├─ System records: Actual checkout time
+│  │  ├─ Auto-adjust return time: If checkout delayed, return time otomatis extended
+│  │  │   Example: Planned 14:00-18:00, actual checkout 14:10 → return adjusted to 18:10
+│  │  └─ Status changes to: 'checked_in'
+│  ├─ CHECKIN (when returning):
+│  │  ├─ Guard scan QR again
+│  │  ├─ System records: Actual return time
+│  │  └─ Status changes to: 'completed'
+│  └─ Validation: Can only scan if status = 'approved'
 ├─ Overdue Tracking
-│  ├─ If waktu kembali passed, system flags Overdue
+│  ├─ System auto-flags if actual_kembali > adjusted_waktu_kembali
+│  ├─ Status becomes: 'overdue' (if not returned by expected time)
 │  ├─ Notification ke: Personel + Komandan + Guard
 │  ├─ Action: Contact personel, mark as emergency
-│  └─ Resolution: Update actual return time
+│  └─ Resolution: Guard can override on checkout (update actual times)
+├─ Cancellation
+│  ├─ Prajurit dapat cancel sebelum keluar
+│  ├─ Status: pending/approved → cancelled
+│  ├─ Cannot cancel: Jika sudah checkout (status = checked_in/completed)
+│  └─ Notifikasi: Komandan ternotif cancellation
 └─ History
    ├─ All submissions (Last 90 days)
-   ├─ Status distribution chart
+   ├─ Status distribution chart (include 'cancelled')
    ├─ Destination frequency
-   └─ Average duration per destination
+   ├─ Average duration per destination
+   ├─ GPS tracking map: Show checkout/checkin locations
+   └─ Delay analytics: Avg checkout delay by destination
 ```
 
 ### D. Komunikasi & Dokumen

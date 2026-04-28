@@ -47,8 +47,10 @@ Comprehensive deep-dive into Gate Pass architecture, validation, auto-approval, 
     │          │
     ▼          ▼
  AUTO-      PENDING
+7. [Auto-Adjust Return Time](#auto-adjust-return-time)
+8. [GPS Tracking](#gps-tracking)
+9. [Cancellation System](#cancellation-system)
  APPROVED   (Wait)
-    │          │
     │          ▼
     │     ┌──────────────┐
     │     │  KOMANDAN    │
@@ -67,6 +69,7 @@ Comprehensive deep-dive into Gate Pass architecture, validation, auto-approval, 
     │ Guard scan QR     │
     └────────┬──────────┘
              │
+│  • GPS location (optional)      │
              ▼
     ┌──────────────────┐
     │  CHECKED_IN      │
@@ -90,6 +93,7 @@ Comprehensive deep-dive into Gate Pass architecture, validation, auto-approval, 
 ## Auto-Approval System
 
 ### Approval Criteria
+   │ Can also CANCEL here
 
 **For ADMIN & KOMANDAN**: ✅ ALWAYS auto-approved
 
@@ -97,6 +101,19 @@ Comprehensive deep-dive into Gate Pass architecture, validation, auto-approval, 
 
 | Criteria | Value | Reason |
 |----------|-------|--------|
+   ┌──────────────────────────────────┐
+   │ Personel pergi ke Guard Post     │
+   │ Guard scan QR code (CHECKOUT)    │
+   └────────┬─────────────────────────┘
+         │
+   ┌────────▼──────────────────────────────────┐
+   │ ON CHECKOUT:                             │
+   │ • Record actual checkout time            │
+   │ • Auto-adjust return time if delayed     │
+   │ • Status: approved → checked_in          │
+   │ • Store GPS location of checkout         │
+   └────────┬───────────────────────────────────┘
+         │
 | **Previous Approvals** | ≥ 3 | Good track record |
 | **Destination** | Known/Repeated | Reduced risk |
 | **Duration** | ≤ 24 hours | Short, manageable |
@@ -104,18 +121,39 @@ Comprehensive deep-dive into Gate Pass architecture, validation, auto-approval, 
 
 ### Implementation
 
-**File**: `supabase/migrations/20260421140000_enhance_gatepass_validation_autoapproval.sql`
+   │ Guard scan QR     │ (CHECKIN)
 
 ```sql
+   ┌────────▼──────────────────────────────────┐
+   │ ON CHECKIN:                              │
+   │ • Record actual return time              │
+   │ • Status: checked_in → completed         │
+   │ • Store GPS location of checkin          │
+   │ • Check if overdue (vs adjusted time)    │
+   └────────┬───────────────────────────────────┘
+         │
 -- Function: Determine if gate pass should auto-approve
 CREATE OR REPLACE FUNCTION should_auto_approve_gate_pass(
-  p_user_id uuid,
+   │    COMPLETED     │
   p_keperluan text,
   p_tujuan text,
   p_waktu_keluar timestamp,
+   ┌──────────────────────────┐
+   │     OVERDUE              │
+   │ (If kembali > waktu)     │
+   │ Auto-triggered at:       │
+   │ actual_kembali > adjusted│
+   │ waktu_kembali            │
+   └──────────────────────────┘
+
+   ┌──────────────────┐
+   │    CANCELLED     │
+   │ User cancels     │
+   │ before checkout  │
+   │ (Terminal state) │
+   └──────────────────┘
   p_waktu_kembali timestamp
 ) RETURNS jsonb AS $$
-DECLARE
   v_user_role user_role;
   v_approval_history int;
   v_known_destination bool;
@@ -460,6 +498,154 @@ useEffect(() => {
 ---
 
 ## Troubleshooting
+
+---
+
+## Auto-Adjust Return Time
+
+### Feature Overview
+
+When a prajurit checks out **later than planned**, the system automatically adjusts the **return time (waktu_kembali)** to maintain the **planned duration**.
+
+**Why?** If someone leaves 15 minutes late, they're likely returning 15 minutes late too. Maintain flexibility without requiring re-approval.
+
+### Workflow Example
+
+```
+Scenario: Delayed Checkout
+
+PLANNED:
+  • Checkout (keluar): 14:00
+  • Checkin (kembali): 18:00
+  • Duration: 4 hours
+
+ACTUAL:
+  • Checkout happens: 14:10 (10 minutes late)
+  • System auto-calculates delay: +10 minutes
+  • Auto-adjusted return time: 18:10
+  • Duration maintained: Still 4 hours ✓
+
+RESULT:
+  • Overdue threshold: Now 18:10 (instead of 18:00)
+  • If back by 18:10: ✓ COMPLETED
+  • If not back by 18:10: ✗ OVERDUE alert
+```
+
+### Backend Implementation
+
+**Migration**: `supabase/migrations/20260423113000_auto_adjust_return_time_on_checkout.sql`
+
+- When guard scans QR code at checkout (first scan):
+  - Calculates delay: `actual_checkout_time - planned_checkout_time`
+  - If delay > 0, extends return time by same delay
+  - Updates `waktu_kembali` in database before status change to `checked_in`
+  - Status: approved → checked_in (with auto-adjusted return time)
+
+- When guard scans at check-in (return):
+  - Compares `actual_return_time` against **adjusted** `waktu_kembali`
+  - If actual > adjusted: marks status as `overdue`
+  - If actual <= adjusted: marks status as `completed`
+
+---
+
+## GPS Tracking
+
+### Feature Overview
+
+Gate Pass submissions now optionally track **GPS location** (latitude, longitude, accuracy) at submission time.
+
+### Use Cases
+
+- **Compliance**: Verify personel actually submitted from declared location
+- **Safety**: Track movement patterns for security analysis
+- **Analytics**: Dashboard heatmap showing frequent submission/checkout locations
+- **Audit**: Historical evidence of movement for disputes or investigations
+
+### Data Model
+
+```sql
+ALTER TABLE public.gate_pass
+ADD COLUMN IF NOT EXISTS submit_latitude DOUBLE PRECISION,
+ADD COLUMN IF NOT EXISTS submit_longitude DOUBLE PRECISION,
+ADD COLUMN IF NOT EXISTS submit_accuracy DOUBLE PRECISION;
+
+-- Future: checkout and checkin locations
+-- checkout_latitude, checkout_longitude, checkout_accuracy
+-- checkin_latitude, checkin_longitude, checkin_accuracy
+```
+
+### Frontend Implementation
+
+- GPS request on page load (user consent)
+- Display current location: "📍 Location: -6.2088° S, 106.8456° E (±65m)"
+- Optional: User can manually adjust location
+- Include in payload when submitting gate pass
+- If GPS unavailable: Show warning but don't block submission
+
+### Dashboard Display
+
+- **Komandan**: Map view showing all gate pass submission locations
+- **Guard**: Mark checkout/checkin locations automatically (future)
+- **Analytics**: Heatmap of most frequent destinations
+
+---
+
+## Cancellation System
+
+### Feature Overview
+
+Personel can **cancel** their gate pass anytime before **checkout (when guard scans QR)**.
+
+Once checkout happens, cancellation is blocked (must be manually resolved by admin/komandan).
+
+### Valid Cancellation States
+
+```
+pending → cancelled (by personel OR admin)
+approved → cancelled (by personel OR admin)
+
+CANNOT cancel from:
+  • checked_in (already left)
+  • completed (already returned)
+  • overdue (already past deadline)
+  • rejected (already denied)
+  • cancelled (already cancelled)
+```
+
+### Backend Implementation
+
+**Migration**: `supabase/migrations/20260426110000_add_gatepass_cancelled_status.sql`
+
+- Added `cancelled` to `gate_pass_status` enum
+- New RPC: `api_cancel_gate_pass(gate_pass_id, reason)`
+- Authorization: Only the personel who submitted it, or admin
+- Validation: Can only cancel if status IN ('pending', 'approved')
+- On cancel:
+  - Set status = 'cancelled'
+  - Store cancel_reason text
+  - Record cancelled_by user_id and cancelled_at timestamp
+  - Notify komandan of cancellation
+
+### Frontend Implementation
+
+- **Prajurit Dashboard**: Show "Cancel" button only if status is pending/approved
+- **Modal**: Ask for optional cancellation reason
+- **Confirmation**: "Are you sure you want to cancel gate pass to [destination]?"
+- **Result**: Immediate update to cancelled status, notification sent
+- **Komandan Dashboard**: Show cancelled gate passes in history, filter by status
+
+### Notification Flow
+
+```
+Personel clicks [Cancel Gate Pass]
+    ↓
+System records cancellation + reason
+    ↓
+Komandan receives notification: "Name cancelled gate pass to Destination"
+    ↓
+Komandan can see in Gate Pass history (filter by status = cancelled)
+```
+
 
 ### Issue: Auto-Approval tidak jalan
 
