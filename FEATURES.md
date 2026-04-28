@@ -162,6 +162,46 @@ Feature Control
 └─ Bulk enable/disable
 ```
 
+### E. Analytics & Dashboard
+```
+Analytics & Performance Metrics
+├─ Dashboard Overview
+│  ├─ Total personel (active/inactive)
+│  ├─ System health status
+│  ├─ Real-time activity gauge
+│  ├─ Alert summary (jika ada issues)
+│  └─ Key metrics at a glance
+├─ Task Analytics
+│  ├─ Task status distribution (pending/in-progress/done/approved/rejected)
+│  ├─ Bar chart: Task status trends
+│  ├─ Completion rate per assignment period
+│  ├─ Average task duration
+│  ├─ Top task assigners
+│  └─ Filter by date range, satuan
+├─ Attendance Analytics
+│  ├─ Attendance status summary (hadir/izin/sakit/dinas_luar/alpa)
+│  ├─ Bar chart: Attendance trends
+│  ├─ Heatmap: Attendance pattern by day
+│  ├─ Per-unit attendance comparison
+│  ├─ Late arrival tracking
+│  └─ Export attendance data
+├─ Custom Filters
+│  ├─ Filter by Satuan/Unit
+│  ├─ Filter by date range
+│  ├─ Real-time or historical data
+│  └─ Applied filters persist in session
+├─ Data Export
+│  ├─ CSV export untuk semua metrics
+│  ├─ PDF report generation
+│  ├─ Email scheduled reports
+│  └─ Bulk download capabilities
+└─ Refresh & Caching
+   ├─ Manual refresh button
+   ├─ Last updated timestamp
+   ├─ Auto-refresh every 5 minutes
+   └─ Cache optimization for performance
+```
+
 ---
 
 ## 👨‍💼 3. Komandan Dashboard (`/komandan`)
@@ -229,26 +269,148 @@ Gate Pass Management
    └─ Export: CSV / PDF untuk compliance
 ```
 
-### D. Reports & Analytics
+### D. Evaluasi & Penilaian Personel
 ```
-Laporan
-├─ Harian
-│  ├─ Attendance summary
-│  ├─ Task completion
-│  ├─ Gate passes approved
-│  └─ Any incidents / alerts
-├─ Mingguan / Bulanan
-│  ├─ Personel performance ranking
-│  ├─ Task completion trend
-│  ├─ Attendance rate per personel
-│  └─ Discipline incidents
-└─ Custom Reports
-   ├─ Select metrics, timeframe, recipients
-   ├─ Schedule: One-time / recurring
-   └─ Format: PDF / Email / Dashboard
+Catatan Disiplin & Penghargaan
+├─ Tambah Catatan
+│  ├─ Tipe: Penghargaan / Peringatan / Catatan
+│  ├─ Pilih personel dari unit
+│  ├─ Deskripsi lengkap catatan
+│  ├─ Auto-timestamp saat dibuat
+│  └─ History tersimpan permanen
+├─ View History
+│  ├─ Lihat semua catatan per personel
+│  ├─ Filter: Tipe, tanggal, personel
+│  ├─ Sort: Terbaru / Tertua
+│  └─ Search: Cari berdasarkan isi
+├─ Aksi
+│  ├─ Edit catatan (hanya pembuat atau admin)
+│  ├─ Delete catatan
+│  ├─ Print/Export
+│  └─ Attach dokumen pendukung
+└─ Laporan
+   ├─ Statistik: Total penghargaan vs peringatan per personel
+   ├─ Report periode (bulanan/tahunan)
+   └─ Export untuk HRD
 ```
 
-### E. Komunikasi
+### E. Manajemen Sprint (Surat Perintah Dinas)
+```
+Surat Perintah (Sprint) Management
+├─ Create Sprint
+│  ├─ Judul surat perintah
+│  ├─ Dasar hukum / pertimbangan
+│  ├─ Tujuan dinas
+│  ├─ Tempat tujuan
+│  ├─ Tanggal berangkat & kembali
+│  ├─ Pilih personel yang ditunjuk
+│  ├─ Assign jabatan untuk setiap personel
+│  └─ Status awal: Draft
+├─ Workflow
+│  ├─ Draft: Komandan input data
+│  ├─ Disetujui: Komandan approve sendiri / tunggu atasan
+│  ├─ Aktif: Sprint sedang berlangsung
+│  ├─ Selesai: Sprint completed, laporan diterima
+│  └─ Dibatalkan: Jika ada perubahan perintah
+├─ Tracking
+│  ├─ List semua sprint (aktif & historis)
+│  ├─ Filter: Status, tanggal, tempat tujuan
+│  ├─ View detail personel yang ditugaskan
+│  ├─ Track status setiap personel
+│  └─ Add notes/amendments
+├─ Reports
+│  ├─ Laporan kembali dari personel
+│  ├─ View & dokumentasikan hasil dinas
+│  ├─ Archive sprint setelah selesai
+│  └─ History untuk compliance
+└─ Actions
+   ├─ Edit (jika masih draft)
+   ├─ Change status manually
+   ├─ Delete (hanya draft untuk keamanan)
+   └─ Print surat perintah
+```
+
+### F. Permintaan Logistik
+```
+Logistics Request Management
+├─ Submit Request
+│  ├─ Nama item yang diminta
+│  ├─ Jumlah & satuannya
+│  ├─ Alasan / keperluan
+│  ├─ Tingkat urgensi (optional)
+│  └─ Status awal: Pending
+├─ Track Status
+│  ├─ List semua permintaan
+│  ├─ Filter: Status (pending/approved/rejected)
+│  ├─ View admin notes / rejection reason
+│  ├─ Timeline kapan disetujui/ditolak
+│  └─ Quantity approved vs requested
+├─ History
+│  ├─ Completed requests (last 90 days)
+│  ├─ Average approval time
+│  ├─ Most frequent requested items
+│  └─ Export untuk dokumentasi
+└─ Actions
+   ├─ Edit request (jika masih pending)
+   ├─ Resubmit setelah ditolak
+   └─ Cancel request (jika tidak diperlukan lagi)
+```
+
+### G. Laporan Operasional
+```
+Laporan Ops Management
+├─ View Submitted Reports
+│  ├─ Dari Staf S-3 (Operasional)
+│  ├─ Tipe: Harian / Insidentil / Latihan / dll
+│  ├─ Status: Diajukan / Diketahui / Diarsipkan
+│  ├─ Filter & sort reports
+│  └─ Quick preview
+├─ Review Process
+│  ├─ Read full report
+│  ├─ Mark as "Diketahui" (approve/acknowledge)
+│  ├─ Archive jika sudah ditindaklanjuti
+│  ├─ Add response/notes
+│  └─ Escalate jika perlu
+├─ History & Archive
+│  ├─ Lihat laporan yang sudah diketahui
+│  ├─ Archive untuk rujukan
+│  ├─ Search by date/type/content
+│  └─ Export untuk compliance
+└─ Statistics
+   ├─ Total reports per period
+   ├─ Average response time
+   ├─ Reports by type
+   └─ Open vs closed reports
+```
+
+### H. Reports & Analytics
+```
+Laporan Komandan
+├─ Daily Reports
+│  ├─ Attendance summary: Hadir / Izin / Sakit / Alpa
+│  ├─ Task completion: Selesai vs pending
+│  ├─ Gate passes approved: Jumlah & destinasi
+│  ├─ Logistics requests pending
+│  └─ Any incidents / alerts
+├─ By Date Selection
+│  ├─ Pick specific date untuk laporan
+│  ├─ Data real-time atau historis
+│  ├─ Compare dengan hari lain
+│  └─ Trend visualization
+├─ Export Options
+│  ├─ Download as CSV
+│  ├─ Print for records
+│  ├─ Email to higher authority
+│  └─ Schedule recurring reports
+└─ Performance Metrics
+   ├─ Personel performance ranking
+   ├─ Task completion rate per personel
+   ├─ Attendance rate trends
+   ├─ Gate pass usage patterns
+   └─ Discipline incidents tracking
+```
+
+### I. Komunikasi
 ```
 Messaging
 ├─ Send Broadcast
@@ -452,7 +614,47 @@ Gate Pass
    └─ Delay analytics: Avg checkout delay by destination
 ```
 
-### D. Komunikasi & Dokumen
+### D. Kalender Kegiatan & RSVP
+```
+Kegiatan & Event Management
+├─ View Kegiatan
+│  ├─ List semua kegiatan satuan
+│  ├─ Filter: Tanggal, jenis, status RSVP
+│  ├─ Jenis kegiatan: Latihan / Upacara / Inspeksi / Perjalanan / Rapat / Lainnya
+│  ├─ Show: Waktu, lokasi, deskripsi, peserta yang diundang
+│  └─ Personalized: Hanya kegiatan satuan user
+├─ RSVP Management (Konfirmasi Kehadiran)
+│  ├─ Respond Status
+│  │  ├─ Hadir: Konfirmasi hadir
+│  │  ├─ Tidak Hadir: Konfirmasi tidak hadir
+│  │  └─ Belum: Default state (belum dikonfirmasi)
+│  ├─ Timeline
+│  │  ├─ Submit RSVP anytime sebelum kegiatan
+│  │  ├─ Update RSVP sampai kegiatan dimulai
+│  │  └─ History: Lihat riwayat RSVP changes
+│  ├─ Attendance Verification
+│  │  ├─ Admin/Komandan verify kehadiran saat kegiatan
+│  │  ├─ Compare RSVP vs actual attendance
+│  │  └─ Flag discrepancies untuk follow-up
+│  └─ Notifications
+│     ├─ Reminder: 1 hari sebelum kegiatan
+│     ├─ Update: Jika ada perubahan kegiatan
+│     └─ Confirmation: Notif ketika RSVP diterima
+├─ History & Trends
+│  ├─ Past events: Kegiatan yang sudah berlalu
+│  ├─ Attendance rate: % keua vs RSVP hadir
+│  ├─ Personal calendar: Timeline kegiatan pribadi
+│  └─ Statistics: Total kehadiran per periode
+└─ Details View
+   ├─ Judul kegiatan
+   ├─ Tanggal & waktu (mulai-selesai)
+   ├─ Lokasi kegiatan
+   ├─ Deskripsi detail
+   ├─ Peserta yang RSVP hadir
+   └─ Documents/attachment jika ada
+```
+
+### E. Komunikasi & Dokumen
 ```
 Messaging & Documents
 ├─ Inbox
@@ -478,7 +680,35 @@ Messaging & Documents
    └─ Picture: Upload profile photo
 ```
 
-### E. Reporting
+### F. Apel Digital
+```
+Sesi Apel & Laporan Kehadiran
+├─ Join Apel Session
+│  ├─ View sesi apel hari ini
+│  ├─ Jenis apel: Pagi / Siang / Sore / Khusus
+│  ├─ Jadwal: Waktu buka dan tutup sesi
+│  ├─ Status: Open / Closed
+│  ├─ Countdown timer sampai sesi tutup
+│  └─ Personal status: Sudah lapor / Belum lapor
+├─ Lapor Hadir
+│  ├─ One-click button untuk lapor kehadiran saat sesi buka
+│  ├─ Confirmation: "Kehadiran dicatat pukul HH:MM"
+│  ├─ Dapat repeat: Bisa ulang jika belum hadir
+│  └─ Timestamp auto-saved
+├─ History & Statistics
+│  ├─ Monthly attendance: Chart kehadiran apel per bulan
+│  ├─ Streak: Berapa hari berturut-turut hadir
+│  ├─ Missed sessions: Daftar sesi yang tidak dihadiri
+│  ├─ Alpa pattern analysis
+│  └─ Exportable for personal records
+└─ Notifications
+   ├─ Reminder: Notif sebelum sesi dimulai
+   ├─ Session open: Notif ketika sesi buka
+   ├─ Session closing soon: Warning mendekati akhir
+   └─ Confirmation: Auto-notif setelah lapor hadir
+```
+
+### G. Reporting
 ```
 Laporan Pribadi
 ├─ Statistics
@@ -486,22 +716,75 @@ Laporan Pribadi
 │  ├─ Tasks: Completed vs assigned
 │  ├─ Rating: Average rating dari komandan
 │  ├─ Gate pass: Submitted vs approved
+│  ├─ Apel attendance: % kehadiran apel
 │  └─ Punctuality: Ontime %
 ├─ Trends
 │  ├─ Performance trend (3-month chart)
-│  ├─ Attendance pattern
+│  ├─ Attendance pattern (daily/weekly)
 │  ├─ Task completion rate trend
-│  └─ Discipline incidents
+│  ├─ Discipline incidents (jika ada)
+│  └─ RSVP accuracy (laporan vs actual hadir)
 └─ Export
    ├─ Download personal record (PDF)
    ├─ Attendance certificate
    ├─ Performance report
+   ├─ Gate pass summary
    └─ For HR / external agencies
+```
+
+### H. Pos Jaga Scanning
+```
+Scan Pos Jaga
+├─ QR Scanner Interface
+│  ├─ Scan static QR code di pos jaga
+│  ├─ Auto-detect lokasi pos berdasarkan QR
+│  ├─ Camera focus & auto-focus
+│  ├─ Vibration feedback saat scan
+│  └─ Sound notification
+├─ Scan Recording
+│  ├─ Auto-timestamp saat scan
+│  ├─ Record lokasi GPS (optional)
+│  ├─ Store locally + sync online
+│  ├─ Offline-capable (works without internet)
+│  └─ Sync when online
+├─ History & Analytics
+│  ├─ Per-location scan history
+│  ├─ Peak scan times
+│  ├─ Frequency analytics per pos
+│  ├─ Personal visit pattern
+│  └─ Export scan records
+└─ Feedback
+   ├─ Success: Green screen + beep
+   ├─ Error: Red screen + info
+   ├─ Duplicate: Alert jika sudah scan pos sama hari ini
+   └─ Summary: Total pos scanned hari ini
 ```
 
 ---
 
-## 🚧 6. Guard / Provost Dashboard (`/guard`)
+## 🪖 5. Reporting
+```
+Laporan Pribadi
+├─ Statistics
+│  ├─ Attendance: % kehadiran bulan ini
+│  ├─ Tasks: Completed vs assigned
+│  ├─ Rating: Average rating dari komandan
+│  ├─ Gate pass: Submitted vs approved
+│  ├─ Apel attendance: % kehadiran apel
+│  └─ Punctuality: Ontime %
+├─ Trends
+│  ├─ Performance trend (3-month chart)
+│  ├─ Attendance pattern (daily/weekly)
+│  ├─ Task completion rate trend
+│  ├─ Discipline incidents (jika ada)
+│  └─ RSVP accuracy (laporan vs actual hadir)
+└─ Export
+   ├─ Download personal record (PDF)
+   ├─ Attendance certificate
+   ├─ Performance report
+   ├─ Gate pass summary
+   └─ For HR / external agencies
+```
 
 ### A. QR Scanning & Validation
 ```
