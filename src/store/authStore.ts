@@ -186,10 +186,158 @@ interface VerifyUserPinRow {
   force_change_pin: boolean;
 }
 
+const DEMO_LOGIN_ENABLED = import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_AUTH !== 'false';
+const DEMO_PIN = '123456';
+
+const buildDemoUsers = (): User[] => {
+  const now = new Date().toISOString();
+  return [
+    {
+      id: 'demo-admin',
+      nrp: '1000001',
+      nama: 'Admin Karyo',
+      role: 'admin',
+      satuan: 'Batalyon 1',
+      pangkat: 'Letnan Kolonel',
+      jabatan: 'Komandan Batalyon',
+      is_active: true,
+      is_online: false,
+      login_attempts: 0,
+      force_change_pin: false,
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-komandan',
+      nrp: '2000001',
+      nama: 'Budi Santoso',
+      role: 'komandan',
+      level_komando: 'KOMPI',
+      satuan: 'Batalyon 1',
+      pangkat: 'Mayor',
+      jabatan: 'Komandan Kompi A',
+      is_active: true,
+      is_online: false,
+      login_attempts: 0,
+      force_change_pin: false,
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-prajurit',
+      nrp: '3000001',
+      nama: 'Agus Pratama',
+      role: 'prajurit',
+      satuan: 'Batalyon 1',
+      pangkat: 'Sersan Dua',
+      jabatan: 'Anggota Regu 1',
+      is_active: true,
+      is_online: false,
+      login_attempts: 0,
+      force_change_pin: false,
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-guard',
+      nrp: '4000001',
+      nama: 'Deni Ramadhan',
+      role: 'guard',
+      satuan: 'Batalyon 1',
+      pangkat: 'Sersan Satu',
+      jabatan: 'Pos Jaga Utama',
+      is_active: true,
+      is_online: false,
+      login_attempts: 0,
+      force_change_pin: false,
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: 'demo-staf',
+      nrp: '5000001',
+      nama: 'Siti Rahma',
+      role: 'staf',
+      satuan: 'Batalyon 1',
+      pangkat: 'Pembina',
+      jabatan: 'Staf Administrasi',
+      is_active: true,
+      is_online: false,
+      login_attempts: 0,
+      force_change_pin: false,
+      created_at: now,
+      updated_at: now,
+    },
+  ];
+};
+
+const DEMO_USERS = buildDemoUsers();
+
+const isFetchLikeError = (err: unknown): boolean => {
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    return msg.includes('fetch') || msg.includes('network') || msg.includes('connection') || msg.includes('name_not_resolved');
+  }
+
+  if (typeof err === 'object' && err !== null) {
+    const maybeError = err as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
+    const combined = [maybeError.message, maybeError.details, maybeError.hint, maybeError.code]
+      .filter((v): v is string => typeof v === 'string')
+      .join(' ')
+      .toLowerCase();
+
+    return (
+      combined.includes('fetch') ||
+      combined.includes('network') ||
+      combined.includes('connection') ||
+      combined.includes('name_not_resolved')
+    );
+  }
+
+  const fallback = String(err).toLowerCase();
+  return (
+    fallback.includes('fetch') ||
+    fallback.includes('network') ||
+    fallback.includes('connection') ||
+    fallback.includes('name_not_resolved')
+  );
+};
+
+const getDemoUserByCredentials = (nrp: string, pin: string): User | null => {
+  if (!DEMO_LOGIN_ENABLED) return null;
+  if (pin !== DEMO_PIN) return null;
+  return DEMO_USERS.find((user) => user.nrp === nrp) ?? null;
+};
+
+const getDemoUserBySession = (session: KaryoSession): User | null => {
+  if (!DEMO_LOGIN_ENABLED) return null;
+  return DEMO_USERS.find((user) => user.id === session.user_id) ?? null;
+};
+
 async function restoreSessionWithRetry(
   session: KaryoSession,
   set: (partial: Partial<AuthStore>) => void,
 ): Promise<boolean> {
+  const demoUser = getDemoUserBySession(session);
+  if (demoUser) {
+    const refreshedSession: KaryoSession = {
+      ...session,
+      role: (normalizeRole(demoUser.role) ?? demoUser.role) as User['role'],
+      expires_at: makeSessionExpiry(),
+    };
+    await saveSession(refreshedSession);
+    set({
+      user: demoUser,
+      isAuthenticated: true,
+      requiresPinChange: false,
+      isLoading: false,
+      isInitialized: true,
+      error: null,
+    });
+    if (import.meta.env.DEV) console.log('[AUTH] Demo session restored');
+    return true;
+  }
+
   const maxRetries = 2;
   const delays = [300, 700];
 
@@ -298,16 +446,66 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       if (import.meta.env.DEV) console.log('[AUTH] Login attempt for NRP:', nrp);
+
+      const normalizedNrp = nrp.trim();
+      const normalizedPin = pin.trim();
       
       // Step 1: Verify PIN and get user_id, user_role
-      const { data, error } = await supabase.rpc('verify_user_pin', { p_nrp: nrp, p_pin: pin }).maybeSingle();
+      const { data, error } = await supabase.rpc('verify_user_pin', { p_nrp: normalizedNrp, p_pin: normalizedPin }).maybeSingle();
       if (error) {
-        const msg = 'Terjadi kesalahan sistem. Coba lagi nanti.';
         if (import.meta.env.DEV) console.error('[AUTH] verify_user_pin error:', error);
-        throw new Error(msg);
+
+        const demoUser = getDemoUserByCredentials(normalizedNrp, normalizedPin);
+        if (demoUser && isFetchLikeError(error)) {
+          const sessionPayload: KaryoSession = {
+            user_id: demoUser.id,
+            role: (normalizeRole(demoUser.role) ?? demoUser.role) as User['role'],
+            expires_at: makeSessionExpiry(),
+          };
+          await saveSession(sessionPayload);
+          set({
+            user: demoUser,
+            isAuthenticated: true,
+            requiresPinChange: false,
+            isLoading: false,
+            error: null,
+          });
+          broadcastAuthSync({
+            type: 'LOGIN',
+            session: sessionPayload,
+          });
+          if (import.meta.env.DEV) console.log('[AUTH] Demo login fallback enabled (network issue)');
+          return;
+        }
+
+        throw new Error('Terjadi kesalahan sistem. Coba lagi nanti.');
       }
       const row = data as VerifyUserPinRow | null;
-      if (!row) throw new Error('NRP atau PIN salah. Periksa kembali dan coba lagi.');
+      if (!row) {
+        const demoUser = getDemoUserByCredentials(normalizedNrp, normalizedPin);
+        if (demoUser) {
+          const sessionPayload: KaryoSession = {
+            user_id: demoUser.id,
+            role: (normalizeRole(demoUser.role) ?? demoUser.role) as User['role'],
+            expires_at: makeSessionExpiry(),
+          };
+          await saveSession(sessionPayload);
+          set({
+            user: demoUser,
+            isAuthenticated: true,
+            requiresPinChange: false,
+            isLoading: false,
+            error: null,
+          });
+          broadcastAuthSync({
+            type: 'LOGIN',
+            session: sessionPayload,
+          });
+          if (import.meta.env.DEV) console.log('[AUTH] Demo login fallback enabled (invalid backend credentials)');
+          return;
+        }
+        throw new Error('NRP atau PIN salah. Periksa kembali dan coba lagi.');
+      }
 
       const { user_id, user_role, force_change_pin } = row;
       if (import.meta.env.DEV) console.log('[AUTH] PIN verified for user_id:', user_id);
@@ -344,7 +542,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           p_user_id: user_id,
           p_action: 'LOGIN',
           p_resource: 'auth',
-          p_detail: JSON.stringify({ nrp, role: user_role })
+          p_detail: JSON.stringify({ nrp: normalizedNrp, role: user_role })
         });
       } catch (auditErr) {
         if (import.meta.env.DEV) console.warn('[AUTH] Failed to insert audit log:', auditErr);

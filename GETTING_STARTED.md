@@ -93,9 +93,13 @@ npm run dev
 ## 🎯 First-Time Workflow
 
 ### 1. Login
-- **NRP**: Any number (sistem punya dummy users)
-- **PIN**: Any 6 digits
-- Atau use pre-seeded credentials di `supabase/seed.sql`
+- Gunakan akun demo bawaan berikut (PIN semua akun: `123456`):
+	- Admin: `1000001`
+	- Komandan: `2000001`
+	- Prajurit: `3000001`
+	- Guard: `4000001`
+	- Staf: `5000001`
+- Sumber seed akun: migration `supabase/migrations/002_seed_data.sql`.
 
 ### 2. Explore Features
 - **Admin Dashboard**: `/admin` (role-based redirect)
