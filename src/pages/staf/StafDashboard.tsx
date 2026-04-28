@@ -210,7 +210,7 @@ export default function StafDashboard() {
           </StatsGrid>
         )}
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="grid-cards-responsive grid gap-6 lg:grid-cols-3">
           {/* Quick Access Modules */}
           <div className="app-card dashboard-section lg:col-span-1">
             <DashboardShortcutGrid
@@ -244,9 +244,9 @@ export default function StafDashboard() {
               ) : (
                 pinnedAnnouncements.map((ann) => (
                   <div
-                    key={ann.id}
-                    className="rounded-2xl border border-surface/70 bg-surface/10 p-4"
-                  >
+                      key={ann.id}
+                      className="rounded-2xl border border-surface/70 bg-surface/10 card-padding-responsive"
+                    >
                     <div className="flex items-start gap-3">
                       <ICONS.Pin className="mt-0.5 h-4 w-4 text-accent-gold" aria-hidden="true" />
                       <div className="min-w-0 flex-1">
