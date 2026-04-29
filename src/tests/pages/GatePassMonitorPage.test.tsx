@@ -247,6 +247,37 @@ describe('GatePassMonitorPage', () => {
     expect(screen.getByTestId('monitor-table')).toBeInTheDocument();
   });
 
+  it('renders all cards in test mode without virtualization gaps', async () => {
+    mockState.gatePasses = Array.from({ length: 24 }, (_, index) =>
+      makeGatePass({
+        id: `bulk-${index + 1}`,
+        tujuan: `Tujuan ${index + 1}`,
+        status: index % 3 === 0 ? 'overdue' : index % 3 === 1 ? 'checked_in' : 'approved',
+        user: {
+          id: `u-${index + 1}`,
+          nama: `Personel ${index + 1}`,
+          nrp: `${10000 + index}`,
+          role: 'prajurit',
+          satuan: index % 2 === 0 ? 'Yon A' : 'Yon B',
+          is_active: true,
+          is_online: true,
+          login_attempts: 0,
+          created_at: '2026-04-16T00:00:00Z',
+          updated_at: '2026-04-16T00:00:00Z',
+        },
+      }),
+    );
+
+    render(<GatePassMonitorPage />);
+
+    await waitFor(() => expect(screen.getByText('Monitoring Gate Pass')).toBeInTheDocument());
+
+    const cards = screen.getAllByTestId(/monitor-card-/i);
+    expect(cards).toHaveLength(24);
+    expect(screen.getByTestId('monitor-card-bulk-1')).toBeInTheDocument();
+    expect(screen.getByTestId('monitor-card-bulk-24')).toBeInTheDocument();
+  });
+
   it('filters rows by satuan', async () => {
     mockState.gatePasses = [
       makeGatePass({

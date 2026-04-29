@@ -156,7 +156,7 @@ async function captureAuthenticatedPages(context: BrowserContext, role: RoleKey,
     const errorFile = `${dir}/error-${width}x${height}.png`;
     await page.screenshot({ path: errorFile, fullPage: true });
     console.log(`✓ Saved error page: ${errorFile}`);
-  } catch (err) {
+  } catch {
     console.warn(`✗ Failed to capture error page for ${role}`);
   }
 
