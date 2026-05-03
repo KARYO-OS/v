@@ -1,4 +1,4 @@
-# 🪖 KARYO OS - Sistem Manajemen Operasional Militer
+#  KARYO OS - Sistem Manajemen Operasional Militer
 
 **Karyo OS** adalah platform web terintegrasi untuk manajemen operasional unit militer dengan fokus pada **efisiensi**, **keamanan**, dan **skalabilitas**.
 
