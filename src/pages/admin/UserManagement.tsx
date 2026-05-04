@@ -220,42 +220,23 @@ function parseDelimitedText(text: string, delimiter: CsvDelimiter): string[][] {
   return rows;
 }
 
-function isSpreadsheetFile(file: File): boolean {
+function isTextImportFile(file: File): boolean {
   const lowerName = file.name.toLowerCase();
   const mimeType = file.type.trim().toLowerCase();
   return (
-    lowerName.endsWith('.xlsx') ||
-    lowerName.endsWith('.xls') ||
-    mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-    mimeType === 'application/vnd.ms-excel'
+    lowerName.endsWith('.csv') ||
+    lowerName.endsWith('.tsv') ||
+    lowerName.endsWith('.txt') ||
+    mimeType === 'application/vnd.ms-excel' ||
+    mimeType === 'text/csv' ||
+    mimeType === 'text/tab-separated-values' ||
+    mimeType === 'text/plain' ||
+    mimeType === 'application/csv'
   );
 }
 
-async function parseSpreadsheetFile(file: File): Promise<Record<string, string>[]> {
-  const xlsx = await import('xlsx');
-  const buffer = await file.arrayBuffer();
-  const workbook = xlsx.read(buffer, { type: 'array' });
-  const firstSheetName = workbook.SheetNames[0];
-  if (!firstSheetName) return [];
-
-  const firstSheet = workbook.Sheets[firstSheetName];
-  const matrix = xlsx.utils.sheet_to_json<Array<string | number | boolean | null>>(firstSheet, {
-    header: 1,
-    blankrows: false,
-    defval: '',
-    raw: true,
-  });
-
-  const rows = matrix.map((row) => row.map((cell) => {
-    if (typeof cell === 'number') {
-      if (Number.isInteger(cell) && Math.abs(cell) <= Number.MAX_SAFE_INTEGER) {
-        return Math.trunc(cell).toString();
-      }
-      return cell.toString();
-    }
-    return String(cell ?? '').trim();
-  }));
-  return mapTabularRowsToObjects(rows);
+async function parseTextImportFile(file: File): Promise<Record<string, string>[]> {
+  return parseCSV(await decodeImportFile(file));
 }
 
 function isLikelyHeaderRow(row: string[]): boolean {
@@ -623,8 +604,8 @@ export default function UserManagement() {
   };
 
   const buildImportRowsResult = async (file: File): Promise<ImportRowsResult> => {
-    const parsedRows = isSpreadsheetFile(file)
-      ? await parseSpreadsheetFile(file)
+    const parsedRows = isTextImportFile(file)
+      ? await parseTextImportFile(file)
       : parseCSV(await decodeImportFile(file));
     const rows = parsedRows.map(normalizeImportRow);
     if (rows.length === 0) {

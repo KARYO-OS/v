@@ -60,7 +60,7 @@ describe('ImportPersonelModal', () => {
     const file = new File(['hello'], 'personel.pdf', { type: 'application/pdf' });
     fireEvent.change(targetInput as HTMLInputElement, { target: { files: [file] } });
 
-    expect(onError).toHaveBeenCalledWith('Hanya file CSV/TSV/TXT/XLS/XLSX yang diizinkan');
+    expect(onError).toHaveBeenCalledWith('Hanya file CSV/TSV/TXT yang diizinkan');
     expect(onImport).not.toHaveBeenCalled();
   });
 
@@ -88,7 +88,7 @@ describe('ImportPersonelModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('accepts xlsx files and triggers import', async () => {
+  it('rejects xlsx files', async () => {
     const user = userEvent.setup();
     const { container } = render(
       <ImportPersonelModal
@@ -110,8 +110,9 @@ describe('ImportPersonelModal', () => {
 
     await user.click(screen.getByRole('button', { name: 'Impor' }));
 
-    await waitFor(() => expect(onImport).toHaveBeenCalledWith(file));
-    expect(onClose).toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledWith('Hanya file CSV/TSV/TXT yang diizinkan');
+    expect(onImport).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('shows preview summary when preview callback is provided', async () => {

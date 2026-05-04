@@ -51,28 +51,6 @@ export default function ImportPersonelModal({
     triggerDownload(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' }), 'template_import_personel.csv');
   };
 
-  const handleDownloadXlsxTemplate = async () => {
-    try {
-      const xlsx = await import('xlsx');
-      const rows = [
-        ['NRP', 'Nama', 'Pangkat', 'Satuan', 'Role', 'Level Komando', 'Jabatan'],
-        ['123456', 'Budi Santoso', 'Sertu', 'Komando I', 'komandan', 'KOMPI', 'Danton'],
-        ['123457', 'Andi Pratama', 'Pratu', 'Komando I', 'prajurit', '', 'Anggota'],
-      ];
-      const sheet = xlsx.utils.aoa_to_sheet(rows);
-      const workbook = xlsx.utils.book_new();
-      xlsx.utils.book_append_sheet(workbook, sheet, 'Personel');
-      const output = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
-
-      triggerDownload(
-        new Blob([output], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
-        'template_import_personel.xlsx',
-      );
-    } catch {
-      onError('Gagal membuat template XLSX');
-    }
-  };
-
   const isSupportedImportFile = (file: File): boolean => {
     const fileName = file.name.trim().toLowerCase();
     const mimeType = file.type.trim().toLowerCase();
@@ -80,14 +58,11 @@ export default function ImportPersonelModal({
       fileName.endsWith('.csv') ||
       fileName.endsWith('.tsv') ||
       fileName.endsWith('.txt') ||
-      fileName.endsWith('.xlsx') ||
-      fileName.endsWith('.xls') ||
       mimeType === 'text/csv' ||
       mimeType === 'text/tab-separated-values' ||
       mimeType === 'text/plain' ||
       mimeType === 'application/csv' ||
-      mimeType === 'application/vnd.ms-excel' ||
-      mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      mimeType === 'application/vnd.ms-excel'
     );
   };
 
@@ -96,7 +71,7 @@ export default function ImportPersonelModal({
     if (!file) return;
 
     if (!isSupportedImportFile(file)) {
-      onError('Hanya file CSV/TSV/TXT/XLS/XLSX yang diizinkan');
+      onError('Hanya file CSV/TSV/TXT yang diizinkan');
       return;
     }
 
@@ -183,19 +158,16 @@ export default function ImportPersonelModal({
             <Button type="button" size="sm" variant="outline" onClick={handleDownloadCsvTemplate}>
               Download Template CSV
             </Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => void handleDownloadXlsxTemplate()}>
-              Download Template XLSX
-            </Button>
           </div>
         </div>
 
         <div>
-          <label htmlFor="personel-csv-input" className="text-sm font-semibold text-text-primary">File CSV/TSV/TXT/XLS/XLSX *</label>
+          <label htmlFor="personel-csv-input" className="text-sm font-semibold text-text-primary">File CSV/TSV/TXT *</label>
           <input
             id="personel-csv-input"
             ref={fileInputRef}
             type="file"
-            accept=".csv,.CSV,.tsv,.TSV,.txt,.TXT,.xls,.XLS,.xlsx,.XLSX,text/csv,text/tab-separated-values,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            accept=".csv,.CSV,.tsv,.TSV,.txt,.TXT,text/csv,text/tab-separated-values,text/plain,application/vnd.ms-excel,application/csv"
             onChange={handleFileChange}
             disabled={isSaving}
             className="mt-1 block w-full text-sm text-text-secondary
@@ -227,7 +199,7 @@ export default function ImportPersonelModal({
         <div className="text-xs text-text-secondary space-y-1">
           <p>• Maksimal ukuran file: 5MB</p>
           <p>• NRP, Nama, dan Satuan wajib diisi (Role opsional, default prajurit)</p>
-          <p>• Mendukung format CSV/TSV/TXT/XLS/XLSX</p>
+          <p>• Mendukung format CSV/TSV/TXT</p>
           <p>• Untuk file teks: mendukung pemisah koma, titik koma, tab, dan pipe (|)</p>
           <p>• PIN di CSV diabaikan, sistem memakai PIN default 123456</p>
           <p>• Duplikat NRP akan dilewati</p>
